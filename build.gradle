@@ -1,0 +1,108 @@
+/*
+ * Android litters the top-level with a "build/" folder.
+ * Applying the Base plugin provides a "clean" task.
+ *
+ * That litter may have been intentional?
+ *   https://code.google.com/p/android/issues/detail?id=194472
+ */
+apply plugin: "base"
+
+
+allprojects {
+	group = "com.github.vhati.openuhs"
+	version = "0.7.0"
+
+	// Declare where to find dependencies.
+	repositories {
+		mavenCentral()
+	}
+}
+
+project(":core") {
+	apply plugin: "org.gradle.java"
+}
+
+project(":desktop-reader") {
+	apply plugin: "org.gradle.java"
+
+	dependencies {
+		compile project(":core")
+		compile "org.jdom:jdom:1.1.3"
+		compile "gnu.getopt:java-getopt:1.0.13"
+	}
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = "2.14.1"
+}
+
+
+/*
+ * Retro-compiling for compatibility with older VMs can be done with modern classes.
+ *
+ * However, it's recommended to point the compiler's bootClasspath to authentic JDK jars.
+ *
+ *   http://stackoverflow.com/questions/22681544/how-to-set-gradle-options-bootclasspath-in-an-os-independent-manner
+ *
+ * Or even more authentic: edit tasks to point at the old JDK's commands.
+ *
+ *   https://docs.gradle.org/3.0/userguide/groovy_plugin.html
+ */
+def retroEnvs = [(JavaVersion.VERSION_1_6):"JDK6_HOME"]
+def retroJDKs = [:]
+retroEnvs.each { retroVer, retroEnv ->
+	if (System.env[retroEnv] != null && !System.env[retroEnv].isEmpty()) {
+		def binDir = new File(System.env[retroEnv], "bin")
+
+		// Resolve command names to full paths.
+		// This map starts empty, guesses from requested keys, and caches results.
+		def exeMap = [:].withDefault { nameKey ->
+
+			// Pick out the first file that matches the closure condition, or null.
+			def exeFile = binDir.listFiles().find {
+				(it.name ==~ '(?i)' + java.util.regex.Pattern.quote(nameKey) + '([.]exe)?')
+			}
+
+			assert(exeFile != null) : "Could not find ${nameKey} in ${binDir}"
+			exeFile
+		}
+		retroJDKs[retroVer] = exeMap
+	}
+}
+
+gradle.projectsEvaluated {
+	allprojects { p ->
+		// Restrict this hack to pure Java projects.
+		if (p.plugins.hasPlugin("org.gradle.java")) {
+			def blacklisted = false
+
+			/*
+			 * To be cautious, and probably redundant, exclude android explicitly.
+			 *
+			 * Android sets bootClasspath to the Android SDK's platform "android.jar".
+			 * Without it, you get "package android.[etc] does not exist" errors.
+			 */
+			if (p.plugins.hasPlugin("com.android.application")) { blacklisted = true }
+
+			if (!blacklisted) {
+				if (retroJDKs.containsKey(p.targetCompatibility)) {
+					println("Using JDK ${p.targetCompatibility} for \"${p.name}\" tasks.")
+
+					p.tasks.withType(AbstractCompile) { t ->
+						t.options.fork = true
+						t.options.forkOptions.executable = retroJDKs[p.targetCompatibility]["javac"]
+					}
+					p.tasks.withType(Javadoc) { t ->
+						t.executable = retroJDKs[p.targetCompatibility]["javadoc"]
+					}
+					p.tasks.withType(Test) { t ->
+						t.executable = retroJDKs[p.targetCompatibility]["java"]
+					}
+					p.tasks.withType(JavaExec) { t ->
+						t.executable = retroJDKs[p.targetCompatibility]["java"]
+					}
+				}
+			}
+		}
+	}
+}

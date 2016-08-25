@@ -1,0 +1,27 @@
+# Gradle stuff
+.gradle
+/build/
+
+# Gradle GUI config
+gradle-app.setting
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+
+# Misc
+*.class
+*.tmp
+*.bak
+~$*
+
+
+# Windows image file caches
+Thumbs.db
+
+# Windows folder config file
+Desktop.ini
+
+
+# Mac stuff
+.DS_Store

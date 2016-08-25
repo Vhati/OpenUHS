@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+<xs:simpleType name="integerOrEmpty">
+  <xs:union>
+   <xs:simpleType>
+     <xs:restriction base="xs:integer"/>
+   </xs:simpleType>
+   <xs:simpleType>
+     <xs:restriction base="xs:token">
+       <xs:enumeration value=""/>
+     </xs:restriction>
+   </xs:simpleType>
+ </xs:union>
+</xs:simpleType>
+
+
+<xs:element name="content">
+  <xs:complexType>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string" use="required" />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="node">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="content" minOccurs="0" maxOccurs="1" />
+      <xs:element name="child" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:choice minOccurs="1" maxOccurs="1">
+              <xs:element ref="node" />
+              <xs:element ref="hotspot-node" />
+            </xs:choice>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="id" type="integerOrEmpty" />
+    <xs:attribute name="link-id" type="integerOrEmpty" />
+  </xs:complexType>
+</xs:element>
+
+<xs:element name="hotspot-node">
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element ref="content" minOccurs="0" maxOccurs="1" />
+      <xs:element name="hotspot-child" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:choice minOccurs="1" maxOccurs="1">
+              <xs:element ref="node" />
+              <xs:element ref="hotspot-node" />
+            </xs:choice>
+          </xs:sequence>
+          <xs:attribute name="zx" type="xs:integer" />
+          <xs:attribute name="zy" type="xs:integer" />
+          <xs:attribute name="zw" type="xs:integer" />
+          <xs:attribute name="zh" type="xs:integer" />
+          <xs:attribute name="px" type="xs:integer" />
+          <xs:attribute name="py" type="xs:integer" />
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="id" type="integerOrEmpty" />
+  </xs:complexType>
+</xs:element>
+
+
+<xs:element name="uhs">
+  <xs:complexType>
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element ref="node" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element ref="hotspot-node" minOccurs="0" maxOccurs="unbounded" />
+    </xs:choice>
+    <xs:attribute name="openuhs-xml-version" type="xs:integer" use="required" />
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>

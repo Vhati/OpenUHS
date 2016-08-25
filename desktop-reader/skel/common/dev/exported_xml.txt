@@ -1,0 +1,34 @@
+<!-- A human-friendly mockup of the xsd -->
+
+
+<!-- Define a custom attribute type that allows int or blank -->
+
+
+<!-- Define a couple reusable elements -->
+  <node type="" id="" link-id="">
+    <content type="">CDATA</content>
+    <child>
+      <!-- 1 node or hotspot-node -->
+    </child>
+    <child>
+      <!-- 1 node or hotspot-node -->
+    </child>
+    <!-- ... -->
+  </node>
+
+  <hotspot-node type="" id="">
+    <content type="">CDATA</content>
+    <hotspot-child zx="" zy="" zw="" zh="" px="" py="">
+      <!-- 1 node or hotspot-node -->
+    </hotspot-child>
+    <hotspot-child zx="" zy="" zw="" zh="" px="" py="">
+      <!-- 1 node or hotspot-node -->
+    </hotspot-child>
+    <!-- ... -->
+  </hotspot-node>
+
+
+<!-- Now the actual tree -->
+<uhs openuhs-xml-version="1">
+  <!-- N nodes or hotspot-nodes -->
+<uhs>

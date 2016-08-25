@@ -1,0 +1,99 @@
+# Changes
+
+## [0.7.0]  (Pending)
+ - Reorganized code for building with gradle.
+ - Migrated to GitHub.
+ - Added an experimental Android reader.
+ - Added a tar distribution for OSX/Linux with launcher scripts.
+ - License changed to GPLv3.
+
+## [0.6.7]  (Unreleased)
+ - Moved printNode() from the parser to become a method in UHSNode objects.
+ - Added a restriction attribute to UHSNode for any derivative readers that might care about incentive hunks.
+ - Added UHSNode.getDecoratedContent() to handle markup/escapes without GUI reader meddling.
+ - Added UHSRootNode getters for a hint file's title and version.
+ - Added Proto UHS (*.PUHS) support; from the official UHS Source Editor.
+ - Added a new class, Proto4xUHSParser.
+ - Renamed OpenUHSLib to UHSParser.
+ - Updated javadoc for UHSParser.parse88Format().
+ - Updated javadoc for UHSParser.parseHyperImgNode().
+ - Added support for nested nodes within images besides overlay and link.
+ - Renamed children of Hint and NestHint to "HintData" nodes.
+ - Moved setErrorHandler() methods to a global class, UHSErrorHandlerManager.
+
+## [0.6.6]  (2012-02-18)
+ - Added a Find button to the downloader.
+ - Moved user-configurable settings into a third tab.
+ - Added a setting for the reader's font size.
+ - Fixed notices in UHSFetcher that weren't using the logging interface.
+ - Fixed the "Saved my.uhs" log message, miscategorized as "Error".
+ - Fixed threading issues that could cause hangs.
+
+## [0.6.5]  (2011-01-19)
+ - Added getopt jar, which was missing in 0.6.4.
+ - Added Linux/Mac .command frontend script.
+ - Made Windows frontend script fancier and commandline friendly.
+ - Added commandline switches to print or extract content from hint files.
+ - Added an error popup when unable to download from a server.
+ - Added logging to "log.txt".
+ - Changed the lib's UHSNode content to String/byte[], leaving image/sound handling to the GUI.
+ - Added a logging interface to the uhslib, reader/downloader panels, and uhsfetcher.
+ - Parsed children of Comment nodes (CommentData), Credit nodes (CreditData), HyperImg nodes (Hyperpng/Hypergif/Overlay/Link) and Version nodes (VersionData) no longer copy their parent's id.
+ - Minor javadoc improvements.
+
+## [0.6.4]  (YANKED)
+ - Added commandline switches (run with -h or --help to see them).
+ - Added an option to test a UHS file's validity without showing the GUI.
+ - Lowercase ash character was added (#a+ae#a-). Only "Fallout: New Vegas" has one.
+ - The mouse cursor becomes busy while loading.
+
+## [0.6.3]  (2009-04-10)
+ - Fixed a bug that occasionally prevented the downloader's list from highlighting properly.
+
+## [0.6.2]  (2009-01-17)
+ - Clicking a column name in the downloader sorts the table.
+ - Double-clicking a row in the downloader opens a hint file, if you have it.
+ - The downloader's overwrite prompt now mentions the file name in question.
+ - Fixed a typo in one of the downloader's error popups.
+ - Fixed a bug in which the downloader corrupted files smaller than 1024 bytes.
+
+## [0.6.1]  (2008-02-22)
+ - Tilde (#a+n~#a-), grave (#a+e`#a-), circumflex (#a+e^#a-), and capital accents added.
+ - Fixed misrecognition of modern files as 88a if they had 88a credits.
+ - Added gifa images. Only "Deja Vu I" has one.
+
+## [0.6.0]  (2007-12-20)
+ - SourceForge project opened.
+ - Non-proportional and proportional fonts are handled (#p-, #p+).
+ - Whitespace/newline markup is handled ( #w+ or #w., #w-).
+ - Acute accents are handled (#a+e'#a-).
+ - Trademark character was added (#a+TM#a-).
+ - Hyperlinks (url/email) are displayed, though not clickable (#h+address#h-).
+ - Sounds are supported. Only "Tex Murphy: Overseer" has any.
+
+## [0.5.0]  (2007-12-14)
+ - Hint files can be downloaded!
+ - Old format hint files can be opened correctly (silly typo broke them before).
+ - Searching when no hint file is loaded no longer causes an error.
+ - Checking ShowAll reveals hints immediately.
+ - Pop-ups are parented to the main window like they should.
+ - Lots of code cleanup.
+ - Credit nodes correctly nest their paragraphs.
+ - Standalone hint nodes with line breaks are displayed correctly.
+ - Scrollbars return to the top/bottom with each node change.
+ - Images with link or overlay hot spots are supported.
+
+## [0.4.0]
+ - Hint files can be searched.
+ - There's an "Open" button.
+ - The Next Hint button gets disabled correctly when revealing the final hints.
+ - Each question remembers how many hints had been revealed.
+ - The ## (escape chars) are interpreted to be #.
+ - Diaeresis accents are handled (#a+o:#a- becomes ö).
+ - Links (now colored green) to single hints/media (containing no sub-nodes) work.
+ - GPL license included and attached to source code.
+
+## [0.2.0]
+ - Added images and non-hint text.
+ - Added carriage returns in comments.
+ - Sped up scroll bars.

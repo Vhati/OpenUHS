@@ -1,0 +1,4 @@
+include "core", "desktop-reader"
+
+// To enable android builds, uncomment this.
+//include "android-reader"

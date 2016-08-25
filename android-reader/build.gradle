@@ -1,0 +1,156 @@
+/*
+ * Android build tools will pull in a lot of dependency jars.
+ * The minimim JDK for building will get dragged upward to Java 1.8+.
+ *
+ * The ANDROID_HOME environment variable MUST be set: the path to Android SDK's folder.
+ *
+ * This script is kept isolated from the root project to make it optional.
+ */
+
+buildscript {
+	repositories {
+		jcenter()
+	}
+
+	dependencies {
+		classpath "com.android.tools.build:gradle:2.1.3"
+	}
+}
+
+
+/*
+ * https://google.github.io/android-gradle-dsl/current/com.android.build.gradle.AppExtension.html
+ */
+apply plugin: "com.android.application"
+
+
+project.ext.packageName = "net.vhati.openuhs.androidreader"
+project.ext.activityClassName = "${packageName}.MainActivity"
+
+
+android {
+	compileSdkVersion = 10
+	buildToolsVersion = "24.0.1"
+
+	/*
+	 * SourceSets default values...
+	 *
+	 * https://android.googlesource.com/platform/tools/
+	 * build/+/master/gradle/src/main/groovy/com/android/build/gradle/internal/api/
+	 * DefaultAndroidSourceSet.java
+	 *
+	 * https://android.googlesource.com/platform/tools/
+	 * base/+/master/common/src/main/java/com/android/
+	 * SdkConstants.java
+	 *
+	 * def SdkConstants = [FD_RES:"res", FD_ASSETS:"assets", FN_ANDROID_MANIFEST_XML:"AndroidManifest.xml"]
+	 * def setRoot = "src/main"
+	 *
+	 * java.srcDirs = ["${setRoot}/java"]  // Java code
+	 * resources.srcDirs = ["${setRoot}/resources"]  // Java resources
+	 * res.srcDirs = ["${setRoot}/${SdkConstants.FD_RES}"]  // SDK resources
+	 * assets.srcDirs = ["${setRoot}/${SdkConstants.FD_ASSETS}"]
+	 * aidl.srcDirs = ["${setRoot}/aidl"]
+	 * renderscript.srcDirs = ["${setRoot}/rs"]
+	 * jni.srcDirs = ["${setRoot}/jni"]
+	 * manifest.srcFile("${setRoot}/${SdkConstants.FN_ANDROID_MANIFEST_XML}")
+	 */
+	sourceSets {
+		main {
+			def setRoot = "src/main"
+
+			java.srcDirs = ["${setRoot}/java"]
+			resources.srcDirs = ["${setRoot}/resources"]
+
+			res.srcDirs = ["${setRoot}/res"]
+			assets.srcDirs = ["${setRoot}/assets"]
+			aidl.srcDirs = ["${setRoot}/aidl"]
+			renderscript.srcDirs = ["${setRoot}/rs"]
+			jni.srcDirs = ["${setRoot}/jni"]
+			manifest.srcFile("${setRoot}/AndroidManifest.xml")
+		}
+	}
+
+	defaultConfig {
+		// Set mandatory values to inject/override in "AndroidManifest.xml".
+
+		/*
+		 * This link says applicationId overrides the manifest's package property.
+		 * Supposedly it has nothing to do with a Java or R class. It only uniquely identifies this app.
+		 *
+		 * http://tools.android.com/tech-docs/new-build-system/applicationid-vs-packagename
+		 *
+		 * However, I got R reference errors when the xml's doomed value was lorem ipsum.
+		 * So applicationId didn't override, and in the xml at least, it WAS relevant to R.
+		 *
+		 * Flavors can each have their own applicationId (e.g., paid & free) and other config vars.
+		 */
+		applicationId = "${packageName}"
+
+		// Reader app version, an integer that grows with each release.
+		versionCode = 1
+
+		// Reader app version, solely to be seen by users.
+		versionName = "1.0"
+
+		// Minimum API needed to run.
+		minSdkVersion(10)
+
+		// API used for testing.
+		targetSdkVersion(10)
+	}
+}
+
+
+/*
+ * There's an undocumented method in BaseExtension, providing "android.getAdbExe()".
+ *   http://stackoverflow.com/questions/21288448/how-to-retrieve-path-to-adb-in-build-gradle
+ */
+def adbExe = new File("${android.sdkDirectory.getAbsolutePath()}/platform-tools/").listFiles().find {
+	( it.name.matches("(?i)adb(.exe)?") )
+}
+assert(adbExe != null)
+
+
+task listAndroidReaderVariants(type: DefaultTask) {
+	group = "Run"
+	description = "Lists variant names and their output files."
+
+	doLast {
+		// http://tools.android.com/tech-docs/new-build-system/user-guide#TOC-Build-Variants
+
+		def debugVariant = android.applicationVariants.all { v ->
+			println("Variant: ${v.name}")
+			v.outputs.each { o ->
+				println("  - outputFile: ${o.outputFile.name}")
+			}
+		}
+	}
+}
+
+task runAndroidReader(type: DefaultTask) {
+	group = "Run"
+	description = "Runs the installed reader on an Android device. (Debug variant's appId)"
+
+	doLast {
+		def debugVariant = android.applicationVariants.find {
+			("debug".equals(it.name))
+		}
+		assert(debugVariant != null) : "No \"debug\" variant was found."
+
+		// Alternatively: android.defaultConfig.applicationId
+
+		exec {
+			commandLine = ["${adbExe.getAbsolutePath()}", "shell", "am", "start", "-n", "${debugVariant.applicationId}/${activityClassName}"]
+
+			/* Yes, there is redundancy there.
+			 *   com.package.name / com.package.name.ActivityName
+			 *   (Manager: a package id to find your app) / (VM: fully qualified class name)
+			 */
+		}
+	}
+}
+
+dependencies {
+	compile project(":core")
+}

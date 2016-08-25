@@ -1,0 +1,161 @@
+import org.apache.tools.ant.filters.FixCrLfFilter
+
+apply plugin: "java"
+
+
+sourceCompatibility = JavaVersion.VERSION_1_6
+targetCompatibility = JavaVersion.VERSION_1_6
+
+archivesBaseName = "OpenUHS-Reader"
+project.ext.mainClassName = "net.vhati.openuhs.desktopreader.UHSReaderMain"
+
+
+// Modify the Java plugin's "jar" task.
+jar {
+	manifest {
+		attributes ("Main-Class": mainClassName)
+	}
+}
+
+task copyDistUnix(type: DefaultTask) {
+	def distDir = "build/tmp/distUnix"
+
+	// Declare this task's inputs/outputs. Only possible during config phase.
+	inputs.dir("skel/common")
+	inputs.dir("skel/unix")
+	inputs.file(jar)
+	outputs.dir("${distDir}")
+	//outputs.upToDateWhen {false}
+
+	// Stuff to do during the exec phase.
+	doLast {
+		if (file("${distDir}").exists()) {
+			def deleted = file("${distDir}").deleteDir()
+			assert(deleted)
+		}
+
+		copy {
+			includeEmptyDirs = true
+			filteringCharset = "UTF-8"
+
+			from(["skel/common", "skel/unix"]) {
+				eachFile {
+					if (it.getName() ==~ /(?i).*[.](txt|xsd)$/) {
+						it.filter(FixCrLfFilter,
+							eol: FixCrLfFilter.CrLf.newInstance("lf"),
+							tab: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+							eof: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+							fixlast: true)
+					}
+
+					if (it.getName() ==~ /(?i).*[.](command|sh)$/) {
+						it.filter(FixCrLfFilter,
+							eol: FixCrLfFilter.CrLf.newInstance("lf"),
+							tab: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+							eof: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+							fixlast: true)
+
+						// Set the executable flag, if the filesystem supports it. (Try again during Tar.)
+						it.setMode(0755)
+					}
+				}
+			}
+
+			into("${distDir}")
+		}
+
+		copy {
+			// Copy all runtime (and compile time) dependencies.
+			from(configurations.runtime)
+			// Copy from the "jar" task: means taking the task's output (the project jar).
+			from(jar)
+
+			into("${distDir}/lib")
+		}
+	}
+}
+
+task copyDistWin(type: DefaultTask) {
+	def distDir = new File(buildDir, "tmp/distWin")
+
+	// Declare this task's inputs/outputs. Only possible during config phase.
+	inputs.dir("skel/common")
+	inputs.dir("skel/win")
+	inputs.file(jar)
+	outputs.dir(distDir)
+	//outputs.upToDateWhen {false}
+
+	// Stuff to do during the exec phase.
+	doLast {
+		if (distDir.exists()) {
+			def deleted = distDir.deleteDir()
+			assert(deleted)
+		}
+
+		copy {
+			includeEmptyDirs = true
+			filteringCharset = "UTF-8"
+
+			from(["skel/common", "skel/win"]) {
+				eachFile {
+					if (it.getName() ==~ /(?i).*[.](bat|txt|xsd)$/) {
+						it.filter(FixCrLfFilter,
+							eol: FixCrLfFilter.CrLf.newInstance("crlf"),
+							tab: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+							eof: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+							fixlast: true)
+					}
+				}
+			}
+
+			into(distDir)
+		}
+
+		copy {
+			// Copy all runtime (and compile time) dependencies.
+			from(configurations.runtime)
+			// Copy from the "jar" task: means taking the task's output (the project jar).
+			from(jar)
+
+			into(new File(distDir, "lib"))
+		}
+	}
+}
+
+
+task packageDistUnix(type: Tar, dependsOn: copyDistUnix) {
+	baseName = "OpenUHS"
+	appendix = "Reader"
+	classifier = "Unix"
+	compression = Compression.GZIP
+
+	into("${baseName} ${version}")
+
+	// Take the task's output as a source dir.
+	from(copyDistUnix) {
+		eachFile {
+			if (it.getName() ==~ /(?i).*[.](command|sh)$/) {
+				it.setMode(0755)
+			}
+		}
+	}
+}
+
+task packageDistWin(type: Zip, dependsOn: copyDistWin) {
+	baseName = "OpenUHS"
+	appendix = "Reader"
+	classifier = "Win"
+
+	into("${baseName} ${version}")
+
+	// Take the task's output as a source dir.
+	from(copyDistWin)
+}
+
+configurations {
+	dists
+}
+
+artifacts {
+	dists packageDistUnix, packageDistWin
+}

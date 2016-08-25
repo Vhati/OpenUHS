@@ -1,0 +1,33 @@
+apply plugin: "java"
+
+
+sourceCompatibility = JavaVersion.VERSION_1_6
+targetCompatibility = JavaVersion.VERSION_1_6
+
+
+jar {
+	baseName = "openuhs"
+	appendix = project.name
+}
+
+task generateJavadocs(type: Javadoc) {
+	source = sourceSets.main.allJava
+}
+
+task packageDist(type: Zip) {
+	baseName = "OpenUHS"
+	appendix = project.name
+
+	from(jar)
+	from(generateJavadocs) {
+		into("javadoc")
+	}
+}
+
+configurations {
+	dists
+}
+
+artifacts {
+	dists packageDist
+}

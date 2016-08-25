@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent">
+  <TextView
+    android:id="@+id/titleText"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+    android:text="INSERT TITLE HERE" />
+  <TableLayout
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:padding="10dp"
+    android:stretchColumns="1">
+    <TableRow>
+      <ImageButton
+        android:id="@+id/backBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"
+        android:src="@drawable/back_btn_selector"
+        android:background="@android:color/transparent" />
+      <ImageButton
+        android:id="@+id/forwardBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:src="@drawable/forward_btn_selector"
+        android:background="@android:color/transparent" />
+    </TableRow>
+  </TableLayout>
+  <TextView
+    android:id="@+id/questionText"
+    android:layout_width="fill_parent" 
+    android:layout_height="wrap_content" 
+    android:textSize="16sp"
+    android:text="INSERT QUESTION HERE" />
+  <ListView
+    android:id="@+id/childNodesList"
+    android:layout_width="fill_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginBottom="10dp"
+    android:layout_marginTop="10dp"
+    android:background="@android:color/transparent"
+    android:cacheColorHint="@android:color/transparent"
+    android:divider="#CCCCCC"
+    android:dividerHeight="1dp"
+    android:paddingLeft="2dp" >
+  </ListView>
+  <TableLayout
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:padding="5dp"
+    android:stretchColumns="1">
+    <TableRow>
+      <TextView
+        android:id="@+id/showText"
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content" 
+        android:layout_gravity="center_vertical"
+        android:textSize="16sp"
+        android:text="" />
+      <ImageButton
+        android:id="@+id/showNextBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:src="@drawable/next_btn_selector"
+        android:background="@android:color/transparent" />
+      <CheckBox
+        android:id="@+id/showAllBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:textSize="16sp"
+        android:text="Show All" />
+    </TableRow>
+  </TableLayout>
+</LinearLayout>
