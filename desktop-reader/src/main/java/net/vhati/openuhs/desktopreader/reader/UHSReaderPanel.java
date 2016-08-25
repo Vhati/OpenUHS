@@ -373,8 +373,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
         StringBuffer questionBuf = new StringBuffer();
         questionBuf.append(currentNode.getType()).append("=");
 
-        if (currentNode.getContentDecorator() != null) {
-          DecoratedFragment[] fragments = (DecoratedFragment[])currentNode.getDecoratedContent();
+        if (currentNode.getStringContentDecorator() != null) {
+          DecoratedFragment[] fragments = currentNode.getDecoratedStringContent();
           for (int i=0; i < fragments.length; i++) {
             questionBuf.append(fragments[i].fragment);
           }

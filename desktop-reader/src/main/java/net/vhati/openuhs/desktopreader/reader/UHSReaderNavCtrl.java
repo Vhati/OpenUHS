@@ -1,6 +1,6 @@
 package net.vhati.openuhs.desktopreader.reader;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSNode;
 
 
 /**

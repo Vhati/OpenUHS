@@ -1,10 +1,14 @@
 package net.vhati.openuhs.core.markup;
 
-import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.markup.DecoratedFragment;
+import net.vhati.openuhs.core.markup.Decoration;
+import net.vhati.openuhs.core.markup.StringDecorator;
+import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 
 
 /**
@@ -17,6 +21,7 @@ import net.vhati.openuhs.core.*;
 public class Version9xInfoDecorator extends Version9xStringDecorator {
 
 
+  @Override
   public DecoratedFragment[] getDecoratedString(String rawContent) {
     String[] lines = rawContent.split("\\^break\\^");
 
@@ -83,7 +88,7 @@ public class Version9xInfoDecorator extends Version9xStringDecorator {
 
     String fragment = tmpContent.toString();
     String[] decoNames = new String[0];
-    LinkedHashMap[] argMaps = new LinkedHashMap[0];
+    Map[] argMaps = new LinkedHashMap[0];
     DecoratedFragment[] result = new DecoratedFragment[] {new DecoratedFragment(fragment, decoNames, argMaps)};
     return result;
   }

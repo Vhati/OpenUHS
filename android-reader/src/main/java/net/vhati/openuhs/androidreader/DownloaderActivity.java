@@ -1,5 +1,6 @@
 package net.vhati.openuhs.androidreader;
 
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import java.io.File;
@@ -19,8 +20,11 @@ import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.androidreader.downloader.*;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.androidreader.AndroidUHSErrorHandler;
+import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.androidreader.downloader.DownloadableUHSArrayAdapter;
+import net.vhati.openuhs.androidreader.downloader.UHSFetcher;
+import net.vhati.openuhs.androidreader.downloader.UrlFetcher;
 
 
 public class DownloaderActivity extends Activity implements Observer {
@@ -81,11 +85,11 @@ public class DownloaderActivity extends Activity implements Observer {
       if (status == UrlFetcher.COMPLETE) {
         byte[] catalogBytes = urlFetcher.getReceivedBytes();
         if (catalogBytes != null && catalogBytes.length > 0) {
-          final java.util.ArrayList catalog = UHSFetcher.parseCatalog(catalogBytes);
+          final List<DownloadableUHS> catalog = UHSFetcher.parseCatalog(catalogBytes);
           if (catalog.size() > 0) {
             int catalogSize = catalog.size();
             for (int i=0; i < catalogSize; i++) {
-              DownloadableUHS tmpUHS = (DownloadableUHS)catalog.get(i);
+              DownloadableUHS tmpUHS = catalog.get(i);
               if (tmpUHS.getName().length() > 0) {
                 File uhsFile = new File(getExternalFilesDir(null), tmpUHS.getName());
                 if (uhsFile.exists()) tmpUHS.setColor(CATALOG_COLOR_LOCAL);
@@ -95,7 +99,7 @@ public class DownloaderActivity extends Activity implements Observer {
 
             runOnUiThread(new Runnable() {
               public void run() {
-                ((DownloadableUHS)catalog.get(1)).setColor(android.graphics.Color.GREEN);
+                catalog.get(1).setColor(android.graphics.Color.GREEN);
                 catalogListView.setAdapter(new DownloadableUHSArrayAdapter(DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog));
                 catalogFetchDlg.dismiss();
               }

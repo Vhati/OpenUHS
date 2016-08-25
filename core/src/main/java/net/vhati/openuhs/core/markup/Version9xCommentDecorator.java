@@ -3,6 +3,13 @@ package net.vhati.openuhs.core.markup;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import net.vhati.openuhs.core.markup.DecoratedFragment;
+import net.vhati.openuhs.core.markup.Decoration;
+import net.vhati.openuhs.core.markup.StringDecorator;
+import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 
 
 /**
@@ -14,8 +21,9 @@ import java.util.LinkedHashMap;
 public class Version9xCommentDecorator extends Version9xStringDecorator {
 
 
+  @Override
   public DecoratedFragment[] getDecoratedString(String rawContent) {
-    ArrayList resultList = new ArrayList();
+    List<DecoratedFragment> resultList = new ArrayList<DecoratedFragment>();
     char[] tmp = rawContent.toCharArray();
     StringBuffer buf = new StringBuffer(tmp.length);
     int consumedOffset = -1;
@@ -39,12 +47,12 @@ public class Version9xCommentDecorator extends Version9xStringDecorator {
     // Handle lingering content
     if (buf.length() > 0) {
       String fragment = buf.toString();
-      ArrayList attribList = new ArrayList(1);
+      List<String> attribList = new ArrayList<String>(1);
       for (int d=0; d < decos.length; d++) {
         if (decoStates[d] > 0) attribList.add(decos[d].name);
       }
       String[] decoNames = (String[])attribList.toArray(new String[attribList.size()]);
-      LinkedHashMap[] argMaps = new LinkedHashMap[attribList.size()];
+      Map[] argMaps = new LinkedHashMap[attribList.size()];
       resultList.add(new DecoratedFragment(fragment, decoNames, argMaps));
     }
 

@@ -1,12 +1,27 @@
 package net.vhati.openuhs.desktopreader.reader;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
-import java.util.*;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
+import java.awt.Insets;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
+import javax.swing.JPanel;
+import javax.swing.event.MouseInputAdapter;
+import javax.swing.event.MouseInputListener;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
+import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
+import net.vhati.openuhs.desktopreader.reader.ZonePanel;
 
 
 /**

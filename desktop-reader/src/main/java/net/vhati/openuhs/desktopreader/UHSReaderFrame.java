@@ -1,13 +1,25 @@
 package net.vhati.openuhs.desktopreader;
 
-import javax.swing.*;
-import javax.swing.event.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 
-import net.vhati.openuhs.core.*;
-import net.vhati.openuhs.desktopreader.downloader.*;
-import net.vhati.openuhs.desktopreader.reader.*;
+import net.vhati.openuhs.desktopreader.Nerfable;
+import net.vhati.openuhs.desktopreader.SettingsPanel;
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
+import net.vhati.openuhs.desktopreader.downloader.UHSDownloaderPanel;
+import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
 public class UHSReaderFrame extends JFrame implements Nerfable {

@@ -1,7 +1,10 @@
 package net.vhati.openuhs.desktopreader.reader;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.Dimension;
+import java.awt.LayoutManager;
+import java.awt.Rectangle;
+import javax.swing.JPanel;
+import javax.swing.Scrollable;
 
 
 /**

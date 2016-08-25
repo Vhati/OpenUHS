@@ -7,7 +7,7 @@ import android.os.Bundle;
 import android.widget.TabHost;
 
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
 
 
 public class MainActivity extends TabActivity {

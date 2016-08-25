@@ -6,9 +6,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
-import net.vhati.openuhs.androidreader.*;
-import net.vhati.openuhs.androidreader.reader.*;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.androidreader.reader.UHSImageView;
+import net.vhati.openuhs.androidreader.reader.UHSSoundView;
+import net.vhati.openuhs.androidreader.reader.UHSTextView;
+import net.vhati.openuhs.androidreader.reader.UHSUnknownView;
+import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSNode;
 
 
 public class NodeAdapter extends BaseAdapter {

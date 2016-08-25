@@ -1,8 +1,9 @@
 package net.vhati.openuhs.desktopreader;
 
-import java.util.ArrayList;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jdom.Document;
 import org.jdom.JDOMException;
@@ -11,7 +12,10 @@ import org.jdom.CDATA;
 import org.jdom.output.XMLOutputter;
 import org.jdom.output.Format;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSNode;
 
 
 public class UHSXML {
@@ -95,7 +99,7 @@ public class UHSXML {
 
 
     if (currentNode instanceof UHSHotSpotNode) {
-      ArrayList children = currentNode.getChildren();
+      List<UHSNode> children = currentNode.getChildren();
       if (children != null) {
         int childCount = children.size();
         for (int i=0; i < childCount; i++) {
@@ -116,7 +120,7 @@ public class UHSXML {
       int linkId = currentNode.getLinkTarget();
       currentElement.setAttribute("link-id", (linkId==-1?"":linkId+""));
 
-      ArrayList children = currentNode.getChildren();
+      List<UHSNode> children = currentNode.getChildren();
       if (children != null) {
         int childCount = children.size();
         for (int i=0; i < childCount; i++) {

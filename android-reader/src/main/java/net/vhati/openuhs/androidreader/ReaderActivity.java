@@ -18,8 +18,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.androidreader.reader.*;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.androidreader.reader.NodeAdapter;
+import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.UHSParser;
+import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.markup.DecoratedFragment;
 
 
@@ -262,8 +264,8 @@ public class ReaderActivity extends Activity {
         StringBuffer questionBuf = new StringBuffer();
         questionBuf.append(currentNode.getType()).append("=");
 
-        if (currentNode.getContentDecorator() != null) {
-          DecoratedFragment[] fragments = (DecoratedFragment[])currentNode.getDecoratedContent();
+        if (currentNode.getStringContentDecorator() != null) {
+          DecoratedFragment[] fragments = currentNode.getDecoratedStringContent();
           for (int i=0; i < fragments.length; i++) {
             questionBuf.append(fragments[i].fragment);
           }

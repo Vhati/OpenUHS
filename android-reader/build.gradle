@@ -32,6 +32,12 @@ android {
 	compileSdkVersion = 10
 	buildToolsVersion = "24.0.1"
 
+	compileOptions {
+		encoding = "UTF-8"
+		sourceCompatibility JavaVersion.VERSION_1_6
+		targetCompatibility JavaVersion.VERSION_1_6
+	}
+
 	/*
 	 * SourceSets default values...
 	 *

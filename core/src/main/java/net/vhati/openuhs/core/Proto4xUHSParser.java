@@ -1,10 +1,14 @@
 package net.vhati.openuhs.core;
 
-import javax.swing.*;
-import java.util.*;
-import java.util.regex.*;
-import java.io.*;
-import java.nio.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -57,7 +61,7 @@ public class Proto4xUHSParser {
 
 
   /**
-   * Reads a Proto4xUHS file into an ArrayList of text lines.
+   * Reads a Proto4xUHS file into a List of text lines.
    * Then calls an appropriate parser to construct a UHSRootNode and a tree of UHSNodes.
    * <br />
    * <br />This is likely the only method you'll need.
@@ -65,13 +69,13 @@ public class Proto4xUHSParser {
    * @param fileName file to read
    * @param auxStyle option for 9x files AUX_NORMAL, AUX_IGNORE, or AUX_NEST
    * @return the root of a tree of nodes representing the hint file
-   * @see #parse4xFormat(ArrayList, String, int) parse4xFormat(ArrayList, String, int)
+   * @see #parse4xFormat(List, String, int) parse4xFormat(List, String, int)
    */
   public UHSRootNode parseFile(String fileName, int auxStyle) {
     if (auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST) return null;
     logLine = -1;
 
-    ArrayList uhsFileArray = new ArrayList();
+    List<String> uhsFileArray = new ArrayList<String>();
     String workingDirPath = fileName.replace('\\','/').replaceAll("[^/]+$", "");
 
     try {
@@ -141,13 +145,13 @@ public class Proto4xUHSParser {
    * <br />An 'info', mentioning the author, publisher, etc.
    * <br />For convenience, auxiliary nodes can be treated differently.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @param auxStyle AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
    * @return the root of a tree of nodes
-   * @see #buildNodes(ArrayList, UHSRootNode, UHSNode, int, String) buildNodes(ArrayList, UHSRootNode, UHSNode, int, String)
+   * @see #buildNodes(List, UHSRootNode, UHSNode, int, String) buildNodes(List, UHSRootNode, UHSNode, int, String)
    */
-  public UHSRootNode parse4xFormat(ArrayList uhsFileArray, String workingDirPath, int auxStyle) {
+  public UHSRootNode parse4xFormat(List<String> uhsFileArray, String workingDirPath, int auxStyle) {
     if (auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST) return null;
 
     try {
@@ -193,14 +197,14 @@ public class Proto4xUHSParser {
    * <br />This recognizes various types of hints, and runs specialized methods to decode them.
    * <br />Unrecognized hints are harmlessly omitted.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int buildNodes(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int buildNodes(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     int index = startIndex;
 
     String tmp = getLoggedString(uhsFileArray, index);
@@ -378,14 +382,14 @@ public class Proto4xUHSParser {
    * embedded hunk
    * END *********** #</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseSubjectNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseSubjectNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     int index = startIndex;
     String[] tokens = null;
     String tmp = getLoggedString(uhsFileArray, index);  // Not interesting
@@ -436,14 +440,14 @@ public class Proto4xUHSParser {
    * hint (not encrypted)
    * END *********** #</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseHintNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseHintNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -520,14 +524,14 @@ public class Proto4xUHSParser {
    * are preserved (for context-sensitive escaping later).
    * Markup will be inserted to begin with that as the default.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseTextNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseTextNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -598,14 +602,14 @@ public class Proto4xUHSParser {
    * are preserved (for context-sensitive escaping later).
    * Markup will be inserted to begin with that as the default.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseCommentNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseCommentNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -673,14 +677,14 @@ public class Proto4xUHSParser {
    * are preserved (for context-sensitive escaping later).
    * Markup will be inserted to begin with that as the default.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseCreditNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseCreditNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -742,14 +746,14 @@ public class Proto4xUHSParser {
    * title
    * index</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseLinkNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseLinkNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     int index = startIndex;
     String[] tokens = null;
     String tmp = getLoggedString(uhsFileArray, index);  // Not interesting
@@ -840,15 +844,15 @@ public class Proto4xUHSParser {
    * <br />- - Close the overlay's popup.
    * <br />- - Highlight the overlay in the list, then drag a region on the image
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
-   * @see org.openuhs.core.UHSHotSpotNode
+   * @see net.vhati.openuhs.core.UHSHotSpotNode
    */
-  public int parseHyperImgNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseHyperImgNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     int index = startIndex;
     String[] tokens = null;
     String imgPath = null;
@@ -994,14 +998,14 @@ public class Proto4xUHSParser {
    * comments=sentence
    * END *********** #</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseInfoNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseInfoNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     String breakChar = " ";
 
     int index = startIndex;
@@ -1108,14 +1112,14 @@ public class Proto4xUHSParser {
   /**
    * Generates a stand-in UHSNode for an unknown hunk.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
    * @param currentNode an existing node to add children to
    * @param startIndex the line number to start parsing from
    * @param workingDirPath the dir containing the hint file, for finding relative paths
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseUnknownNode(ArrayList uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
+  public int parseUnknownNode(List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, String workingDirPath) {
     int index = startIndex;
     String tmp = getLoggedString(uhsFileArray, index);
     index++;
@@ -1173,7 +1177,7 @@ public class Proto4xUHSParser {
   }
 
 
-  private String getLoggedString(ArrayList uhsFileArray, int n) {
+  private String getLoggedString(List<String> uhsFileArray, int n) {
     logLine = n;
     return (String)uhsFileArray.get(n);
   }

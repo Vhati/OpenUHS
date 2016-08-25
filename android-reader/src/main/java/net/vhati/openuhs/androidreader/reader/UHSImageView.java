@@ -3,8 +3,7 @@ package net.vhati.openuhs.androidreader.reader;
 import android.content.Context;
 import android.widget.TextView;
 
-import net.vhati.openuhs.androidreader.reader.*;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSNode;
 
 
 public class UHSImageView extends TextView {

@@ -1,7 +1,7 @@
 package net.vhati.openuhs.desktopreader;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.LayoutManager;
+import javax.swing.JPanel;
 
 
 public class AppliablePanel extends JPanel {

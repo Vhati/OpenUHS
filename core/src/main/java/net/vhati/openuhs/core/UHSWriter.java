@@ -1,14 +1,22 @@
 package net.vhati.openuhs.core;
 
-import javax.swing.*;
-import java.util.*;
-import java.util.regex.*;
-import java.io.*;
-import java.nio.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -23,9 +31,6 @@ public class UHSWriter {
   private static final Pattern crlfPtn = Pattern.compile("\r\n");
 
 
-  /**
-   * Creates a UHSWriter.
-   */
   public UHSWriter() {
   }
 
@@ -146,25 +151,25 @@ public class UHSWriter {
     if (rootNode.getContentType() != UHSNode.STRING) return false;
     if (!rootNode.isGroup()) return false;
 
-    ArrayList levelOne = rootNode.getChildren();
+    List<UHSNode> levelOne = rootNode.getChildren();
     for (int o=0; o < levelOne.size(); o++) {
-      UHSNode oNode = (UHSNode)levelOne.get(o);
+      UHSNode oNode = levelOne.get(o);
       String oType = oNode.getType();
       if (oType.equals("Subject")) {
         if (oNode.getContentType() != UHSNode.STRING) return false;
         if (!oNode.isGroup()) return false;
 
         // Check Question nodes
-        ArrayList levelTwo = oNode.getChildren();
+        List<UHSNode> levelTwo = oNode.getChildren();
         for (int t=0; t < levelTwo.size(); t++) {
-          UHSNode tNode = (UHSNode)levelTwo.get(t);
+          UHSNode tNode = levelTwo.get(t);
           if (tNode.getContentType() != UHSNode.STRING) return false;
           if (!tNode.isGroup()) return false;
 
           // Check Hint nodes
-          ArrayList levelThree = tNode.getChildren();
+          List<UHSNode> levelThree = tNode.getChildren();
           for (int r=0; r < levelThree.size(); r++) {
-            UHSNode rNode = (UHSNode)levelThree.get(r);
+            UHSNode rNode = levelThree.get(r);
             if (rNode.getContentType() != UHSNode.STRING) return false;
             if (rNode.isGroup()) return false;
           }
@@ -203,15 +208,15 @@ public class UHSWriter {
     StringBuffer buf = new StringBuffer();
 
     String tmp = null;
-    ArrayList subjectNodes = rootNode.getChildren("Subject");
-    ArrayList questionNodes = new ArrayList();
-    ArrayList hintNodes = new ArrayList();
+    List<UHSNode> subjectNodes = rootNode.getChildren("Subject");
+    List<UHSNode> questionNodes = new ArrayList<UHSNode>();
+    List<UHSNode> hintNodes = new ArrayList<UHSNode>();
     for (int s=0; s < subjectNodes.size(); s++) {
-      UHSNode tmpS = (UHSNode)subjectNodes.get(s);
-      ArrayList tmpQs = tmpS.getChildren();
+      UHSNode tmpS = subjectNodes.get(s);
+      List<UHSNode> tmpQs = tmpS.getChildren();
       questionNodes.addAll(tmpQs);
       for (int q=0; q < tmpQs.size(); q++) {
-        hintNodes.addAll( ((UHSNode)tmpQs.get(q)).getChildren() );
+        hintNodes.addAll( (tmpQs.get(q)).getChildren() );
       }
     }
 
@@ -232,7 +237,7 @@ public class UHSWriter {
 
 
     for (int s=0; s < subjectNodes.size(); s++) {
-      UHSNode tmpSubject = (UHSNode)subjectNodes.get(s);
+      UHSNode tmpSubject = subjectNodes.get(s);
       tmp = escapeText(tmpSubject, true);
         tmp = tmp.replaceAll("\\^break\\^", " ");  // 88a doesn't support newlines
         tmp = encryptString(tmp);
@@ -241,7 +246,7 @@ public class UHSWriter {
     }
 
     for (int q=0; q < questionNodes.size(); q++) {
-      UHSNode tmpQuestion = (UHSNode)questionNodes.get(q);
+      UHSNode tmpQuestion = questionNodes.get(q);
       tmp = escapeText(tmpQuestion, true);
         if (tmp.endsWith("?")) tmp = tmp.substring(0, tmp.length()-1);
         tmp = tmp.replaceAll("\\^break\\^", " ");  // 88a doesn't support newlines
@@ -251,14 +256,14 @@ public class UHSWriter {
     }
 
     for (int h=0; h < hintNodes.size(); h++) {
-      UHSNode tmpHint = (UHSNode)hintNodes.get(h);
+      UHSNode tmpHint = hintNodes.get(h);
       tmp = escapeText(tmpHint, true);
         tmp = tmp.replaceAll("\\^break\\^", " ");  // 88a doesn't support newlines
         tmp = encryptString(tmp);
       buf.append(tmp).append("\r\n");
     }
 
-    UHSNode creditNode = (UHSNode)rootNode.getChildren("Credit").get(0);
+    UHSNode creditNode = rootNode.getChildren("Credit").get(0);
     tmp = (String)creditNode.getChild(0).getContent();
     tmp = tmp.replaceAll("\\^break\\^", "\r\n");
     if (tmp.length() > 0) buf.append(tmp).append("\r\n");
@@ -334,9 +339,9 @@ public class UHSWriter {
       buf.append("** END OF 88A FORMAT **").append("\r\n");
 
       if (currentNode.getChildCount() > 0) {
-        ArrayList children = currentNode.getChildren();
+        List<UHSNode> children = currentNode.getChildren();
         for (int i=0; i < children.size(); i++) {
-          getLinesAndBinData((UHSNode)children.get(i), info, buf);
+          getLinesAndBinData(children.get(i), info, buf);
         }
       }
 
@@ -411,9 +416,9 @@ public class UHSWriter {
       buf.append(getEncryptedText(currentNode, info, ENCRYPT_NONE)).append("\r\n");
 
       if (currentNode.getChildCount() > 0) {
-        ArrayList children = currentNode.getChildren();
+        List<UHSNode> children = currentNode.getChildren();
         for (int i=0; i < children.size(); i++) {
-          getLinesAndBinData((UHSNode)children.get(i), info, buf);
+          getLinesAndBinData(children.get(i), info, buf);
         }
       }
 
@@ -491,13 +496,13 @@ public class UHSWriter {
       buf.append(getEncryptedText(currentNode, info, ENCRYPT_NONE)).append("\r\n");
 
       if (currentNode.getChildCount() > 0) {
-        ArrayList children = currentNode.getChildren("HintData");
+        List<UHSNode> children = currentNode.getChildren("HintData");
         for (int i=0; i < children.size(); i++) {
           if (i > 0) {
             if (!info.linesCollected) info.line += 1;  // "-" divider
             buf.append("-").append("\r\n");
           }
-          String encryptedChildContent = getEncryptedText((UHSNode)children.get(i), info, ENCRYPT_HINT);
+          String encryptedChildContent = getEncryptedText(children.get(i), info, ENCRYPT_HINT);
           if (!info.linesCollected) info.line += crlfCount(encryptedChildContent) + 1;  // +1 is final line w/o crlf.
           buf.append(encryptedChildContent).append("\r\n");
         }
@@ -777,7 +782,7 @@ public class UHSWriter {
     // Pass 1
     public int line = -1;
     public ByteArrayOutputStream binStream = new ByteArrayOutputStream();
-    public HashMap idToLineMap = new HashMap();  // Integer pairs
+    public Map<Integer, Integer> idToLineMap = new HashMap<Integer, Integer>();
 
     public int[] encryptionKey = null;
     public boolean linesCollected = false;
@@ -794,8 +799,8 @@ public class UHSWriter {
     // reset nodeStream and encode for real
 
     public int getLine(int id) {
-      Object o = idToLineMap.get(new Integer(id));
-      if (o != null) return ((Integer)o).intValue();
+      Integer line = idToLineMap.get(new Integer(id));
+      if (line != null) return line.intValue();
       else return -1;
     }
 

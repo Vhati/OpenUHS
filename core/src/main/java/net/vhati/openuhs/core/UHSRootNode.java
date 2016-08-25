@@ -1,6 +1,8 @@
 package net.vhati.openuhs.core;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -8,7 +10,7 @@ import java.util.*;
  * <br />Additionally a root node is responsible for tracking nodes that are link targets.
  */
 public class UHSRootNode extends UHSNode {
-  private HashMap linkMap = new HashMap();
+  private Map<String, UHSNode> linkMap = new HashMap<String, UHSNode>();
 
 
   public UHSRootNode() {
@@ -96,12 +98,13 @@ public class UHSRootNode extends UHSNode {
     return linkMap.size();
   }
 
-  public void setChildren(ArrayList inChildren) {
+  @Override
+  public void setChildren(List<UHSNode> inChildren) {
     super.setChildren(inChildren);
     if (this.getChildCount() > 0) this.setRevealedAmount(this.getChildCount());
   }
 
-
+  @Override
   public void addChild(UHSNode inChild) {
     super.addChild(inChild);
     if (this.getChildCount() > 0) this.setRevealedAmount(this.getChildCount());

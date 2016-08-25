@@ -1,15 +1,25 @@
 package net.vhati.openuhs.desktopreader;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
-import java.util.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
+import javax.swing.JFrame;
 
-import gnu.getopt.*;
+import gnu.getopt.Getopt;
+import gnu.getopt.LongOpt;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import net.vhati.openuhs.core.Proto4xUHSParser;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.UHSParser;
+import net.vhati.openuhs.core.UHSRootNode;
+import net.vhati.openuhs.core.UHSWriter;
+import net.vhati.openuhs.desktopreader.UHSReaderFrame;
 import net.vhati.openuhs.desktopreader.downloader.*;
 import net.vhati.openuhs.desktopreader.reader.*;
 
@@ -36,7 +46,7 @@ public class UHSReaderMain {
 
 
   public static void main(String[] args) {
-    HashMap optionMap = new HashMap();
+    Map<String, Boolean> optionMap = new HashMap<String, Boolean>();
       optionMap.put(OPTION_CLI, Boolean.FALSE);
       optionMap.put(OPTION_OPEN_88A, Boolean.FALSE);
       optionMap.put(OPTION_TEST, Boolean.FALSE);
@@ -245,7 +255,7 @@ public class UHSReaderMain {
    * @param argv app args
    * @param optionMap a map to fill with Boolean.TRUE values
    */
-  private static void parseArgs(String[] argv, HashMap optionMap) {
+  private static void parseArgs(String[] argv, Map<String, Boolean> optionMap) {
     boolean needFileArg = false;
 
     //StringBuffer sb = new StringBuffer();

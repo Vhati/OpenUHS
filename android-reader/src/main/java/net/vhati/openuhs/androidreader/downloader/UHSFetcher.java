@@ -1,9 +1,5 @@
 package net.vhati.openuhs.androidreader.downloader;
 
-import java.util.ArrayList;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -17,9 +13,15 @@ import java.net.HttpURLConnection;
 import java.net.UnknownHostException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 
-import net.vhati.openuhs.androidreader.downloader.*;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandler;
 
 
 /**
@@ -50,8 +52,8 @@ public class UHSFetcher {
    *
    * @return an array of DownloadableUHS objects
    */
-  public static ArrayList parseCatalog(byte[] catalogBytes) {
-    ArrayList catalog = new ArrayList();
+  public static List<DownloadableUHS> parseCatalog(byte[] catalogBytes) {
+    List<DownloadableUHS> catalog = new ArrayList<DownloadableUHS>();
 
     if (catalogBytes == null) return catalog;
 

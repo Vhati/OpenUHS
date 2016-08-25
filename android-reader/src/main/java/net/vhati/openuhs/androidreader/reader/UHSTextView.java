@@ -12,9 +12,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.androidreader.*;
-import net.vhati.openuhs.androidreader.reader.*;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.markup.DecoratedFragment;
 
 
@@ -49,9 +47,9 @@ public class UHSTextView extends LinearLayout {
       contentLabel.setText("^NON-STRING CONTENT^");
     }
     else {
-      if (node.getContentDecorator() != null) {
+      if (node.getStringContentDecorator() != null) {
         SpannableStringBuilder buf = new SpannableStringBuilder();
-        DecoratedFragment[] fragments = (DecoratedFragment[])node.getDecoratedContent();
+        DecoratedFragment[] fragments = node.getDecoratedStringContent();
         for (int i=0; i < fragments.length; i++) {
           Object styleObj = null;
           for (int a=0; a < fragments[i].attributes.length; a++) {

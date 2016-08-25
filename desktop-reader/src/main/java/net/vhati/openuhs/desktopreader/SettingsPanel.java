@@ -1,21 +1,27 @@
 package net.vhati.openuhs.desktopreader;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
+import java.awt.BorderLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.List;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
-import net.vhati.openuhs.core.*;
-import net.vhati.openuhs.desktopreader.*;
-import net.vhati.openuhs.desktopreader.downloader.*;
-import net.vhati.openuhs.desktopreader.reader.*;
+import net.vhati.openuhs.desktopreader.AppliablePanel;
 
 
 public class SettingsPanel extends JPanel implements ActionListener {
-  private ArrayList appliablePanels = new ArrayList();
+  private List<AppliablePanel> appliablePanels = new ArrayList<AppliablePanel>();
   private JPanel sectionsPanel = null;
-  GridBagConstraints sectionC = null;
+  private GridBagConstraints sectionC = null;
   private JButton applyBtn = null;
 
 
@@ -51,7 +57,7 @@ public class SettingsPanel extends JPanel implements ActionListener {
     Object source = e.getSource();
     if (source == applyBtn) {
       for (int i=0; i < appliablePanels.size(); i++) {
-        ((AppliablePanel)appliablePanels.get(i)).apply();
+        appliablePanels.get(i).apply();
       }
     }
   }

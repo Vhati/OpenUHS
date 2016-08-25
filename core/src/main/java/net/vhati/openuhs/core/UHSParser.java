@@ -1,10 +1,12 @@
 package net.vhati.openuhs.core;
 
-import javax.swing.*;
-import java.util.*;
-import java.util.regex.*;
-import java.io.*;
-import java.nio.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.vhati.openuhs.core.markup.*;
 
@@ -139,7 +141,7 @@ public class UHSParser {
 
 
   /**
-   * Reads a UHS file into an ArrayList of text lines and an array of binary bytes.
+   * Reads a UHS file into a List of text lines and an array of bytes (for binary content).
    * Then calls an appropriate parser to construct a UHSRootNode and a tree of UHSNodes.
    * <br />
    * <br />This is likely the only method you'll need.
@@ -147,8 +149,8 @@ public class UHSParser {
    * @param filePath file to read
    * @param auxStyle option for 9x files: AUX_NORMAL, AUX_IGNORE, or AUX_NEST
    * @return the root of a tree of nodes representing the hint file
-   * @see #parse88Format(ArrayList, String, int) parse88Format(ArrayList, String, int)
-   * @see #parse9xFormat(ArrayList, byte[], long, int) parse9xFormat(ArrayList, byte[], long, int)
+   * @see #parse88Format(List, String, int) parse88Format(List, String, int)
+   * @see #parse9xFormat(List, byte[], long, int) parse9xFormat(List, byte[], long, int)
    */
   public UHSRootNode parseFile(String filePath, int auxStyle) {
     if (auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST) return null;
@@ -162,7 +164,7 @@ public class UHSParser {
     int startHintSection = 0;
     int endHintSection = 0;
 
-    ArrayList uhsFileArray = new ArrayList();
+    List<String> uhsFileArray = new ArrayList<String>();
     String name = "";
 
     long rawOffset = -1;
@@ -229,10 +231,10 @@ public class UHSParser {
 
     boolean version88a = true;
     for (int i=endHintSection-1+1; i < uhsFileArray.size(); i++) {
-      if ( ((String)uhsFileArray.get(i)).equals("** END OF 88A FORMAT **") ) {
+      if ( uhsFileArray.get(i).equals("** END OF 88A FORMAT **") ) {
         if (force88a == true) {
           // Trim off all the new junk and keep the 88A section.
-          uhsFileArray = new ArrayList(uhsFileArray.subList(0, i));
+          uhsFileArray = new ArrayList<String>(uhsFileArray.subList(0, i));
           break;
         }
         else {
@@ -303,12 +305,12 @@ public class UHSParser {
    * ever wrote with that in mind, so it's not worth
    * enforcing.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param name the UHS document's name (not the filename)
    * @param hintSectionEnd index of the last hint, relative to the first subject (as in the file, 1-based)
    * @return the root of a tree of nodes
    */
-  public UHSRootNode parse88Format(ArrayList uhsFileArray, String name, int hintSectionEnd) {
+  public UHSRootNode parse88Format(List<String> uhsFileArray, String name, int hintSectionEnd) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 
     try {
@@ -371,7 +373,7 @@ public class UHSParser {
             tmpContent.append(getLoggedString(uhsFileArray, i));
           }
           newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-          newNode.setContentDecorator(new Version88CreditDecorator());
+          newNode.setStringContentDecorator(new Version88CreditDecorator());
           creditNode.addChild(newNode);
 
       return rootNode;
@@ -414,15 +416,15 @@ public class UHSParser {
    * <br />And an 'incentive', listing nodes to show/block if the reader is unregistered.
    * <br />For convenience, auxiliary nodes can be treated differently.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param auxStyle AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
    * @return the root of a tree of nodes
-   * @see #buildNodes(ArrayList, byte[], long, UHSRootNode, UHSNode, int[], int) buildNodes(ArrayList, byte[], long, UHSRootNode, UHSNode, int[], int)
+   * @see #buildNodes(List, byte[], long, UHSRootNode, UHSNode, int[], int) buildNodes(List, byte[], long, UHSRootNode, UHSNode, int[], int)
    * @see #calcChecksum(String) calcChecksum(String)
    */
-  public UHSRootNode parse9xFormat(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, int auxStyle) {
+  public UHSRootNode parse9xFormat(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, int auxStyle) {
     if (auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST) return null;
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 
@@ -464,7 +466,7 @@ public class UHSParser {
    * <br />This recognizes various types of hints, and runs specialized methods to decode them.
    * <br />Unrecognized hints are harmlessly omitted.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -473,7 +475,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int buildNodes(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int buildNodes(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     int index = startIndex;
 
     String tmp = getLoggedString(uhsFileArray, index);
@@ -538,7 +540,7 @@ public class UHSParser {
    * embedded hunk
    * embedded hunk</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -547,7 +549,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseSubjectNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseSubjectNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     int index = startIndex;
     String tmp = getLoggedString(uhsFileArray, index);
     index++;
@@ -555,7 +557,7 @@ public class UHSParser {
 
     UHSNode newNode = new UHSNode("Subject");
       newNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      newNode.setContentDecorator(new Version9xTitleDecorator());
+      newNode.setStringContentDecorator(new Version9xTitleDecorator());
       newNode.setId(startIndex);
       currentNode.addChild(newNode);
       rootNode.addLink(newNode);
@@ -584,7 +586,7 @@ public class UHSParser {
    * -
    * hint (encrypted)</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -594,7 +596,7 @@ public class UHSParser {
    * @return the number of lines consumed from the file in parsing children
    * @see #decryptNestString(String, int[]) decryptNestString(String, int[])
    */
-  public int parseNestHintNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseNestHintNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -604,7 +606,7 @@ public class UHSParser {
 
     UHSNode hintNode = new UHSNode("NestHint");
       hintNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      hintNode.setContentDecorator(new Version9xTitleDecorator());
+      hintNode.setStringContentDecorator(new Version9xTitleDecorator());
       hintNode.setId(startIndex);
       currentNode.addChild(hintNode);
       rootNode.addLink(hintNode);
@@ -620,7 +622,7 @@ public class UHSParser {
         // A hint, add last content
         if (tmpContent.length() > 0) {
           newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-          newNode.setContentDecorator(new Version9xHintDecorator());
+          newNode.setStringContentDecorator(new Version9xHintDecorator());
           hintNode.addChild(newNode);
           newNode = new UHSNode("HintData");
           tmpContent.delete(0, tmpContent.length());
@@ -630,7 +632,7 @@ public class UHSParser {
         // Nested hunk, add last content
         if (tmpContent.length() > 0) {
           newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-          newNode.setContentDecorator(new Version9xHintDecorator());
+          newNode.setStringContentDecorator(new Version9xHintDecorator());
           hintNode.addChild(newNode);
         }
 
@@ -648,7 +650,7 @@ public class UHSParser {
 
       if (j == innerCount-1 && tmpContent.length() > 0) {
         newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-        newNode.setContentDecorator(new Version9xHintDecorator());
+        newNode.setStringContentDecorator(new Version9xHintDecorator());
         hintNode.addChild(newNode);
       }
     }
@@ -666,7 +668,7 @@ public class UHSParser {
    * -
    * hint (encrypted)</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -676,7 +678,7 @@ public class UHSParser {
    * @return the number of lines consumed from the file in parsing children
    * @see #decryptString(String) decryptNestString(String)
    */
-  public int parseHintNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseHintNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -686,7 +688,7 @@ public class UHSParser {
 
     UHSNode hintNode = new UHSNode("Hint");
       hintNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      hintNode.setContentDecorator(new Version9xTitleDecorator());
+      hintNode.setStringContentDecorator(new Version9xTitleDecorator());
       hintNode.setId(startIndex);
       currentNode.addChild(hintNode);
       rootNode.addLink(hintNode);
@@ -700,7 +702,7 @@ public class UHSParser {
       if (tmp.equals("-")) {
         if (tmpContent.length() > 0) {
           newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-          newNode.setContentDecorator(new Version9xHintDecorator());
+          newNode.setStringContentDecorator(new Version9xHintDecorator());
           hintNode.addChild(newNode);
           newNode = new UHSNode("HintData");
           tmpContent.delete(0, tmpContent.length());
@@ -714,7 +716,7 @@ public class UHSParser {
 
       if (j == innerCount-1 && tmpContent.length() > 0) {
         newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-        newNode.setContentDecorator(new Version9xHintDecorator());
+        newNode.setStringContentDecorator(new Version9xHintDecorator());
         hintNode.addChild(newNode);
       }
     }
@@ -732,7 +734,7 @@ public class UHSParser {
    * sentence
    * sentence</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -741,7 +743,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseCommentNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseCommentNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -751,7 +753,7 @@ public class UHSParser {
 
     UHSNode commentNode = new UHSNode("Comment");
       commentNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      commentNode.setContentDecorator(new Version9xTitleDecorator());
+      commentNode.setStringContentDecorator(new Version9xTitleDecorator());
       commentNode.setId(startIndex);
       currentNode.addChild(commentNode);
       rootNode.addLink(commentNode);
@@ -766,7 +768,7 @@ public class UHSParser {
       tmpContent.append( getLoggedString(uhsFileArray, index+j) );
     }
     newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-    newNode.setContentDecorator(new Version9xCommentDecorator());
+    newNode.setStringContentDecorator(new Version9xCommentDecorator());
     commentNode.addChild(newNode);
 
     index += innerCount;
@@ -782,7 +784,7 @@ public class UHSParser {
    * sentence
    * sentence</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -791,7 +793,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseCreditNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseCreditNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -801,7 +803,7 @@ public class UHSParser {
 
     UHSNode creditNode = new UHSNode("Credit");
       creditNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      creditNode.setContentDecorator(new Version9xTitleDecorator());
+      creditNode.setStringContentDecorator(new Version9xTitleDecorator());
       creditNode.setId(startIndex);
       currentNode.addChild(creditNode);
       rootNode.addLink(creditNode);
@@ -816,7 +818,7 @@ public class UHSParser {
       tmpContent.append( getLoggedString(uhsFileArray, index+j) );
     }
     newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-    newNode.setContentDecorator(new Version9xCreditDecorator());
+    newNode.setStringContentDecorator(new Version9xCreditDecorator());
     creditNode.addChild(newNode);
 
     index += innerCount;
@@ -833,7 +835,7 @@ public class UHSParser {
    * <br />Offset and length are zero-padded to 6 or 7 digits.
    * <br />The binary content is encrypted.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -843,7 +845,7 @@ public class UHSParser {
    * @return the number of lines consumed from the file in parsing children
    * @see #decryptTextHunk(String, int[]) decryptTextHunk(String, int[])
    */
-  public int parseTextNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseTextNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
     String breakChar = "^break^";
 
@@ -855,7 +857,7 @@ public class UHSParser {
     tmp ="";
     UHSNode textNode = new UHSNode("Text");
       textNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      textNode.setContentDecorator(new Version9xTitleDecorator());
+      textNode.setStringContentDecorator(new Version9xTitleDecorator());
       textNode.setId(startIndex);
       currentNode.addChild(textNode);
       rootNode.addLink(textNode);
@@ -884,7 +886,7 @@ public class UHSParser {
       tmpContent.append( decryptTextHunk(lines[i], key) );
     }
     newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-    newNode.setContentDecorator(new Version9xTextDecorator());
+    newNode.setStringContentDecorator(new Version9xTextDecorator());
     textNode.addChild(newNode);
 
     return index-startIndex;
@@ -898,7 +900,7 @@ public class UHSParser {
    * title
    * index</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -907,7 +909,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseLinkNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseLinkNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     int index = startIndex;
     String tmp = getLoggedString(uhsFileArray, index);
     index++;
@@ -915,7 +917,7 @@ public class UHSParser {
 
     UHSNode newNode = new UHSNode("Link");
       newNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      newNode.setContentDecorator(new Version9xTitleDecorator());
+      newNode.setStringContentDecorator(new Version9xTitleDecorator());
       newNode.setId(startIndex);
       currentNode.addChild(newNode);
       rootNode.addLink(newNode);
@@ -983,7 +985,7 @@ public class UHSParser {
    * <br />Nested HyperImgs aren't expected to recurse further
    * with additional nested nodes.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -991,9 +993,9 @@ public class UHSParser {
    * @param key this file's hint decryption key
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
-   * @see org.openuhs.core.UHSHotSpotNode
+   * @see net.vhati.openuhs.core.UHSHotSpotNode
    */
-  public int parseHyperImgNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseHyperImgNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
     int index = startIndex;
     String[] tokens = null;
@@ -1150,7 +1152,7 @@ public class UHSParser {
    *
    * <br />Offset and length are zero-padded to 6 or 7 digits.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -1160,7 +1162,7 @@ public class UHSParser {
    * @return the number of lines consumed from the file in parsing children
    * @see #decryptTextHunk(String, int[]) decryptTextHunk(String, int[])
    */
-  public int parseSoundNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseSoundNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
     int index = startIndex;
     String tmp = getLoggedString(uhsFileArray, index);
@@ -1170,7 +1172,7 @@ public class UHSParser {
     tmp ="";
     UHSNode soundNode = new UHSNode("Sound");
       soundNode.setContent(getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      soundNode.setContentDecorator(new Version9xTitleDecorator());
+      soundNode.setStringContentDecorator(new Version9xTitleDecorator());
       soundNode.setId(startIndex);
       currentNode.addChild(soundNode);
       rootNode.addLink(soundNode);
@@ -1203,7 +1205,7 @@ public class UHSParser {
    * <pre> 2 blank
    * -</pre>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -1212,7 +1214,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseBlankNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseBlankNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     int index = startIndex;
     String tmp = getLoggedString(uhsFileArray, index);
     index++;
@@ -1247,7 +1249,7 @@ public class UHSParser {
    * <br />Illustrative UHS: <i>System Shock (blank version)</i>
    * <br />Illustrative UHS: <i>The Bizarre Adventures of Woodruff (blank version)</i>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -1256,7 +1258,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseVersionNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseVersionNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -1266,7 +1268,7 @@ public class UHSParser {
 
     UHSNode versionNode = new UHSNode("Version");
       versionNode.setContent("Version: "+ getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      versionNode.setContentDecorator(new Version9xTitleDecorator());
+      versionNode.setStringContentDecorator(new Version9xTitleDecorator());
       versionNode.setId(startIndex);
       currentNode.addChild(versionNode);
       rootNode.addLink(versionNode);
@@ -1281,7 +1283,7 @@ public class UHSParser {
       tmpContent.append( getLoggedString(uhsFileArray, index+j) );
     }
     newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-    newNode.setContentDecorator(new Version9xVersionDecorator());
+    newNode.setStringContentDecorator(new Version9xVersionDecorator());
     versionNode.addChild(newNode);
 
     index += innerCount;
@@ -1315,7 +1317,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseInfoNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseInfoNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     String breakChar = "^break^";
 
     int index = startIndex;
@@ -1325,7 +1327,7 @@ public class UHSParser {
 
     UHSNode infoNode = new UHSNode("Info");
       infoNode.setContent("Info: "+ getLoggedString(uhsFileArray, index), UHSNode.STRING);
-      infoNode.setContentDecorator(new Version9xTitleDecorator());
+      infoNode.setStringContentDecorator(new Version9xTitleDecorator());
       infoNode.setId(startIndex);
       currentNode.addChild(infoNode);
       rootNode.addLink(infoNode);
@@ -1344,7 +1346,7 @@ public class UHSParser {
       }
 
       newNode.setContent(tmpContent.toString(), UHSNode.STRING);
-      newNode.setContentDecorator(new Version9xInfoDecorator());
+      newNode.setStringContentDecorator(new Version9xInfoDecorator());
       infoNode.addChild(newNode);
     }
 
@@ -1373,7 +1375,7 @@ public class UHSParser {
    *
    * <br />Illustrative UHS: <i>AGON (no IDs)</i>
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -1382,7 +1384,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseIncentiveNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseIncentiveNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     int index = startIndex;
     String tmp = getLoggedString(uhsFileArray, index);
     index++;
@@ -1414,7 +1416,7 @@ public class UHSParser {
    *
    * @param rootNode an existing root node
    * @param incentiveString a space-separated string of numbers, each with 'Z' or 'A' appended
-   * @see #parseIncentiveNode(ArrayList, byte[], long, UHSRootNode, UHSNode, int[], int) parseIncentiveNode(ArrayList, byte[], long, UHSRootNode, UHSNode, int[], int)
+   * @see #parseIncentiveNode(List, byte[], long, UHSRootNode, UHSNode, int[], int) parseIncentiveNode(List, byte[], long, UHSRootNode, UHSNode, int[], int)
    */
   public void applyRestrictions(UHSRootNode rootNode, String incentiveString) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
@@ -1441,7 +1443,7 @@ public class UHSParser {
   /**
    * Generates a stand-in UHSNode for an unknown hunk.
    *
-   * @param uhsFileArray array of all available lines in the file
+   * @param uhsFileArray a List of all available lines in the file
    * @param rawuhs array of raw bytes at the end of the file
    * @param rawOffset offset to the raw bytes from the beginning of the file
    * @param rootNode an existing root node
@@ -1450,7 +1452,7 @@ public class UHSParser {
    * @param startIndex the line number to start parsing from
    * @return the number of lines consumed from the file in parsing children
    */
-  public int parseUnknownNode(ArrayList uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
+  public int parseUnknownNode(List<String> uhsFileArray, byte[] rawuhs, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 
     int index = startIndex;
@@ -1491,7 +1493,7 @@ public class UHSParser {
   }
 
 
-  private String getLoggedString(ArrayList uhsFileArray, int n) {
+  private String getLoggedString(List<String> uhsFileArray, int n) {
     logLine = n;
     return (String)uhsFileArray.get(n);
   }

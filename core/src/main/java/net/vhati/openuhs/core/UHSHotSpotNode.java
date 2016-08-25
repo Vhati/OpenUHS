@@ -1,6 +1,8 @@
 package net.vhati.openuhs.core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
 
 /**
@@ -83,7 +85,7 @@ public class UHSHotSpotNode extends UHSNode {
    * Overridden to make linking impossible.
    *
    * @param n ID of the node to target
-   * @see org.openuhs.core.UHSNode#setLinkTarget(int) UHSNode.setLinkTarget(int)
+   * @see net.vhati.openuhs.core.UHSNode#setLinkTarget(int) UHSNode.setLinkTarget(int)
    */
   public void setLinkTarget(int n) {
     return;
@@ -94,9 +96,9 @@ public class UHSHotSpotNode extends UHSNode {
    * Replace or initialize the current children.
    * <br />This method gives the new nodes default zones/positions.
    *
-   * @param inChildren an array of new child UHSNodes
+   * @param inChildren a List of new child UHSNodes
    */
-  public void setChildren(ArrayList inChildren) {
+  public void setChildren(List<UHSNode> inChildren) {
     if (inChildren == null || inChildren.size() == 0) {
       this.removeAllChildren();
     }

@@ -18,9 +18,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.androidreader.*;
-import net.vhati.openuhs.androidreader.reader.*;
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.UHSNode;
 
 
 public class UHSSoundView extends LinearLayout {

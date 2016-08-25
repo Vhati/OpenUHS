@@ -1,18 +1,12 @@
 package net.vhati.openuhs.core.markup;
 
+import net.vhati.openuhs.core.markup.DecoratedFragment;
 
-public abstract class StringDecorator extends ContentDecorator {
+
+public abstract class StringDecorator {
   /** The sequence representing line breaks, as expected from the parser. */
   public static final char[] linebreak = new char[] {'^','b','r','e','a','k','^'};
 
 
-  abstract DecoratedFragment[] getDecoratedString(String rawContent);
-
-  public Object getDecoratedContent(Object rawContent) {
-    if (rawContent instanceof String) {
-      return getDecoratedString((String)rawContent);
-    } else {
-      return null;
-    }
-  }
+  public abstract DecoratedFragment[] getDecoratedString(String rawContent);
 }

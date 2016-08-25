@@ -1,12 +1,26 @@
 package net.vhati.openuhs.desktopreader.reader;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
-import java.util.*;
-import java.io.*;
-import javax.sound.sampled.*;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.Timer;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 
 /**
@@ -20,7 +34,7 @@ public class MinimalSoundPlayer extends JPanel {
   private Clip clip = null;
   private int duration = 0;
   private int position = 0;
-  private javax.swing.Timer timer = null;
+  private Timer timer = null;
 
   private JButton playBtn = new JButton(playText);
   private JSlider slider = new JSlider(0, 0, 0);
@@ -37,8 +51,8 @@ public class MinimalSoundPlayer extends JPanel {
 
 
     try {
-      ByteArrayInputStream bs = new ByteArrayInputStream(b);
-      AudioInputStream ain = AudioSystem.getAudioInputStream(bs);
+      InputStream is = new ByteArrayInputStream(b);
+      AudioInputStream ain = AudioSystem.getAudioInputStream(is);
       try {
         //This used to be the entirety of the try{...}
         //DataLine.Info info = new DataLine.Info(Clip.class, ain.getFormat());
@@ -84,7 +98,7 @@ public class MinimalSoundPlayer extends JPanel {
           }
         }
       });
-      timer = new javax.swing.Timer(100, new ActionListener() {
+      timer = new Timer(100, new ActionListener() {
         public void actionPerformed(ActionEvent e) {
           if (clip.isActive()) {
             position = (int)(clip.getMicrosecondPosition()/1000);

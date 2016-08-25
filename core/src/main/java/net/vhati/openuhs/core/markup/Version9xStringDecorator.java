@@ -3,8 +3,14 @@ package net.vhati.openuhs.core.markup;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.markup.DecoratedFragment;
+import net.vhati.openuhs.core.markup.Decoration;
+import net.vhati.openuhs.core.markup.StringDecorator;
 
 
 /**
@@ -58,8 +64,9 @@ public class Version9xStringDecorator extends StringDecorator {
   }
 
 
+  @Override
   public DecoratedFragment[] getDecoratedString(String rawContent) {
-    ArrayList resultList = new ArrayList();
+    List<DecoratedFragment> resultList = new ArrayList<DecoratedFragment>();
     char[] tmp = rawContent.toCharArray();
     StringBuffer buf = new StringBuffer(tmp.length);
     int consumedOffset = -1;
@@ -83,12 +90,12 @@ public class Version9xStringDecorator extends StringDecorator {
     // Handle lingering content
     if (buf.length() > 0) {
       String fragment = buf.toString();
-      ArrayList attribList = new ArrayList(1);
+      List<String> attribList = new ArrayList<String>(1);
       for (int d=0; d < decorations.length; d++) {
         if (decoStates[d] > 0) attribList.add(decorations[d].name);
       }
       String[] decoNames = (String[])attribList.toArray(new String[attribList.size()]);
-      LinkedHashMap[] argMaps = new LinkedHashMap[attribList.size()];
+      Map[] argMaps = new LinkedHashMap[attribList.size()];
       resultList.add(new DecoratedFragment(fragment, decoNames, argMaps));
     }
 
@@ -199,13 +206,13 @@ public class Version9xStringDecorator extends StringDecorator {
    * @param contentChars raw content with markup
    * @param buf a destination buffer
    * @param c index in contentChars to check for markup
-   * @param decos a dictionary of Decorations to check for
+   * @param decorations a dictionary of Decorations to check for
    * @param decoStates an array to return the current decoration in-use counts
-   * @param fragmentList an array in which to store any new DecoratedFragments
+   * @param fragmentList a List in which to store any new DecoratedFragments
    * @return offset to the final consumed char
    * @see #getDecorations() getDecorations()
    */
-  public int parseDecorationMarkup(char[] contentChars, StringBuffer buf, int c, Decoration[] decorations, int[] decoStates, ArrayList fragmentList) {
+  public int parseDecorationMarkup(char[] contentChars, StringBuffer buf, int c, Decoration[] decorations, int[] decoStates, List<DecoratedFragment> fragmentList) {
     char[] tmp = contentChars;
     int result = -1;
     int dNum = -1;  // Decoration to apply delayed inc/dec
@@ -229,12 +236,12 @@ public class Version9xStringDecorator extends StringDecorator {
     if (result != -1) {
       if (buf.length() > 0) {
         String fragment = buf.toString();
-        ArrayList attribList = new ArrayList(1);
+        List<String> attribList = new ArrayList<String>(1);
         for (int d=0; d < decorations.length; d++) {
           if (decoStates[d] > 0) attribList.add(decorations[d].name);
         }
         String[] decoNames = (String[])attribList.toArray(new String[attribList.size()]);
-        LinkedHashMap[] argMaps = new LinkedHashMap[attribList.size()];
+        Map[] argMaps = new LinkedHashMap[attribList.size()];
         fragmentList.add(new DecoratedFragment(fragment, decoNames, argMaps));
         buf.setLength(0);
       }
@@ -256,7 +263,7 @@ public class Version9xStringDecorator extends StringDecorator {
    *
    * <br />Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)
    *
-   * @see #parseDecorationMarkup(char[], StringBuffer, int, Decoration[], int[], ArrayList) parseDecorationMarkup(char[], StringBuffer, int, Decoration[], int[], ArrayList)
+   * @see #parseDecorationMarkup(char[], StringBuffer, int, Decoration[], int[], List) parseDecorationMarkup(char[], StringBuffer, int, Decoration[], int[], List)
    */
   public Decoration[] getDecorations() {
     return decorations;

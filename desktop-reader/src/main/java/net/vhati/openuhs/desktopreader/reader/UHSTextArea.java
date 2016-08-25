@@ -1,12 +1,16 @@
 package net.vhati.openuhs.desktopreader.reader;
 
-import java.awt.*;
-import javax.swing.*;
-import javax.swing.text.*;
-import java.util.*;
+import java.awt.Color;
+import javax.swing.JTextPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 
-import net.vhati.openuhs.core.*;
-import net.vhati.openuhs.core.markup.*;
+import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.markup.DecoratedFragment;
 
 
 /**
@@ -66,8 +70,8 @@ public class UHSTextArea extends JTextPane {
     else if (node.isLink()) normStyleName = STYLE_NAME_LINK;
     else normStyleName = STYLE_NAME_REGULAR;
 
-    if (node.getContentDecorator() != null) {
-      DecoratedFragment[] fragments = (DecoratedFragment[])node.getDecoratedContent();
+    if (node.getStringContentDecorator() != null) {
+      DecoratedFragment[] fragments = node.getDecoratedStringContent();
       for (int i=0; i < fragments.length; i++) {
         String styleName = normStyleName;
         for (int a=0; a < fragments[i].attributes.length; a++) {

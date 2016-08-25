@@ -1,9 +1,11 @@
 package net.vhati.openuhs.core;
 
-import java.util.*;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 
-import net.vhati.openuhs.core.markup.*;
+import net.vhati.openuhs.core.markup.DecoratedFragment;
+import net.vhati.openuhs.core.markup.StringDecorator;
 
 
 /**
@@ -32,11 +34,11 @@ public class UHSNode {
   private String type = "";
   private int contentType = STRING;
   private Object content = null;
-  private ContentDecorator decorator = null;
+  private StringDecorator decorator = null;
   private int id = -1;
   private int linkIndex = -1;                                // Either Link or group, not both
   private int restriction = RESTRICT_NONE;
-  private ArrayList children = null;
+  private List<UHSNode> children = null;
   private int revealedAmt = -1;
 
 
@@ -169,13 +171,14 @@ public class UHSNode {
   /**
    * Returns this node's child nodes of a given type.
    *
-   * @return an ArrayList of UHSNodes, never null
+   * @return a List of UHSNodes, never null
    */
-  public ArrayList getChildren(String type) {
-    ArrayList result = new ArrayList();
+  public List<UHSNode> getChildren(String type) {
+    List result = new ArrayList();
     if (children == null) return result;
+
     for (int i=0; i < children.size(); i++) {
-      UHSNode tmpNode = (UHSNode)children.get(i);
+      UHSNode tmpNode = children.get(i);
       if (tmpNode.getType().equals(type)) result.add(tmpNode);
     }
     return result;
@@ -184,13 +187,13 @@ public class UHSNode {
   /**
    * Returns this node's child nodes.
    *
-   * @return an ArrayList of UHSNodes, or null
+   * @return a List of UHSNodes, or null
    */
-  public ArrayList getChildren() {
+  public List<UHSNode> getChildren() {
     return children;
   }
 
-  public void setChildren(ArrayList newChildren) {
+  public void setChildren(List<UHSNode> newChildren) {
     if (newChildren == null) {
       this.removeAllChildren();
     }
@@ -205,7 +208,7 @@ public class UHSNode {
   public void addChild(UHSNode inChild) {
     if (children == null) {
       linkIndex = -1;
-      children = new ArrayList();
+      children = new ArrayList<UHSNode>();
     }
     if (inChild != null) {
       children.add(inChild);
@@ -244,8 +247,9 @@ public class UHSNode {
   public UHSNode getFirstChild(String type) {
     UHSNode result = null;
     if (children == null) return result;
+
     for (int i=0; i < children.size(); i++) {
-      UHSNode tmpNode = (UHSNode)children.get(i);
+      UHSNode tmpNode = children.get(i);
       if (tmpNode.getType().equals(type)) {
         result = tmpNode;
         break;
@@ -261,7 +265,7 @@ public class UHSNode {
    */
   public UHSNode getChild(int input) {
     if (children == null || this.getChildCount()-1 < input) return null;
-    return (UHSNode)children.get(input);
+    return children.get(input);
   }
 
   public int indexOfChild(UHSNode inChild) {
@@ -318,22 +322,22 @@ public class UHSNode {
   }
 
 
-  public void setContentDecorator(ContentDecorator o) {
-    decorator = o;
+  public void setStringContentDecorator(StringDecorator d) {
+    decorator = d;
   }
 
-  public ContentDecorator getContentDecorator() {
+  public StringDecorator getStringContentDecorator() {
     return decorator;
   }
 
   /**
-   * Returns parsed content without markup.
+   * Returns content with markup parsed away.
    *
    * @return an array of DecoratedFragments for STRING nodes, or null
    */
-  public Object getDecoratedContent() {
+  public DecoratedFragment[] getDecoratedStringContent() {
     if (decorator != null) {
-      return decorator.getDecoratedContent(content);
+      return decorator.getDecoratedString((String)content);
     } else {
       return null;
     }

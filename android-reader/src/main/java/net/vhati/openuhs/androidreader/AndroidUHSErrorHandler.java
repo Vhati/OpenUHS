@@ -2,7 +2,7 @@ package net.vhati.openuhs.androidreader;
 
 import android.util.Log;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSErrorHandler;
 
 
 /**

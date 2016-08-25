@@ -6,6 +6,7 @@ public class Decoration {
   public char[] prefix = null;
   public char[] suffix = null;
 
+
   public Decoration(String name, char[] prefix, char[] suffix) {
     this.name = name;
     this.prefix = prefix;

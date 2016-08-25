@@ -13,7 +13,8 @@ import java.net.UnknownHostException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandler;
 
 
 public class UrlFetcher extends Observable implements Runnable {

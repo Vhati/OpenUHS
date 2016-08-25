@@ -1,6 +1,6 @@
 apply plugin: "java"
 
-
+compileJava.options.encoding = "Windows-1252"  // Someday "UTF-8"?
 sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6
 

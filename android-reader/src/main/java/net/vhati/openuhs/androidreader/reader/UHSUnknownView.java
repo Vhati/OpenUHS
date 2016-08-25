@@ -4,7 +4,6 @@ import android.content.Context;
 import android.widget.TextView;
 
 import net.vhati.openuhs.androidreader.reader.*;
-import net.vhati.openuhs.core.*;
 
 
 public class UHSUnknownView extends TextView {

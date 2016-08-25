@@ -3,6 +3,12 @@ package net.vhati.openuhs.core.markup;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import net.vhati.openuhs.core.markup.DecoratedFragment;
+import net.vhati.openuhs.core.markup.StringDecorator;
+import net.vhati.openuhs.core.markup.Version88StringDecorator;
 
 
 /**
@@ -17,6 +23,7 @@ import java.util.LinkedHashMap;
 public class Version88CreditDecorator extends Version88StringDecorator {
 
 
+  @Override
   public DecoratedFragment[] getDecoratedString(String rawContent) {
     char[] tmp = rawContent.toCharArray();
     StringBuffer buf = new StringBuffer(tmp.length);
@@ -45,7 +52,7 @@ public class Version88CreditDecorator extends Version88StringDecorator {
 
     String fragment = buf.toString();
     String[] decoNames = new String[0];
-    LinkedHashMap[] argMaps = new LinkedHashMap[0];
+    Map[] argMaps = new LinkedHashMap[0];
     DecoratedFragment[] result = new DecoratedFragment[] {new DecoratedFragment(fragment, decoNames, argMaps)};
     return result;
   }
