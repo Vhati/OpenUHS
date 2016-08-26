@@ -54,6 +54,7 @@ public class NodePanel extends JScrollablePanel {
     pronoun.setLayout(layoutGridbag);
 
     MouseListener clickListener = new MouseAdapter() {
+      @Override
       public void mouseClicked(MouseEvent e) {
         if (pronoun.getParent() != null) {
           JComponent thisComponent = (JComponent)e.getSource();
@@ -86,6 +87,7 @@ public class NodePanel extends JScrollablePanel {
         }
         return -1;
       }
+      @Override
       public void mouseMoved(MouseEvent e) {
         if (pronoun.getParent() != null) {
           JComponent thisComponent = (JComponent)e.getSource();
@@ -103,14 +105,17 @@ public class NodePanel extends JScrollablePanel {
       Cursor zoneCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
       Cursor normCursor = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
 
+      @Override
       public void mouseEntered(MouseEvent e) {
         ZonePanel thisComponent = (ZonePanel)e.getSource();
         thisComponent.setCursor(zoneCursor);
       }
+      @Override
       public void mouseExited(MouseEvent e) {
         ZonePanel thisComponent = (ZonePanel)e.getSource();
         thisComponent.setCursor(normCursor);
       }
+      @Override
       public void mouseClicked(MouseEvent e) {
         ZonePanel thisComponent = (ZonePanel)e.getSource();
         ZonePanel zoneTarget = thisComponent.getZoneTarget();

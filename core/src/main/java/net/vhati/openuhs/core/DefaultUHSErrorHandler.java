@@ -27,7 +27,7 @@ public class DefaultUHSErrorHandler implements UHSErrorHandler {
    * @param out multiple streams to print to (e.g., System.err)
    */
   public DefaultUHSErrorHandler(PrintStream[] out) {
-    if (out != null && out.length > 0) outStreams = (PrintStream[])out.clone();
+    if (out != null && out.length > 0) outStreams = out.clone();
   }
 
 

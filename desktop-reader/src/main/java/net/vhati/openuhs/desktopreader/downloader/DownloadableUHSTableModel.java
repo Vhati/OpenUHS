@@ -1,8 +1,12 @@
 package net.vhati.openuhs.desktopreader.downloader;
 
-import javax.swing.*;
-import javax.swing.table.*;
-import java.util.*;
+import javax.swing.table.AbstractTableModel;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Vector;
+
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
 
 
 public class DownloadableUHSTableModel extends AbstractTableModel {
@@ -12,8 +16,8 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
   public static int SORT_NAME = 3;
 
   private int sortOrder = SORT_TITLE;
-  Vector dataVector = new Vector();
-  Vector colVector = new Vector();
+  List<DownloadableUHS> dataVector = new Vector<DownloadableUHS>();
+  List<String> colVector = new Vector<String>();
 
 
   public DownloadableUHSTableModel(String[] columnNames) {
@@ -22,38 +26,43 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
     }
   }
 
+  @Override
   public int getRowCount() {return dataVector.size();}
+
+  @Override
   public int getColumnCount() {return colVector.size();}
 
+  @Override
   public String getColumnName(int column) {
     if (column < 0 || column >= colVector.size()) return null;
 
-    return (String)colVector.get(column);
+    return colVector.get(column);
   }
 
-
+  @Override
   public Object getValueAt(int row, int column) {
     if (column < 0 || column >= colVector.size() || row < 0 || row >= dataVector.size()) return null;
 
     Object value = null;
     if (getColumnName(column).equals("Title")) {
-      value = ((DownloadableUHS)dataVector.get(row)).getTitle();
+      value = dataVector.get(row).getTitle();
     }
     else if (getColumnName(column).equals("Name")) {
-      value = ((DownloadableUHS)dataVector.get(row)).getName();
+      value = dataVector.get(row).getName();
     }
     else if (getColumnName(column).equals("Date")) {
-      value = ((DownloadableUHS)dataVector.get(row)).getDate();
+      value = dataVector.get(row).getDate();
     }
     else if (getColumnName(column).equals("Size")) {
-      value = ((DownloadableUHS)dataVector.get(row)).getCompressedSize();
+      value = dataVector.get(row).getCompressedSize();
     }
     else if (getColumnName(column).equals("FullSize")) {
-      value = ((DownloadableUHS)dataVector.get(row)).getFullSize();
+      value = dataVector.get(row).getFullSize();
     }
     return value;
   }
 
+  @Override
   public boolean isCellEditable(int x, int y) {
     return false;
   }
@@ -73,14 +82,14 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 
 
   public void removeUHSs(int[] indeces) {
-    Vector indexVector = new Vector();
+    Vector<Integer> indexVector = new Vector<Integer>();
     for (int i=0; i < indeces.length; i++) {
       indexVector.add( new Integer(indeces[i]) );
     }
     Collections.sort(indexVector);
 
     for (int i=indexVector.size()-1; i >= 0; i--) {
-      dataVector.remove( ((Integer)indexVector.get(i)).intValue() );
+      dataVector.remove( indexVector.get(i).intValue() );
     }
     this.fireTableDataChanged();
   }
@@ -88,7 +97,7 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 
   public DownloadableUHS getUHS(int row) {
     if (row < 0 || row >= dataVector.size()) return null;
-    return (DownloadableUHS)dataVector.get(row);
+    return dataVector.get(row);
   }
 
 
@@ -99,23 +108,22 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 
 
   public void sort() {
-    Collections.sort(dataVector, new Comparator() {
-      public int compare(Object a, Object b) {
-        if (a != null && b != null && a instanceof DownloadableUHS && b instanceof DownloadableUHS) {
-          DownloadableUHS dA = (DownloadableUHS)a;
-          DownloadableUHS dB = (DownloadableUHS)b;
-          if (sortOrder == SORT_TITLE) return dA.getTitle().compareTo(dB.getTitle());
-          if (sortOrder == SORT_DATE) return dA.getDate().compareTo(dB.getDate()) * -1;
+    Collections.sort(dataVector, new Comparator<DownloadableUHS>() {
+      @Override
+      public int compare(DownloadableUHS a, DownloadableUHS b) {
+        if (a != null && b != null) {
+          if (sortOrder == SORT_TITLE) return a.getTitle().compareTo(b.getTitle());
+          if (sortOrder == SORT_DATE) return a.getDate().compareTo(b.getDate()) * -1;
           if (sortOrder == SORT_FULLSIZE) {
-            if (dA.getFullSize().matches("^[0-9]+$") && dB.getFullSize().matches("^[0-9]+$")) {
-              if (dA.getFullSize().length() > dB.getFullSize().length())
+            if (a.getFullSize().matches("^[0-9]+$") && b.getFullSize().matches("^[0-9]+$")) {
+              if (a.getFullSize().length() > b.getFullSize().length())
                 return 1;
-              if (dA.getFullSize().length() < dB.getFullSize().length())
+              if (a.getFullSize().length() < b.getFullSize().length())
                 return -1;
             }
-            return dA.getFullSize().compareTo(dB.getFullSize());
+            return a.getFullSize().compareTo(b.getFullSize());
           }
-          if (sortOrder == SORT_NAME) return dA.getName().compareTo(dB.getName());
+          if (sortOrder == SORT_NAME) return a.getName().compareTo(b.getName());
         }
         return 1;
       }

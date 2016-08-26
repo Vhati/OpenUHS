@@ -1,13 +1,31 @@
 package net.vhati.openuhs.desktopreader.downloader;
 
-import java.awt.*;
-import javax.swing.*;
-import java.util.*;
-import java.util.zip.*;
-import java.io.*;
-import java.net.*;
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InterruptedIOException;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.UnknownHostException;
+import java.net.URLConnection;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipInputStream;
+import javax.swing.JOptionPane;
+import javax.swing.ProgressMonitor;
+import javax.swing.ProgressMonitorInputStream;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
 
 
 /**
@@ -50,14 +68,14 @@ public class UHSFetcher {
           pm.setMillisToDecideToPopup(300);
           pm.setMillisToPopup(100);
         int chunkSize = 1024;
-        ArrayList bufs = new ArrayList();
+        List<ByteBuffer> bufs = new ArrayList<ByteBuffer>();
         int tmpByte;
-        java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(chunkSize);
+        ByteBuffer buf = ByteBuffer.allocate(chunkSize);
         bufs.add(buf);
         while ((tmpByte = is.read()) != -1) {
           buf.put((byte)tmpByte);
           if (buf.remaining()==0) {
-            buf = java.nio.ByteBuffer.allocate(chunkSize);
+            buf = ByteBuffer.allocate(chunkSize);
             bufs.add(buf);
           }
         }
@@ -66,15 +84,15 @@ public class UHSFetcher {
         int bufCount = bufs.size();
         int bufTotalSize = chunkSize * bufCount;
         if (bufCount > 0)
-          bufTotalSize -= ((java.nio.ByteBuffer)bufs.get(bufCount-1)).remaining();
+          bufTotalSize -= bufs.get(bufCount-1).remaining();
         byte[] bytes = new byte[bufTotalSize];
         for (int i=0; i <= bufCount-2; i++) {
-          buf = ((java.nio.ByteBuffer)bufs.get(i));
+          buf = bufs.get(i);
           buf.rewind();
           buf.get(bytes, i*chunkSize, chunkSize);
         }
         if (bufCount > 0) {
-          buf = ((java.nio.ByteBuffer)bufs.get(bufCount-1));
+          buf = bufs.get(bufCount-1);
           buf.flip();
           buf.get(bytes, (bufCount-1)*chunkSize, buf.remaining());
         }
@@ -98,6 +116,7 @@ public class UHSFetcher {
       final Exception finalObj = exceptionObj;
       final String finalMsg = exceptionMsg;
       Runnable r = new Runnable() {
+        @Override
         public void run() {
           if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, null, finalMsg, 0, finalObj);
           JOptionPane.showMessageDialog(parentComponent, finalMsg +":\n "+ finalObj.getMessage(), "OpenUHS Cannot Continue", JOptionPane.ERROR_MESSAGE);
@@ -117,8 +136,8 @@ public class UHSFetcher {
    * @param parentComponent a component to be the monitor's parent
    * @return an array of DownloadableUHS objects
    */
-  public static ArrayList fetchCatalog(Component parentComponent) {
-    ArrayList catalog = new ArrayList();
+  public static List<DownloadableUHS> fetchCatalog(Component parentComponent) {
+    List<DownloadableUHS> catalog = new ArrayList<DownloadableUHS>();
 
     byte[] responseBytes = fetchURL(parentComponent, "Fetching Catalog...", catalogUrl);
     if (responseBytes == null) return catalog;
@@ -196,14 +215,14 @@ public class UHSFetcher {
         if (errorHandler != null) errorHandler.log(UHSErrorHandler.INFO, null, "Extracting "+ ze.getName() +"...", 0, null);
 
         int chunkSize = 1024;
-        ArrayList bufs = new ArrayList();
+        List<ByteBuffer> bufs = new ArrayList<ByteBuffer>();
         int tmpByte;
-        java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(chunkSize);
+        ByteBuffer buf = ByteBuffer.allocate(chunkSize);
         bufs.add(buf);
         while ((tmpByte = is.read()) != -1) {
           buf.put((byte)tmpByte);
           if (buf.remaining()==0) {
-            buf = java.nio.ByteBuffer.allocate(chunkSize);
+            buf = ByteBuffer.allocate(chunkSize);
             bufs.add(buf);
           }
         }
@@ -211,15 +230,15 @@ public class UHSFetcher {
         int bufCount = bufs.size();
         int bufTotalSize = chunkSize * bufCount;
         if (bufCount > 1)
-          bufTotalSize -= ((java.nio.ByteBuffer)bufs.get(bufCount-1)).remaining();
+          bufTotalSize -= bufs.get(bufCount-1).remaining();
         fullBytes = new byte[bufTotalSize];
         for (int i=0; i <= bufCount-2; i++) {
-          buf = ((java.nio.ByteBuffer)bufs.get(i));
+          buf = bufs.get(i);
           buf.rewind();
           buf.get(fullBytes, i*chunkSize, chunkSize);
         }
         if (bufCount > 1) {
-          buf = ((java.nio.ByteBuffer)bufs.get(bufCount-1));
+          buf = bufs.get(bufCount-1);
           buf.flip();
           buf.get(fullBytes, (bufCount-1)*chunkSize, buf.remaining());
         }
@@ -262,6 +281,7 @@ public class UHSFetcher {
       final String message = "A file named "+ destFile.getName() +" exists. Overwrite?";
       final int[] delayedChoice = new int[] {JOptionPane.NO_OPTION};
       Runnable r = new Runnable() {
+        @Override
         public void run() {
           delayedChoice[0] = JOptionPane.showConfirmDialog(parentComponent, message, "Overwrite?", JOptionPane.YES_NO_OPTION);
         }
@@ -345,6 +365,7 @@ public class UHSFetcher {
     } else {
       final int[] doneLock = new int[] {0};
       Runnable wrapper = new Runnable() {
+        @Override
         public void run() {
           r.run();
           synchronized (doneLock) {doneLock[0] = 1;}

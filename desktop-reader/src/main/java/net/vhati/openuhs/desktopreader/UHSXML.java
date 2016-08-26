@@ -113,7 +113,7 @@ public class UHSXML {
             childElement.setAttribute("px", spot.x+"");
             childElement.setAttribute("py", spot.y+"");
             currentElement.addContent(childElement);
-            n = exportNode(childElement, (UHSNode)children.get(i), basename, n);
+            n = exportNode(childElement, children.get(i), basename, n);
         }
       }
     }
@@ -127,7 +127,7 @@ public class UHSXML {
         for (int i=0; i < childCount; i++) {
           Element childElement = new Element("child");
             currentElement.addContent(childElement);
-            n = exportNode(childElement, (UHSNode)children.get(i), basename, n);
+            n = exportNode(childElement, children.get(i), basename, n);
         }
       }
     }

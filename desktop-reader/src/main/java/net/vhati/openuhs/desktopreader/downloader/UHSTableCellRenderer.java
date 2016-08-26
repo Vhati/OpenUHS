@@ -1,8 +1,12 @@
 package net.vhati.openuhs.desktopreader.downloader;
 
-import java.awt.*;
-import javax.swing.*;
-import javax.swing.table.*;
+import java.awt.Color;
+import java.awt.Component;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableCellRenderer;
+
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
 
 
 public class UHSTableCellRenderer extends DefaultTableCellRenderer {
@@ -15,6 +19,7 @@ public class UHSTableCellRenderer extends DefaultTableCellRenderer {
   }
 
 
+  @Override
   public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
     Component c = super.getTableCellRendererComponent(table,value,isSelected,hasFocus,row,column);
 

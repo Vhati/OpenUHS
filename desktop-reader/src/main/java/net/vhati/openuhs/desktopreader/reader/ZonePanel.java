@@ -29,26 +29,38 @@ public class ZonePanel extends JComponent {
     c.setBounds(0, 0, c.getPreferredSize().width, c.getPreferredSize().height);
   }
 
+
+  @Override
   public Dimension getPreferredSize() {
     if (component == null) return super.getPreferredSize();
     else return component.getPreferredSize();
   }
+
+  @Override
   public void setPreferredSize(Dimension d) {
     if (component == null) super.setPreferredSize(d);
     else component.setPreferredSize(d);
   }
+
+  @Override
   public Dimension getMinimumSize() {
     if (component == null) return super.getMinimumSize();
     else return component.getMinimumSize();
   }
+
+  @Override
   public void setMinimumSize(Dimension d) {
     if (component == null) super.setMinimumSize(d);
     else component.setMinimumSize(d);
   }
+
+  @Override
   public Dimension getMaximumSize() {
     if (component == null) return super.getMaximumSize();
     else return component.getMaximumSize();
   }
+
+  @Override
   public void setMaximumSize(Dimension d) {
     if (component == null) super.setMaximumSize(d);
     else component.setMaximumSize(d);
@@ -73,8 +85,9 @@ public class ZonePanel extends JComponent {
   public void setLinkTarget(int n) {linkTarget = n;}
 
 
-  public void paint(Graphics g) {
-    super.paint(g);
+  @Override
+  public void paintComponent(Graphics g) {
+    super.paintComponent(g);
     if (component != null) {
       if (showContents) {component.paint(g);}
       else {

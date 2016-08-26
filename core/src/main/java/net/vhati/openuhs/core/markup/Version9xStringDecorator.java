@@ -94,12 +94,12 @@ public class Version9xStringDecorator extends StringDecorator {
       for (int d=0; d < decorations.length; d++) {
         if (decoStates[d] > 0) attribList.add(decorations[d].name);
       }
-      String[] decoNames = (String[])attribList.toArray(new String[attribList.size()]);
+      String[] decoNames = attribList.toArray(new String[attribList.size()]);
       Map[] argMaps = new LinkedHashMap[attribList.size()];
       resultList.add(new DecoratedFragment(fragment, decoNames, argMaps));
     }
 
-    return (DecoratedFragment[])resultList.toArray(new DecoratedFragment[resultList.size()]);
+    return resultList.toArray(new DecoratedFragment[resultList.size()]);
   }
 
 
@@ -240,7 +240,7 @@ public class Version9xStringDecorator extends StringDecorator {
         for (int d=0; d < decorations.length; d++) {
           if (decoStates[d] > 0) attribList.add(decorations[d].name);
         }
-        String[] decoNames = (String[])attribList.toArray(new String[attribList.size()]);
+        String[] decoNames = attribList.toArray(new String[attribList.size()]);
         Map[] argMaps = new LinkedHashMap[attribList.size()];
         fragmentList.add(new DecoratedFragment(fragment, decoNames, argMaps));
         buf.setLength(0);

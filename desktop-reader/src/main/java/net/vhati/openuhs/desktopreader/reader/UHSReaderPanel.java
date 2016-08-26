@@ -1,18 +1,43 @@
 package net.vhati.openuhs.desktopreader.reader;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Frame;
+import java.awt.GridLayout;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
-import java.util.*;
-import java.io.File;
 
-import net.vhati.openuhs.core.*;
+import net.vhati.openuhs.core.Proto4xUHSParser;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.UHSParser;
+import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.markup.DecoratedFragment;
-import net.vhati.openuhs.desktopreader.*;
+import net.vhati.openuhs.desktopreader.AppliablePanel;
+import net.vhati.openuhs.desktopreader.Nerfable;
+import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
+import net.vhati.openuhs.desktopreader.reader.NodePanel;
+import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
+import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
 
 
 /**
@@ -44,8 +69,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
   private JScrollPane scrollPane = null;
   private JScrollablePanel scrollView = new JScrollablePanel(new BorderLayout());
 
-  private ArrayList historyArray = new ArrayList();
-  private ArrayList futureArray = new ArrayList();
+  private List<UHSNode> historyArray = new ArrayList<UHSNode>();
+  private List<UHSNode> futureArray = new ArrayList<UHSNode>();
   private JButton openBtn = null;
   private JButton backBtn = null;
   private JButton forwardBtn = null;
@@ -140,18 +165,23 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
   }
 
 
+  @Override
   public void actionPerformed(ActionEvent e) {
     Object source = e.getSource();
 
     if (source == openBtn) {
       FileFilter uhsFilter = new FileFilter() {
+        @Override
         public String getDescription() {return "UHS Files (*.uhs)";}
+        @Override
         public boolean accept(File f) {
           return (f.isDirectory() || f.getName().toLowerCase().endsWith(".uhs"));
         }
       };
       FileFilter puhsFilter = new FileFilter() {
+        @Override
         public String getDescription() {return "Proto UHS Files (*.puhs)";}
+        @Override
         public boolean accept(File f) {
           return (f.isDirectory() || f.getName().toLowerCase().endsWith(".puhs"));
         }
@@ -181,10 +211,10 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
       openFile(finalName);
     }
     else if (source == backBtn) {
-      setReaderNode((UHSNode)historyArray.get(historyArray.size()-1));
+      setReaderNode(historyArray.get(historyArray.size()-1));
     }
     else if (source == forwardBtn) {
-      setReaderNode((UHSNode)futureArray.get(futureArray.size()-1));
+      setReaderNode(futureArray.get(futureArray.size()-1));
     }
     else if (source == findBtn) {
       String tmpString = JOptionPane.showInputDialog(pronoun, "Find what?", "Find text", JOptionPane.QUESTION_MESSAGE);
@@ -281,6 +311,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
         final UHSRootNode finalRootNode = rootNode;
         // Back to the event thread...
         Runnable r = new Runnable() {
+          @Override
           public void run() {
             if (finalRootNode != null) {
               setUHSNodes(finalRootNode, finalRootNode);
@@ -290,7 +321,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
             ancestorSetNerfed(false);
           }
         };
-        EventQueue.invokeLater(r);
+        SwingUtilities.invokeLater(r);
       }
     };
 
@@ -319,6 +350,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
    *
    * @param newNode the new node
    */
+  @Override
   public void setReaderNode(UHSNode newNode) {
     if (newNode == null) {return;}
 
@@ -410,6 +442,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
    *
    * @param id ID of the new node
    */
+  @Override
   public void setReaderNode(int id) {
     UHSNode tmpNode = rootNode.getLink(id);
     if (tmpNode != null) setReaderNode(tmpNode);
@@ -422,6 +455,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
    *
    * @param s a title (null is treated as "")
    */
+  @Override
   public void setReaderTitle(String s) {
     readerTitle = (s!=null?s:"");
 
@@ -436,6 +470,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
    *
    * @return the title of the reader
    */
+  @Override
   public String getReaderTitle() {
     return readerTitle;
   }
@@ -469,7 +504,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
     UHSNode newNode = null;
     boolean beenListed = false;
     for (int i=0; i<currentNode.getChildCount(); i++) {
-      tmpNode = ((UHSNode)currentNode.getChild(i));
+      tmpNode = currentNode.getChild(i);
       if (tmpNode.getContentType() == UHSNode.STRING && beenListed == false) {
         if (((String)tmpNode.getContent()).toLowerCase().indexOf(input) != -1) {
           newNode = new UHSNode("result");
@@ -559,6 +594,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
     }
 
     Runnable applyAction = new Runnable() {
+      @Override
       public void run() {
         try {
           int newSize = Integer.parseInt(textSizeField.getText());

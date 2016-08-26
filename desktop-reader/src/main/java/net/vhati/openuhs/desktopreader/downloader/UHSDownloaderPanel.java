@@ -1,13 +1,45 @@
 package net.vhati.openuhs.desktopreader.downloader;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
-import javax.swing.event.*;
-import java.util.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
-import net.vhati.openuhs.core.*;
-import net.vhati.openuhs.desktopreader.*;
+import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.desktopreader.AppliablePanel;
+import net.vhati.openuhs.desktopreader.Nerfable;
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
+import net.vhati.openuhs.desktopreader.downloader.UHSTableCellRenderer;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
@@ -104,6 +136,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
     findBtn.addActionListener(this);
 
     Action findAction = new AbstractAction() {
+      @Override
       public void actionPerformed(ActionEvent e) {
         find(findField.getText());
       }
@@ -112,6 +145,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
     findPanel.getActionMap().put("find", findAction);
 
     uhsTable.getTableHeader().addMouseListener(new MouseAdapter() {
+      @Override
       public void mouseReleased(MouseEvent e) {
         int index = uhsTable.getColumnModel().getColumnIndexAtX(e.getX());
         int col = uhsTable.convertColumnIndexToModel(index);
@@ -126,6 +160,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
     });
 
     uhsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+      @Override
       public void valueChanged(ListSelectionEvent e) {
         if (e.getValueIsAdjusting()) return;
         boolean state = false;
@@ -140,6 +175,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
   }
 
 
+  @Override
   public void actionPerformed(ActionEvent e) {
     Object source = e.getSource();
     if (source == reloadBtn) {
@@ -182,7 +218,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
    * @param s the path
    */
   public void setHintsPath(String s) {
-    java.io.File tmpFile = new java.io.File(s);
+    File tmpFile = new File(s);
     if (tmpFile.exists() && tmpFile.isDirectory())
       hintsPath = s;
   }
@@ -195,14 +231,16 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
     uhsTableModel.clear();
 
     Thread reloadWorker = new Thread() {
+      @Override
       public void run() {
-        final ArrayList catalog = UHSFetcher.fetchCatalog(parentComponent);
+        final List<DownloadableUHS> catalog = UHSFetcher.fetchCatalog(parentComponent);
 
         // Back to the event thread...
         Runnable r = new Runnable() {
+          @Override
           public void run() {
             for (int i=0; i < catalog.size(); i++) {
-              uhsTableModel.addUHS( (DownloadableUHS)catalog.get(i) );
+              uhsTableModel.addUHS(catalog.get(i));
             }
             uhsTableModel.sort();
             colorizeTable();
@@ -219,14 +257,14 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
   private void colorizeTable() {
     uhsTable.clearSelection();
 
-    String[] hintNames = new java.io.File(hintsPath).list();
+    String[] hintNames = new File(hintsPath).list();
     Arrays.sort(hintNames);
 
     for (int i=0; i < uhsTableModel.getRowCount(); i++) {
       DownloadableUHS tmpUHS = uhsTableModel.getUHS(i);
 
       if (Arrays.binarySearch(hintNames, tmpUHS.getName()) >= 0) {
-        java.io.File tmpFile = new java.io.File( hintsPath +"/"+ tmpUHS.getName() );
+        File tmpFile = new File( hintsPath +"/"+ tmpUHS.getName() );
         String tmpDate = new java.sql.Date(tmpFile.lastModified()).toString();
         if (tmpUHS.hasFixedDate() && tmpUHS.getDate().compareTo(tmpDate) > 0)
           tmpUHS.setColor(NEWER_COLOR);
@@ -253,6 +291,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
     }
 
     Thread downloadWorker = new Thread() {
+      @Override
       public void run() {
         for (int i=0; i < wants.length; i++) {
           DownloadableUHS tmpUHS = wants[i];
@@ -268,6 +307,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
         // Back to the event thread...
         Runnable r = new Runnable() {
+          @Override
           public void run() {
             colorizeTable();
             ancestorSetNerfed(false);
@@ -384,6 +424,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
         result.add(optionsPanel, BorderLayout.NORTH);
 
     ActionListener settingsListener = new ActionListener() {
+      @Override
       public void actionPerformed(ActionEvent e) {
         Object source = e.getSource();
         if (source == httpBox) {
@@ -422,6 +463,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
     }
 
     Runnable applyAction = new Runnable() {
+      @Override
       public void run() {
         Properties prop = System.getProperties();
         String httpHost = httpHostField.getText();

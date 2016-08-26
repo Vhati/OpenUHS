@@ -1187,6 +1187,6 @@ public class Proto4xUHSParser {
 
   private String getLoggedString(List<String> uhsFileArray, int n) {
     logLine = n;
-    return (String)uhsFileArray.get(n);
+    return uhsFileArray.get(n);
   }
 }

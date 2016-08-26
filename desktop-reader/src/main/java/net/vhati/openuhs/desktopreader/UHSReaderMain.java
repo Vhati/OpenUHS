@@ -191,7 +191,7 @@ public class UHSReaderMain {
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setSize(400, 400);
     frame.setLocationRelativeTo(null);
-    frame.show();
+    frame.setVisible(true);
 
     //Get the JFileChooser cached
     try {Class.forName("javax.swing.JFileChooser");}

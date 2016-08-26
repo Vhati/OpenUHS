@@ -174,7 +174,7 @@ public class UHSNode {
    * @return a List of UHSNodes, never null
    */
   public List<UHSNode> getChildren(String type) {
-    List result = new ArrayList();
+    List<UHSNode> result = new ArrayList<UHSNode>();
     if (children == null) return result;
 
     for (int i=0; i < children.size(); i++) {

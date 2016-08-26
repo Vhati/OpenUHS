@@ -51,11 +51,11 @@ public class Version9xVersionDecorator extends Version9xStringDecorator {
       for (int d=0; d < decos.length; d++) {
         if (decoStates[d] > 0) attribList.add(decos[d].name);
       }
-      String[] decoNames = (String[])attribList.toArray(new String[attribList.size()]);
+      String[] decoNames = attribList.toArray(new String[attribList.size()]);
       Map[] argMaps = new LinkedHashMap[attribList.size()];
       resultList.add(new DecoratedFragment(fragment, decoNames, argMaps));
     }
 
-    return (DecoratedFragment[])resultList.toArray(new DecoratedFragment[resultList.size()]);
+    return resultList.toArray(new DecoratedFragment[resultList.size()]);
   }
 }
