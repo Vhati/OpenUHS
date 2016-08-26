@@ -10,6 +10,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import net.vhati.openuhs.core.HotSpot;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.UHSRootNode;
+
 
 /**
  * Proto UHS 4.x file parser.
@@ -953,7 +961,7 @@ public class Proto4xUHSParser {
               }
               newNode.setContent(tmpBytes, UHSNode.IMAGE);
               hotspotNode.addChild(newNode);
-              hotspotNode.setCoords(newNode, new int[] {zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY});
+              hotspotNode.setSpot(newNode, new HotSpot(zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY));
             } else {
               if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, this, "Invalid coords for hyper-overlay hunk", logLine+1, null);
             }
@@ -970,7 +978,7 @@ public class Proto4xUHSParser {
                 newNode.setContent(title, UHSNode.STRING);
                 parseTextEscapes(newNode);
                 hotspotNode.addChild(newNode);
-                hotspotNode.setCoords(newNode, new int[] {zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1});
+                hotspotNode.setSpot(newNode, new HotSpot(zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1));
                 newNode.setLinkTarget(targetIndex);
             } else {
               if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, this, "Invalid coords/target for hyper-link hunk", logLine+1, null);

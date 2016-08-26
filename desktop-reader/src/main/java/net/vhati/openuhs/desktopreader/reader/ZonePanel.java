@@ -10,13 +10,14 @@ import javax.swing.JComponent;
 
 
 /**
- * A hotspot panel.
+ * A panel representing a single zone in a hotspot node.
  */
 public class ZonePanel extends JComponent {
   private boolean showContents = false;
   private JComponent component = null;
   private ZonePanel zoneTarget = null;
   private int linkTarget = -1;
+
 
   public ZonePanel() {
     super();

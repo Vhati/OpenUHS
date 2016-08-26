@@ -8,7 +8,22 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.vhati.openuhs.core.markup.*;
+import net.vhati.openuhs.core.CRC16;
+import net.vhati.openuhs.core.HotSpot;
+import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.UHSRootNode;
+import net.vhati.openuhs.core.markup.Version9xCommentDecorator;
+import net.vhati.openuhs.core.markup.Version9xCreditDecorator;
+import net.vhati.openuhs.core.markup.Version9xHintDecorator;
+import net.vhati.openuhs.core.markup.Version9xInfoDecorator;
+import net.vhati.openuhs.core.markup.Version9xStringDecorator;
+import net.vhati.openuhs.core.markup.Version9xTextDecorator;
+import net.vhati.openuhs.core.markup.Version9xTitleDecorator;
+import net.vhati.openuhs.core.markup.Version9xVersionDecorator;
+import net.vhati.openuhs.core.markup.Version88CreditDecorator;
 
 
 /**
@@ -1106,7 +1121,7 @@ public class UHSParser {
             overlayNode.setId(nestedIndex);
             hotspotNode.addChild(overlayNode);
             rootNode.addLink(overlayNode);
-            hotspotNode.setCoords(overlayNode, new int[] {zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY});
+            hotspotNode.setSpot(overlayNode, new HotSpot(zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY));
 
           // Reader's NodePanel would need to look two children deep
           //UHSNode newNode = new UHSNode("OverlayData");
@@ -1124,7 +1139,7 @@ public class UHSParser {
             if (tmp.endsWith("hyperpng") && newNode.getChildCount() != 1) {
               if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, this, "Nested HyperImage has an unexpected child count", logHeader+logLine+1, null);
             }
-            hotspotNode.setCoords(newNode, new int[] {zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1});
+            hotspotNode.setSpot(newNode, new HotSpot(zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1));
           } else {
             if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, this, "Failed to add nested hunk", logHeader+logLine+1, null);
           }

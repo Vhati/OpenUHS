@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.event.MouseInputAdapter;
 import javax.swing.event.MouseInputListener;
 
+import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
@@ -78,8 +79,8 @@ public class NodePanel extends JScrollablePanel {
 
       private int getZone(UHSHotSpotNode nick, int x, int y) {
         for (int i=1; i < nick.getChildCount(); i++) {
-          int[] coords = nick.getCoords(nick.getChild(i));
-          if (x > coords[0] && y > coords[1] && x < coords[0]+coords[2] && y < coords[1]+coords[3]) {
+          HotSpot spot = nick.getSpot(nick.getChild(i));
+          if (x > spot.zoneX && y > spot.zoneY && x < spot.zoneX+spot.zoneW && y < spot.zoneY+spot.zoneH) {
             return i;
           }
         }
@@ -130,10 +131,10 @@ public class NodePanel extends JScrollablePanel {
       for (int i=0; i < node.getChildCount(); i++) {
         int childContentType = node.getChild(i).getContentType();
         if (childContentType == UHSNode.STRING) {
-          int[] coords = nick.getCoords(nick.getChild(i));
+          HotSpot spot = nick.getSpot(nick.getChild(i));
           ZonePanel spotPanel = new ZonePanel();
             //spotPanel.setToolTipText( (String)node.getChild(i).getContent() );
-            spotPanel.setBounds(coords[0], coords[1], coords[2], coords[3]);
+            spotPanel.setBounds(spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH);
             sharedPanel.add(spotPanel, JLayeredPane.PALETTE_LAYER, 0);
             spotPanel.addMouseListener(zoneListener);
           if (node.getChild(i).isLink()) {
@@ -145,13 +146,13 @@ public class NodePanel extends JScrollablePanel {
           }
         }
         else if (childContentType == UHSNode.IMAGE) {
-          int[] coords = nick.getCoords(nick.getChild(i));
+          HotSpot spot = nick.getSpot(nick.getChild(i));
 
           JLabel imageLbl = new JLabel(new ImageIcon((byte[])node.getChild(i).getContent()));
 
           ZonePanel contentPanel = new ZonePanel(imageLbl);
             Dimension pSize = contentPanel.getPreferredSize();
-            contentPanel.setBounds(coords[4], coords[5], pSize.width, pSize.height);
+            contentPanel.setBounds(spot.x, spot.y, pSize.width, pSize.height);
             sharedPanel.add(contentPanel, JLayeredPane.DEFAULT_LAYER, 0);
           if (i == 0) {
             contentPanel.setContentsVisible(true);
@@ -160,7 +161,7 @@ public class NodePanel extends JScrollablePanel {
           } else {
             ZonePanel spotPanel = new ZonePanel();
               spotPanel.setZoneTarget(contentPanel);
-              spotPanel.setBounds(coords[0], coords[1], coords[2], coords[3]);
+              spotPanel.setBounds(spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH);
               sharedPanel.add(spotPanel, JLayeredPane.PALETTE_LAYER, 0);
               spotPanel.addMouseListener(zoneListener);
           }

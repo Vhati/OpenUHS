@@ -13,6 +13,7 @@ import org.jdom.output.XMLOutputter;
 import org.jdom.output.Format;
 
 import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
@@ -103,14 +104,14 @@ public class UHSXML {
       if (children != null) {
         int childCount = children.size();
         for (int i=0; i < childCount; i++) {
-          int[] coords = ((UHSHotSpotNode)currentNode).getCoords((UHSNode)children.get(i));
+          HotSpot spot = ((UHSHotSpotNode)currentNode).getSpot(children.get(i));
           Element childElement = new Element("hotspot-child");
-            childElement.setAttribute("zx", coords[0]+"");
-            childElement.setAttribute("zy", coords[1]+"");
-            childElement.setAttribute("zw", coords[2]+"");
-            childElement.setAttribute("zh", coords[3]+"");
-            childElement.setAttribute("px", coords[4]+"");
-            childElement.setAttribute("py", coords[5]+"");
+            childElement.setAttribute("zx", spot.zoneX+"");
+            childElement.setAttribute("zy", spot.zoneY+"");
+            childElement.setAttribute("zw", spot.zoneW+"");
+            childElement.setAttribute("zh", spot.zoneH+"");
+            childElement.setAttribute("px", spot.x+"");
+            childElement.setAttribute("py", spot.y+"");
             currentElement.addContent(childElement);
             n = exportNode(childElement, (UHSNode)children.get(i), basename, n);
         }
