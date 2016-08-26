@@ -12,6 +12,9 @@ allprojects {
 	group = "com.github.vhati.openuhs"
 	version = "0.7.0"
 
+	// Define a custom attribute to let subprojects copy the license.
+	project.ext.licenseFile = project(":").file("LICENSE")
+
 	// Declare where to find dependencies.
 	repositories {
 		mavenCentral()

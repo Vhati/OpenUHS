@@ -7,7 +7,6 @@ compileJava.options.encoding = "Windows-1252"  // Someday "UTF-8"?
 sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6
 
-archivesBaseName = "OpenUHS-Reader"
 project.ext.mainClassName = "net.vhati.openuhs.desktopreader.UHSReaderMain"
 
 
@@ -73,6 +72,20 @@ task copyDistUnix(type: DefaultTask) {
 
 			into("${distDir}/lib")
 		}
+
+		// Copy the licenseFile, an attribute declared on allprojects from the root project.
+		copy {
+			from(licenseFile)
+			rename(licenseFile.getName(), "license.txt")
+
+			filter(FixCrLfFilter,
+				eol: FixCrLfFilter.CrLf.newInstance("lf"),
+				tab: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+				eof: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+				fixlast: true)
+
+			into(distDir)
+		}
 	}
 }
 
@@ -119,6 +132,20 @@ task copyDistWin(type: DefaultTask) {
 			from(jar)
 
 			into(new File(distDir, "lib"))
+		}
+
+		// Copy the licenseFile, an attribute declared on allprojects from the root project.
+		copy {
+			from(licenseFile)
+			rename(licenseFile.getName(), "license.txt")
+
+			filter(FixCrLfFilter,
+				eol: FixCrLfFilter.CrLf.newInstance("crlf"),
+				tab: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+				eof: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+				fixlast: true)
+
+			into(distDir)
 		}
 	}
 }

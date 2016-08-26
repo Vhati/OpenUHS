@@ -9,8 +9,6 @@ The end-user features are essentially complete. Switch to the Downloader tab, re
 
 The underlying parser code is separated to be useful as a library in other developers' projects, though that aspect is beta.
 
-The official Windows-only shareware reader and hint repository that inspired this project can be found at [http://uhs-hints.com/](http://uhs-hints.com/).
-
 <a href="https://raw.github.com/Vhati/OpenUHS/master/img/reader_mi2.png"><img src="https://raw.github.com/Vhati/OpenUHS/master/img/reader_mi2.png" width="145px" height="auto" /></a>
 <a href="https://raw.github.com/Vhati/OpenUHS/master/img/downloader_catalog.png"><img src="https://raw.github.com/Vhati/OpenUHS/master/img/downloader_catalog.png" width="145px" height="auto" /></a>
 <a href="https://raw.github.com/Vhati/OpenUHS/master/img/reader_tlj.png"><img src="https://raw.github.com/Vhati/OpenUHS/master/img/reader_tlj.png" width="145px" height="auto" /></a>
@@ -30,3 +28,9 @@ Requirements
 * WinXP SP1 can't run Java 1.7.
     * (1.7 was built with VisualStudio 2010, causing a DecodePointer error.)
     * To get 1.6, you may have to google "jdk-6u45-windows-i586.exe".
+
+
+Acknowledgments
+---------------
+* The official Windows-only shareware reader and hint repository that inspired this project can be found at [http://uhs-hints.com/](http://uhs-hints.com/).
+* Stefan Wolff. His [primer](http://www.swolff.dk/uhs/) on the file structure gave me somewhere to start.

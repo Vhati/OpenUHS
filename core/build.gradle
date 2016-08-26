@@ -1,4 +1,7 @@
+import org.apache.tools.ant.filters.FixCrLfFilter
+
 apply plugin: "java"
+
 
 compileJava.options.encoding = "Windows-1252"  // Someday "UTF-8"?
 sourceCompatibility = JavaVersion.VERSION_1_6
@@ -16,11 +19,40 @@ task generateJavadocs(type: Javadoc) {
 
 task packageDist(type: Zip) {
 	baseName = "OpenUHS"
-	appendix = project.name
+	appendix = "Core"
+
+	includeEmptyDirs = true
+	filteringCharset = "UTF-8"
+
+	from(["skel/common"]) {
+		eachFile {
+			if (it.getName() ==~ /(?i).*[.](bat|txt)$/) {
+				it.filter(FixCrLfFilter,
+					eol: FixCrLfFilter.CrLf.newInstance("crlf"),
+					tab: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+					eof: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+					fixlast: true)
+			}
+		}
+		// Into the root of the archive.
+	}
 
 	from(jar)
 	from(generateJavadocs) {
 		into("javadoc")
+	}
+
+	// Copy the licenseFile, an attribute declared on allprojects from the root project.
+	from(licenseFile) {
+		rename(licenseFile.getName(), "license.txt")
+
+		filter(FixCrLfFilter,
+			eol: FixCrLfFilter.CrLf.newInstance("crlf"),
+			tab: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+			eof: FixCrLfFilter.AddAsisRemove.newInstance("asis"),
+			fixlast: true)
+
+		// Into the root of the archive.
 	}
 }
 

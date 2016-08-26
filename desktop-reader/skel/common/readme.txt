@@ -14,8 +14,6 @@ About
 
   The underlying parser code is separated to be useful as a library in other developers' projects, though that aspect is beta.
 
-  The official Windows-only shareware reader and hint repository that inspired this project can be found at http://uhs-hints.com/ .
-
 
 Requirements
 
@@ -51,3 +49,10 @@ Addendum
   "Space Quest 4 (in German)"
 
   This file is non-standard and will not be supported. Four questions each contain a lone linefeed in their first hint. It's 88a, so a text editor can see the indented lines and remove the linebreak to make it parsable, at least.
+
+
+Acknowledgments
+
+  The official Windows-only shareware reader and hint repository that inspired this project can be found at http://uhs-hints.com/ .
+
+  Stefan Wolff. His primer( http://www.swolff.dk/uhs/ ) on the file structure gave me somewhere to start.
