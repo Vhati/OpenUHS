@@ -2,10 +2,15 @@ package net.vhati.openuhs.androidreader;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -17,6 +22,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.support.v4.content.IntentCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+
 import net.vhati.openuhs.androidreader.R;
 import net.vhati.openuhs.androidreader.reader.NodeAdapter;
 import net.vhati.openuhs.core.UHSNode;
@@ -25,10 +34,14 @@ import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.markup.DecoratedFragment;
 
 
-public class ReaderActivity extends Activity {
+public class ReaderActivity extends AppCompatActivity implements View.OnClickListener {
+  public static final String EXTRA_OPEN_FILE = "net.openuhs.androidreader.OpenFile";
+
   public static final int SCROLL_TO_TOP = 0;
   public static final int SCROLL_TO_BOTTOM = 1;
   public static final int SCROLL_IF_INCOMPLETE = 2;
+
+  private Toolbar toolbar = null;
 
   private String readerTitle = "";
 
@@ -38,8 +51,8 @@ public class ReaderActivity extends Activity {
   private NodeAdapter nodeAdapter = null;
   private ListView listView = null;
 
-  private ArrayList<UHSNode> historyArray = new ArrayList<UHSNode>();
-  private ArrayList<UHSNode> futureArray = new ArrayList<UHSNode>();
+  private List<UHSNode> historyArray = new ArrayList<UHSNode>();
+  private List<UHSNode> futureArray = new ArrayList<UHSNode>();
   private ImageButton backBtn = null;
   private ImageButton forwardBtn = null;
 
@@ -47,7 +60,7 @@ public class ReaderActivity extends Activity {
   private TextView questionLabel = null;
   private TextView showLabel = null;
   private ImageButton showNextBtn = null;
-  private CheckBox showAllBox = null;
+  private MenuItem showAllBox = null;
 
   private ReaderActivity navCtrl = this;
   private UHSNode dummyNode = new UHSNode("Blank");
@@ -58,112 +71,146 @@ public class ReaderActivity extends Activity {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    UHSRootNode inRootNode = null;
-    try {
-      File uhsFile = new File(getExternalFilesDir(null), "overseer.uhs");
-      String fileName = uhsFile.getPath();
-      UHSParser uhsParser = new UHSParser();
-      inRootNode = uhsParser.parseFile(fileName, UHSParser.AUX_NEST);
+    this.setContentView(R.layout.reader);
 
-      /*
-      TextView tv = new TextView(this);
-      tv.setText(rootNode.getUHSTitle());
-      this.setContentView(tv);
-      */
+    toolbar = (Toolbar)findViewById(R.id.readerToolbar);
+    toolbar.setTitle("");  // Ensure it's non-null so support will defer its text to Toolbar.
+    this.setSupportActionBar(toolbar);
+
+    questionLabel = (TextView)findViewById(R.id.questionText);
+    backBtn = (ImageButton)findViewById(R.id.backBtn);
+    forwardBtn = (ImageButton)findViewById(R.id.forwardBtn);
+    showNextBtn = (ImageButton)findViewById(R.id.showNextBtn);
+    showAllBox = (MenuItem)findViewById(R.id.showAllHintsAction);
+
+    backBtn.setEnabled(false);
+    forwardBtn.setEnabled(false);
+
+    listView = (ListView)findViewById(R.id.childNodesList);
+    nodeAdapter = new NodeAdapter(this, dummyNode, true);
+    listView.setAdapter(nodeAdapter);
+
+    backBtn.setOnClickListener(this);
+    forwardBtn.setOnClickListener(this);
+    showNextBtn.setOnClickListener(this);
+
+    listView.setOnItemClickListener(new OnItemClickListener() {
+      @Override
+      public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        //Log.i("OpenUHS", "@!@ Clicked list item #"+ position);
+        if (parent != listView) return;
+
+        Object o = nodeAdapter.getItem(position);
+        if ((o instanceof UHSNode) == false) return;
+
+        UHSNode childNode = (UHSNode)o;
+        if (childNode.isGroup()) {
+          navCtrl.setReaderNode(childNode);
+        }
+        else if (childNode.isLink()) {
+          int targetIndex = childNode.getLinkTarget();
+          navCtrl.setReaderNode(targetIndex);
+        }
+      }
+    });
+    // When list items are focusable or clickable, they preempt the list's click listener.
+    // This is a workaround reminder, in case it's ever needed.
+    //   android:descendantFocusability="blocksDescendants"
+    //   listView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+
+    // Check bundle args for a file to open.
+    String uhsPath = null;
+    if (savedInstanceState == null) {
+      Bundle extras = this.getIntent().getExtras();
+      if (extras == null) {
+        uhsPath = null;
+      } else {
+        uhsPath = extras.getString(EXTRA_OPEN_FILE);
+      }
     }
-    catch (Exception e) {
-      TextView tv = new TextView(this);
-      tv.setText(e.toString());
-      this.setContentView(tv);
-    }
-
-    if (inRootNode != null) {
-      this.setContentView(R.layout.reader);
-
-      titleLabel = (TextView)findViewById(R.id.titleText);
-      questionLabel = (TextView)findViewById(R.id.questionText);
-      backBtn = (ImageButton)findViewById(R.id.backBtn);
-      forwardBtn = (ImageButton)findViewById(R.id.forwardBtn);
-      showLabel = (TextView)findViewById(R.id.showText);
-      showNextBtn = (ImageButton)findViewById(R.id.showNextBtn);
-      showAllBox = (CheckBox)findViewById(R.id.showAllBox);
-
-      backBtn.setEnabled(false);
-      forwardBtn.setEnabled(false);
-
-      backBtn.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-          setReaderNode((UHSNode)historyArray.get(historyArray.size()-1));
-        }
-      });
-
-      forwardBtn.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-          setReaderNode((UHSNode)futureArray.get(futureArray.size()-1));
-        }
-      });
-
-      showNextBtn.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-          showNext();
-          scrollTo(SCROLL_TO_BOTTOM);
-        }
-      });
-
-      showAllBox.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-          if(!showAllBox.isChecked()) return;
-          while (showNext() != false);
-        }
-      });
-
-      //listView = new ListView(this);
-      listView = (ListView)findViewById(R.id.childNodesList);
-
-      nodeAdapter = new NodeAdapter(this, dummyNode, true);
-      listView.setAdapter(nodeAdapter);
-      listView.setOnItemClickListener(new OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-          //Log.i("OpenUHS", "@!@ Clicked list item #"+ position);
-          if (parent != listView) return;
-
-          Object o = nodeAdapter.getItem(position);
-          if ((o instanceof UHSNode) == false) return;
-
-          UHSNode childNode = (UHSNode)o;
-          if (childNode.isGroup()) {
-            navCtrl.setReaderNode(childNode);
-          }
-          else if (childNode.isLink()) {
-            int targetIndex = childNode.getLinkTarget();
-            navCtrl.setReaderNode(targetIndex);
-          }
-        }
-      });
-
-      // When list items are focusable or clickable, they preempt the list's click listener.
-      // This is a workaround reminder, in case it's ever needed.
-      //   android:descendantFocusability="blocksDescendants"
-      //   lv.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
-
-      //this.setContentView(listView);
-
-      reset();
-      setUHSNodes(inRootNode, inRootNode);
+    else {
+      uhsPath = (String)savedInstanceState.getSerializable(EXTRA_OPEN_FILE);
     }
 
+    if (uhsPath != null) {
+      UHSRootNode inRootNode = null;
+      try {
+        //File uhsFile = new File(getExternalFilesDir(null), "overseer.uhs");
+        //String fileName = uhsFile.getPath();
+        UHSParser uhsParser = new UHSParser();
+        inRootNode = uhsParser.parseFile(uhsPath, UHSParser.AUX_NEST);
+      }
+      catch (Exception e) {
+        // TODO: Report the error properly.
+        TextView tv = new TextView(this);
+        tv.setText(e.toString());
+        this.setContentView(tv);
+      }
+
+      if (inRootNode != null) {
+        reset();
+        setUHSNodes(inRootNode, inRootNode);
+      }
+    }
 
     /*
+    UHSParser uhsParser = new UHSParser();
     String tmp = uhsParser.decryptString("4w{ Bw d srJ zH JDr yJptIy");
     TextView tv = new TextView(this);
     tv.setText(tmp);
     this.setContentView(tv);
     */
+  }
+
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    MenuInflater inflater = getMenuInflater();
+    inflater.inflate(R.menu.reader_menu, menu);
+    return true;
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    switch (item.getItemId()) {
+      case R.id.showAllHintsAction:
+        boolean b = !item.isChecked();
+        item.setChecked(b);
+
+        if (b) {  // Reveal all hints if it is now checked.
+          while (showNext() != false);
+        }
+        return true;
+
+      case R.id.switchToDownloaderAction:
+        Intent intent = new Intent().setClass(this, DownloaderActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | IntentCompat.FLAG_ACTIVITY_CLEAR_TASK | IntentCompat.FLAG_ACTIVITY_TASK_ON_HOME);
+        this.startActivity(intent);
+        finish();
+        return true;
+
+      default:
+        return super.onOptionsItemSelected(item);
+    }
+  }
+
+
+  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+      case R.id.backBtn:
+        setReaderNode(historyArray.get(historyArray.size()-1));
+        break;
+
+      case R.id.forwardBtn:
+        setReaderNode(futureArray.get(futureArray.size()-1));
+        break;
+
+      case R.id.showNextBtn:
+        showNext();
+        scrollTo(SCROLL_TO_BOTTOM);
+        break;
+    }
   }
 
 
@@ -315,7 +362,7 @@ public class ReaderActivity extends Activity {
    */
   public void setReaderTitle(String s) {
     readerTitle = ((s !=null) ? s : "");
-    titleLabel.setText(readerTitle);
+    toolbar.setTitle(readerTitle);
   }
 
   /**

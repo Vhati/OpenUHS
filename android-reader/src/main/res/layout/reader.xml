@@ -1,38 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
   android:orientation="vertical"
-  android:layout_width="fill_parent"
-  android:layout_height="fill_parent">
-  <TextView
-    android:id="@+id/titleText"
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
-    android:text="INSERT TITLE HERE" />
-  <TableLayout
-    android:layout_width="fill_parent"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent">
+
+  <android.support.v7.widget.Toolbar
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/readerToolbar"
     android:layout_height="wrap_content"
-    android:padding="10dp"
-    android:stretchColumns="1">
-    <TableRow>
-      <ImageButton
-        android:id="@+id/backBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="left"
-        android:src="@drawable/back_btn_selector"
-        android:background="@android:color/transparent" />
-      <ImageButton
-        android:id="@+id/forwardBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right"
-        android:src="@drawable/forward_btn_selector"
-        android:background="@android:color/transparent" />
-    </TableRow>
-  </TableLayout>
+    android:layout_width="match_parent" />
+    <!-- android:minHeight="?android:attr/actionBarSize" -->
+    <!-- android:background="?android:attr/colorPrimary" -->
+
   <TextView
     android:id="@+id/questionText"
-    android:layout_width="fill_parent" 
+    android:layout_width="match_parent" 
     android:layout_height="wrap_content" 
     android:textSize="16sp"
     android:text="INSERT QUESTION HERE" />
@@ -49,33 +31,44 @@
     android:dividerHeight="1dp"
     android:paddingLeft="2dp" >
   </ListView>
+
   <TableLayout
-    android:layout_width="fill_parent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="10dp"
+    android:stretchColumns="1">
+    <TableRow>
+      <ImageButton
+        android:id="@+id/backBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"
+        android:src="@drawable/btn_back_selector"
+        android:background="@android:color/transparent" />
+      <ImageButton
+        android:id="@+id/forwardBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:src="@drawable/btn_forward_selector"
+        android:background="@android:color/transparent" />
+    </TableRow>
+  </TableLayout>
+
+  <TableLayout
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="5dp"
     android:stretchColumns="1">
     <TableRow>
-      <TextView
-        android:id="@+id/showText"
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content" 
-        android:layout_gravity="center_vertical"
-        android:textSize="16sp"
-        android:text="" />
       <ImageButton
         android:id="@+id/showNextBtn"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:src="@drawable/next_btn_selector"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:src="@drawable/btn_show_next_selector"
         android:background="@android:color/transparent" />
-      <CheckBox
-        android:id="@+id/showAllBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:textSize="16sp"
-        android:text="Show All" />
     </TableRow>
   </TableLayout>
 </LinearLayout>

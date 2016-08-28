@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent">
+
+  <android.support.v7.widget.Toolbar
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/downloaderToolbar"
+    android:layout_height="wrap_content"
+    android:layout_width="match_parent" />
+    <!-- android:minHeight="?android:attr/actionBarSize" -->
+    <!-- android:background="?android:attr/colorPrimary" -->
+
+  <ListView
+    android:id="@+id/catalogList"
+    android:layout_width="fill_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:layout_marginBottom="10dp"
+    android:layout_marginTop="10dp"
+    android:background="@android:color/transparent"
+    android:cacheColorHint="@android:color/transparent"
+    android:divider="#CCCCCC"
+    android:dividerHeight="1dp"
+    android:paddingLeft="2dp" />
+
+</LinearLayout>

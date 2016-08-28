@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="net.vhati.openuhs.androidreader.DownloaderActivity" >
+
+    <item android:id="@+id/fetchCatalogAction"
+          android:title="@string/action_fetch_catalog"
+          android:icon="@drawable/ic_refresh_normal_24dp"
+          tools:showAsAction="ifRoom" />
+
+</menu>

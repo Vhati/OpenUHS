@@ -1,0 +1,6 @@
+<resources>
+    <style name="MyMaterialTheme" parent="Theme.AppCompat">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">true</item>
+    </style>
+</resources>

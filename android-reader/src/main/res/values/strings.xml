@@ -2,5 +2,11 @@
 <resources>
     <string name="app_name">OpenUHS</string>
     <string name="reader">Reader</string>
+    <string name="action_show_all_hints">Show All Hints</string>
+    <string name="action_switch_to_downloader">Downloader...</string>
     <string name="downloader">Downloader</string>
+    <string name="action_fetch_catalog">Refresh</string>
+    <string name="context_action_open_file">Open</string>
+    <string name="context_action_fetch_file">Download</string>
+    <string name="context_action_delete_file">Delete</string>
 </resources>

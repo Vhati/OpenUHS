@@ -76,25 +76,32 @@ ENDLOCAL & EXIT /B
 
 Android SDK Setup
 
-  Be warned, Android development will demand hundreds of megs of disk space and RAM, and the latest Java.
+  Be warned, Android development will demand over a gig of disk space, hundreds of megs of RAM, and the latest Java.
 
   Download and extract the Android SDK somewhere.
 
   Start the SDK Manager
-    Untick the latest API
-
     Tick these...
+      Tools/
+        Android SDK Platform-tools
+        Android SDK Build-tools
+
+      [Latest API]/
+        SDK Platform
+
       Android 2.3.3 (API 10)/
         SDK Platform
         Intel x86 Atom System Image
 
-      Intel x86 Emulator Accelerator (HAXM installer)
+      Extras/
+        Android Support Repository
+        Intel x86 Emulator Accelerator (HAXM installer)
 
   Emulating an x86 device (as opposed to ARM), combined with HAXM, is considerably faster.
 
   The SDK won't actually install HAXM, merely download it. Look in the SDK's "extras/" folder. To confirm your hardware supports Intel virtualization, run "haxm_check.exe" from a prompt. Run "intelhaxm-android.exe" to install.
 
-  The platform and build tools alone are enough to compile. If you have a physical device, you /could/ forgo emulation.
+  If you have a physical device, technically you /could/ forgo emulation.
 
 
   Start the AVD Manager

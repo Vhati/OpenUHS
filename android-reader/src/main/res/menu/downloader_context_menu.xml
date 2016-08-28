@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="net.vhati.openuhs.androidreader.DownloaderActivity" >
+
+    <item android:id="@+id/openFileContextAction"
+          android:title="@string/context_action_open_file"
+          android:enabled="false" />
+
+    <item android:id="@+id/fetchFileContextAction"
+          android:title="@string/context_action_fetch_file"
+          android:enabled="true" />
+
+    <item android:id="@+id/deleteFileContextAction"
+          android:title="@string/context_action_delete_file"
+          android:enabled="false" />
+
+</menu>

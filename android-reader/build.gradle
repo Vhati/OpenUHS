@@ -29,7 +29,8 @@ project.ext.activityClassName = "${packageName}.MainActivity"
 
 
 android {
-	compileSdkVersion = 10
+	// These two should match the latest packages in your your Android SDK Manager.
+	compileSdkVersion = 24
 	buildToolsVersion = "24.0.1"
 
 	compileOptions {
@@ -99,7 +100,7 @@ android {
 		// Reader app version, solely to be seen by users.
 		versionName = "1.0"
 
-		// Minimum API needed to run.
+		// Minimum API needed to run. It caps features for backward compatibility.
 		minSdkVersion(10)
 
 		// API used for testing.
@@ -159,4 +160,11 @@ task runAndroidReader(type: DefaultTask) {
 
 dependencies {
 	compile project(":core")
+
+	/*
+	 * appcompat-v7 library for Action Bar UI.
+	 * https://developer.android.com/topic/libraries/support-library/features.html#v7-appcompat
+	 * support-v4 will be brought in as its dependency.
+	 */
+	compile "com.android.support:appcompat-v7:24.2.0"
 }

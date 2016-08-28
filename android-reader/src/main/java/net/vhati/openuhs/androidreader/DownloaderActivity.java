@@ -11,13 +11,25 @@ import java.io.OutputStream;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.TextView;
 import android.widget.ListView;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
+
+import android.support.v4.content.IntentCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 
 import net.vhati.openuhs.androidreader.R;
 import net.vhati.openuhs.androidreader.AndroidUHSErrorHandler;
@@ -27,16 +39,20 @@ import net.vhati.openuhs.androidreader.downloader.UHSFetcher;
 import net.vhati.openuhs.androidreader.downloader.UrlFetcher;
 
 
-public class DownloaderActivity extends Activity implements Observer {
+public class DownloaderActivity extends AppCompatActivity implements Observer {
   private static final int CATALOG_COLOR_REMOTE = android.graphics.Color.BLACK;
   private static final int CATALOG_COLOR_LOCAL = android.graphics.Color.DKGRAY;
   private static final int CATALOG_COLOR_NEWER = android.graphics.Color.LTGRAY;
 
   private TextView tv = null;
+  private Toolbar toolbar = null;
   private ListView catalogListView = null;
-  private UrlFetcher catalogFetcher = null;
 
-  private ProgressDialog catalogFetchDlg = null;
+  private AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler("OpenUHS");
+  private UrlFetcher catalogFetcher = null;
+  private UrlFetcher uhsFetcher = null;
+
+  private ProgressDialog progressDlg = null;
 
 
   /** Called when the activity is first created. */
@@ -48,36 +64,147 @@ public class DownloaderActivity extends Activity implements Observer {
     tv.setText("This is the downloader");
     //setContentView(tv);
 
+/*
     catalogListView = new ListView(this);
       catalogListView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
       //catalogListView.setAdapter(new ArrayAdapter(this, android.R.layout.simple_list_item_1, new String[] {"a", "b", "c"}));
       setContentView(catalogListView);
+*/
+    this.setContentView(R.layout.downloader);
 
-    catalogFetchDlg = new ProgressDialog(this);
-      catalogFetchDlg.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-      catalogFetchDlg.setIndeterminate(false);
-      catalogFetchDlg.setMax(100);
-      catalogFetchDlg.setCancelable(false);
-      catalogFetchDlg.setMessage("Fetching Catalog...");
-      catalogFetchDlg.show();
+    toolbar = (Toolbar)findViewById(R.id.downloaderToolbar);
+    this.setSupportActionBar(toolbar);
 
-    AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler("OpenUHS");
+    catalogListView = (ListView)findViewById(R.id.catalogList);
+    this.registerForContextMenu(catalogListView);
 
     UHSFetcher.setErrorHandler(errorHandler);
 
-    catalogFetcher = new UrlFetcher(UHSFetcher.getCatalogUrl());
-      catalogFetcher.setErrorHandler(errorHandler);
-      catalogFetcher.setUserAgent(UHSFetcher.getUserAgent());
-      catalogFetcher.addObserver(this);
-      catalogFetcher.download();
+    progressDlg = new ProgressDialog(this);
+      progressDlg.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+      progressDlg.setIndeterminate(false);
+      progressDlg.setMax(100);
+      progressDlg.setCancelable(false);
+      progressDlg.setMessage("...");
+  }
 
-    //testNewFile();
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    MenuInflater inflater = getMenuInflater();
+    inflater.inflate(R.menu.downloader_menu, menu);
+    return true;
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    switch (item.getItemId()) {
+      case R.id.fetchCatalogAction:
+        fetchCatalog();
+        return true;
+
+      default:
+        return super.onOptionsItemSelected(item);
+    }
+  }
+
+  @Override
+  public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+    super.onCreateContextMenu(menu, v, menuInfo);
+
+    DownloadableUHS tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem(((AdapterContextMenuInfo)menuInfo).position);
+    if (tmpUHS != null && tmpUHS.getName().length() > 0) {
+
+      MenuInflater inflater = getMenuInflater();
+      inflater.inflate(R.menu.downloader_context_menu, menu);
+
+      File uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
+      if (uhsFile.exists()) {
+        ((MenuItem)findViewById(R.id.openFileContextAction)).setEnabled(true);
+        ((MenuItem)findViewById(R.id.deleteFileContextAction)).setEnabled(true);
+      }
+    }
+  }
+
+  @Override
+  public boolean onContextItemSelected(MenuItem item) {
+    AdapterContextMenuInfo info = (AdapterContextMenuInfo)item.getMenuInfo();
+    DownloadableUHS tmpUHS = null;
+    File uhsFile = null;
+
+    switch (item.getItemId()) {
+      case R.id.openFileContextAction:
+        tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem(info.position);
+        if (tmpUHS.getName().length() == 0) {
+          // TODO: Complain.
+          return false;
+        }
+        uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
+        String uhsPath = uhsFile.getPath();
+        if (!uhsFile.exists()) {
+          // TODO: Complain.
+          return false;
+        }
+        openFile(uhsPath);
+        return true;
+
+      case R.id.fetchFileContextAction:
+        tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem(info.position);
+        if (tmpUHS.getName().length() == 0) {
+          // TODO: Complain.
+          return false;
+        }
+        uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
+
+        // TODO: Integrate UrlFetcher into UHSFetcher (which doesn'tcurrently fetch, only unzips).
+        //byte[] uhsBytes = UHSFetcher.fetchUHS(tmpUHS);
+        //UHSFetcher.saveBytes(uhsFile.getPath(), uhsBytes);
+        //Update the UI.
+        return true;
+
+      case R.id.deleteFileContextAction:
+        tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem(info.position);
+        if (tmpUHS.getName().length() == 0) {
+          // TODO: Complain.
+          return false;
+        }
+        uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
+        if (uhsFile.exists()) uhsFile.delete();
+        return true;
+
+      default:
+        return super.onContextItemSelected(item);
+    }
+}
+
+
+  private void fetchCatalog() {
+    if (catalogFetcher != null && catalogFetcher.getStatus() == UrlFetcher.DOWNLOADING) {
+      catalogFetcher.cancel();
+      progressDlg.dismiss();
+    }
+
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        progressDlg.setProgress(0);
+        progressDlg.setMessage("Fetching Catalog...");
+        progressDlg.show();
+
+        catalogFetcher = new UrlFetcher(UHSFetcher.getCatalogUrl());
+          catalogFetcher.setErrorHandler(errorHandler);
+          catalogFetcher.setUserAgent(UHSFetcher.getUserAgent());
+          catalogFetcher.addObserver(DownloaderActivity.this);
+          catalogFetcher.download();
+      }
+    });
   }
 
 
   /**
    * Triggers a callback when an Observable changes.
    */
+  @Override
   public void update(Observable obj, Object arg) {
     if (obj == catalogFetcher) {
       UrlFetcher urlFetcher = (UrlFetcher)obj;
@@ -98,33 +225,50 @@ public class DownloaderActivity extends Activity implements Observer {
             }
 
             runOnUiThread(new Runnable() {
+              @Override
               public void run() {
                 catalog.get(1).setColor(android.graphics.Color.GREEN);
                 catalogListView.setAdapter(new DownloadableUHSArrayAdapter(DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog));
-                catalogFetchDlg.dismiss();
+                progressDlg.dismiss();
               }
             });
           }
         } else {
           runOnUiThread(new Runnable() {
+            @Override
             public void run() {
               tv.setText("Could not fetch catalog");
-              catalogFetchDlg.dismiss();
+              progressDlg.dismiss();
             }
           });
         }
       }
       else if (status == UrlFetcher.DOWNLOADING) {
-        catalogFetchDlg.setProgress((int)urlFetcher.getProgress());
+        progressDlg.setProgress((int)urlFetcher.getProgress());
       }
       else {
         runOnUiThread(new Runnable() {
+          @Override
           public void run() {
-            catalogFetchDlg.dismiss();
+            progressDlg.dismiss();
           }
         });
       }
     }
+  }
+
+
+  /**
+   * Opens a given file in the reader.
+   *
+   * @param uhsPath an absolute path to a UHS file.
+   */
+  public void openFile(String uhsPath) {
+    Intent intent = new Intent().setClass(this, ReaderActivity.class);
+    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | IntentCompat.FLAG_ACTIVITY_CLEAR_TASK | IntentCompat.FLAG_ACTIVITY_TASK_ON_HOME);
+    intent.putExtra(ReaderActivity.EXTRA_OPEN_FILE, uhsPath);
+    this.startActivity(intent);
+    finish();
   }
 
 /*

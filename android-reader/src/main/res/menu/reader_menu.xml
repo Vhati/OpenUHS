@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="net.vhati.openuhs.androidreader.ReaderActivity" >
+
+    <item android:id="@+id/showAllHintsAction"
+          android:title="@string/action_show_all_hints"
+          android:checkable="true"
+          tools:showAsAction="ifRoom" />
+
+    <item android:id="@+id/switchToDownloaderAction"
+          android:title="@string/action_switch_to_downloader"
+          android:icon="@drawable/ic_view_list_normal_24dp"
+          tools:showAsAction="ifRoom" />
+
+</menu>
