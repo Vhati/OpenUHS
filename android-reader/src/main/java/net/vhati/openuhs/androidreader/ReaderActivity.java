@@ -53,14 +53,13 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 
   private List<UHSNode> historyArray = new ArrayList<UHSNode>();
   private List<UHSNode> futureArray = new ArrayList<UHSNode>();
+  private boolean showAllOverride = false;
+
+  private TextView questionLbl = null;
   private ImageButton backBtn = null;
   private ImageButton forwardBtn = null;
-
-  private TextView titleLabel = null;
-  private TextView questionLabel = null;
-  private TextView showLabel = null;
+  private TextView shownHintsCountLbl = null;
   private ImageButton showNextBtn = null;
-  private MenuItem showAllBox = null;
 
   private ReaderActivity navCtrl = this;
   private UHSNode dummyNode = new UHSNode("Blank");
@@ -77,11 +76,11 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
     toolbar.setTitle("");  // Ensure it's non-null so support will defer its text to Toolbar.
     this.setSupportActionBar(toolbar);
 
-    questionLabel = (TextView)findViewById(R.id.questionText);
+    questionLbl = (TextView)findViewById(R.id.questionLbl);
     backBtn = (ImageButton)findViewById(R.id.backBtn);
     forwardBtn = (ImageButton)findViewById(R.id.forwardBtn);
+    shownHintsCountLbl = (TextView)findViewById(R.id.shownHintsCountLbl);
     showNextBtn = (ImageButton)findViewById(R.id.showNextBtn);
-    showAllBox = (MenuItem)findViewById(R.id.showAllHintsAction);
 
     backBtn.setEnabled(false);
     forwardBtn.setEnabled(false);
@@ -174,10 +173,10 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
   public boolean onOptionsItemSelected(MenuItem item) {
     switch (item.getItemId()) {
       case R.id.showAllHintsAction:
-        boolean b = !item.isChecked();
-        item.setChecked(b);
+        showAllOverride = !item.isChecked();
+        item.setChecked(showAllOverride);
 
-        if (b) {  // Reveal all hints if it is now checked.
+        if (showAllOverride) {  // Reveal all hints here if it is now checked.
           while (showNext() != false);
         }
         return true;
@@ -224,7 +223,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
     forwardBtn.setEnabled(false);
     //findBtn.setEnabled(false);
 
-    showLabel.setText("");
+    shownHintsCountLbl.setText("");
     showNextBtn.setEnabled(false);
 
     rootNode = null;
@@ -299,12 +298,12 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 
 
     currentNode = newNode;
-    boolean showAll = false;
+    boolean needToShowAll = false;
 
     if (currentNode == rootNode) {
-      questionLabel.setText("");
+      questionLbl.setText("");
       setReaderTitle((String)currentNode.getContent());
-      showAll = true;
+      needToShowAll = true;
     }
     else {
       if (currentNode.getContentType() == UHSNode.STRING) {
@@ -320,19 +319,19 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
         else {
           questionBuf.append((String)currentNode.getContent());
         }
-        questionLabel.setText(questionBuf.toString());
+        questionLbl.setText(questionBuf.toString());
       }
       else {
-        questionLabel.setText("");
+        questionLbl.setText("");
       }
-      showAll = showAllBox.isChecked();
     }
-    nodeAdapter.setNode(newNode, showAll);
+    needToShowAll = (needToShowAll || showAllOverride);
+    nodeAdapter.setNode(newNode, needToShowAll);
 
     scrollTo(SCROLL_IF_INCOMPLETE);
 
     boolean complete = nodeAdapter.isComplete();
-    showLabel.setText("Hint "+ (complete ? currentNode.getChildCount() : currentNode.getRevealedAmount()) +"/"+ currentNode.getChildCount());
+    shownHintsCountLbl.setText(String.format("%d/%d", (complete ? currentNode.getChildCount() : currentNode.getRevealedAmount()), currentNode.getChildCount()));
     showNextBtn.setEnabled(!complete);
 
     nodeAdapter.notifyDataSetChanged();
@@ -392,7 +391,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
     } else {
       int hintCount = currentNode.getChildCount();
       if ((revealedIndex+1) == hintCount) showNextBtn.setEnabled(false);
-      showLabel.setText("Hint "+ (revealedIndex+1) +"/"+ hintCount);
+      shownHintsCountLbl.setText(String.format("%d/%d", (revealedIndex+1), hintCount));
       return true;
     }
   }

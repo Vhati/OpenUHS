@@ -11,7 +11,11 @@ import java.io.OutputStream;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
+import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -21,11 +25,14 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.TextView;
-import android.widget.ListView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import android.support.v4.content.IntentCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -36,10 +43,13 @@ import net.vhati.openuhs.androidreader.AndroidUHSErrorHandler;
 import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
 import net.vhati.openuhs.androidreader.downloader.DownloadableUHSArrayAdapter;
 import net.vhati.openuhs.androidreader.downloader.UHSFetcher;
+import net.vhati.openuhs.androidreader.downloader.UHSFetchTask;
+import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchObserver;
+import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchResult;
 import net.vhati.openuhs.androidreader.downloader.UrlFetcher;
 
 
-public class DownloaderActivity extends AppCompatActivity implements Observer {
+public class DownloaderActivity extends AppCompatActivity implements Observer, UHSFetchTask.UHSFetchObserver {
   private static final int CATALOG_COLOR_REMOTE = android.graphics.Color.BLACK;
   private static final int CATALOG_COLOR_LOCAL = android.graphics.Color.DKGRAY;
   private static final int CATALOG_COLOR_NEWER = android.graphics.Color.LTGRAY;
@@ -50,7 +60,7 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
 
   private AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler("OpenUHS");
   private UrlFetcher catalogFetcher = null;
-  private UrlFetcher uhsFetcher = null;
+  private final UHSFetchTask uhsFetchTask = new UHSFetchTask(this, this);
 
   private ProgressDialog progressDlg = null;
 
@@ -78,14 +88,43 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
     catalogListView = (ListView)findViewById(R.id.catalogList);
     this.registerForContextMenu(catalogListView);
 
+    catalogListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+      public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        DownloadableUHS tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem(position);
+        File uhsFile = null;
+
+        if (tmpUHS != null && tmpUHS.getName().length() > 0) {
+          uhsFile = new File(DownloaderActivity.this.getExternalFilesDir(null), tmpUHS.getName());
+        }
+        if (uhsFile != null && uhsFile.exists()) {
+          openFile(uhsFile.getPath());
+        } else {
+          view.showContextMenu();
+        }
+      }
+    });
+
     UHSFetcher.setErrorHandler(errorHandler);
 
     progressDlg = new ProgressDialog(this);
       progressDlg.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-      progressDlg.setIndeterminate(false);
+      progressDlg.setIndeterminate(true);
       progressDlg.setMax(100);
       progressDlg.setCancelable(false);
       progressDlg.setMessage("...");
+
+    progressDlg.setOnCancelListener(new DialogInterface.OnCancelListener() {
+      @Override
+      public void onCancel(DialogInterface dialog) {
+        if (catalogFetcher != null && catalogFetcher.getStatus() == UrlFetcher.DOWNLOADING) {
+          catalogFetcher.cancel();
+        }
+        if (AsyncTask.Status.RUNNING.equals(uhsFetchTask.getStatus())) {
+          uhsFetchTask.cancel(true);
+        }
+        progressDlg.dismiss();
+      }
+    });
   }
 
 
@@ -118,10 +157,12 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
       MenuInflater inflater = getMenuInflater();
       inflater.inflate(R.menu.downloader_context_menu, menu);
 
+      menu.setHeaderTitle(tmpUHS.getName());
+
       File uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
       if (uhsFile.exists()) {
-        ((MenuItem)findViewById(R.id.openFileContextAction)).setEnabled(true);
-        ((MenuItem)findViewById(R.id.deleteFileContextAction)).setEnabled(true);
+        menu.findItem(R.id.openFileContextAction).setEnabled(true);
+        menu.findItem(R.id.deleteFileContextAction).setEnabled(true);
       }
     }
   }
@@ -156,10 +197,9 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
         }
         uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
 
-        // TODO: Integrate UrlFetcher into UHSFetcher (which doesn'tcurrently fetch, only unzips).
-        //byte[] uhsBytes = UHSFetcher.fetchUHS(tmpUHS);
-        //UHSFetcher.saveBytes(uhsFile.getPath(), uhsBytes);
-        //Update the UI.
+        if (!uhsFile.exists()) {
+          uhsFetchTask.execute(tmpUHS);
+        }
         return true;
 
       case R.id.deleteFileContextAction:
@@ -169,7 +209,11 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
           return false;
         }
         uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
-        if (uhsFile.exists()) uhsFile.delete();
+        if (uhsFile.exists()) {
+          uhsFile.delete();
+          colorizeCatalogRow(tmpUHS);
+          ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).notifyDataSetChanged();
+        }
         return true;
 
       default:
@@ -183,19 +227,25 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
       catalogFetcher.cancel();
       progressDlg.dismiss();
     }
+    if (AsyncTask.Status.RUNNING.equals(uhsFetchTask.getStatus())) {
+      uhsFetchTask.cancel(true);
+      progressDlg.dismiss();
+    }
 
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
+        progressDlg.setCancelable(false);
+        progressDlg.setIndeterminate(true);
         progressDlg.setProgress(0);
         progressDlg.setMessage("Fetching Catalog...");
         progressDlg.show();
 
         catalogFetcher = new UrlFetcher(UHSFetcher.getCatalogUrl());
-          catalogFetcher.setErrorHandler(errorHandler);
-          catalogFetcher.setUserAgent(UHSFetcher.getUserAgent());
-          catalogFetcher.addObserver(DownloaderActivity.this);
-          catalogFetcher.download();
+        catalogFetcher.setErrorHandler(errorHandler);
+        catalogFetcher.setUserAgent(UHSFetcher.getUserAgent());
+        catalogFetcher.addObserver(DownloaderActivity.this);
+        catalogFetcher.download();
       }
     });
   }
@@ -213,26 +263,16 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
         byte[] catalogBytes = urlFetcher.getReceivedBytes();
         if (catalogBytes != null && catalogBytes.length > 0) {
           final List<DownloadableUHS> catalog = UHSFetcher.parseCatalog(catalogBytes);
-          if (catalog.size() > 0) {
-            int catalogSize = catalog.size();
-            for (int i=0; i < catalogSize; i++) {
-              DownloadableUHS tmpUHS = catalog.get(i);
-              if (tmpUHS.getName().length() > 0) {
-                File uhsFile = new File(getExternalFilesDir(null), tmpUHS.getName());
-                if (uhsFile.exists()) tmpUHS.setColor(CATALOG_COLOR_LOCAL);
-                else tmpUHS.setColor(CATALOG_COLOR_REMOTE);
-              }
-            }
-
-            runOnUiThread(new Runnable() {
-              @Override
-              public void run() {
-                catalog.get(1).setColor(android.graphics.Color.GREEN);
+          runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+              if (catalog.size() > 0) {
+                colorizeCatalog(catalog);
                 catalogListView.setAdapter(new DownloadableUHSArrayAdapter(DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog));
                 progressDlg.dismiss();
               }
-            });
-          }
+            }
+          });
         } else {
           runOnUiThread(new Runnable() {
             @Override
@@ -244,6 +284,7 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
         }
       }
       else if (status == UrlFetcher.DOWNLOADING) {
+        progressDlg.setIndeterminate(false);
         progressDlg.setProgress((int)urlFetcher.getProgress());
       }
       else {
@@ -255,6 +296,61 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
         });
       }
     }
+  }
+
+  @Override
+  public void uhsFetchStarted() {
+    progressDlg.setCancelable(true);
+    progressDlg.setIndeterminate(true);
+    progressDlg.setMessage("...");
+    progressDlg.setProgress(0);
+    progressDlg.show();
+  }
+
+  @Override
+  public void uhsFetchUpdate(int progress) {
+    progressDlg.setIndeterminate(false);
+    progressDlg.setMax(100);
+    progressDlg.setProgress(progress);
+  }
+
+  @Override
+  public void uhsFetchEnded(UHSFetchTask.UHSFetchResult fetchResult) {
+    // This won't run if cancelled.
+
+    progressDlg.dismiss();
+    if (fetchResult.status == UHSFetchResult.STATUS_COMPLETED) {
+      Toast.makeText(this, "Download completed: "+ fetchResult.file.getName(), Toast.LENGTH_SHORT);
+    }
+    else {
+      if (fetchResult.status != UHSFetchResult.STATUS_CANCELLED) {
+        String message = (fetchResult.message != null) ? fetchResult.message : "Unknown error";
+        Toast.makeText(this, "Download failed: "+ message, Toast.LENGTH_LONG);
+      }
+      if (fetchResult.file != null && fetchResult.file.exists()) {
+        fetchResult.file.delete();
+      }
+    }
+    colorizeCatalogRow(fetchResult.duh);
+    ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).notifyDataSetChanged();
+  }
+
+
+  public void colorizeCatalog(List<DownloadableUHS> catalog) {
+    for (DownloadableUHS tmpUHS : catalog) {
+      colorizeCatalogRow(tmpUHS);
+    }
+  }
+
+  public void colorizeCatalogRow(DownloadableUHS tmpUHS) {
+    int c = CATALOG_COLOR_REMOTE;
+    if (tmpUHS.getName().length() > 0) {
+      File uhsFile = new File(getExternalFilesDir(null), tmpUHS.getName());
+      if (uhsFile.exists()) {
+        c = CATALOG_COLOR_LOCAL;
+      }
+    }
+    tmpUHS.setColor(c);
   }
 
 
@@ -270,31 +366,4 @@ public class DownloaderActivity extends AppCompatActivity implements Observer {
     this.startActivity(intent);
     finish();
   }
-
-/*
-  // This is broken.
-
-  private void testNewFile() {
-    // getExternalFilesDir(null) resolves to:
-    //   /sdcard/Android/data/com.myexample.myandroid/files/
-    // It'll be deleted when this app is uninstalled.
-
-    File file = new File(getExternalFilesDir(null), "DemoFile.png");
-    if (file.exists()) return;
-
-    try {
-      InputStream is = getResources().openRawResource(R.drawable.ic_tab_mic_grey);
-      OutputStream os = new FileOutputStream(file);
-      byte[] data = new byte[is.available()];
-      is.read(data);
-      os.write(data);
-      is.close();
-      os.close();
-    }
-    catch (IOException e) {
-      // External storage probably wasn't mounted
-      Log.w("ExternalStorage", "Error writing " + file, e);
-    }
-  }
-*/
 }
