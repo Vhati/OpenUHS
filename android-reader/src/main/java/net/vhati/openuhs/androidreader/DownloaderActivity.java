@@ -320,7 +320,7 @@ public class DownloaderActivity extends AppCompatActivity implements Observer, U
 
     progressDlg.dismiss();
     if (fetchResult.status == UHSFetchResult.STATUS_COMPLETED) {
-      Toast.makeText(this, "Download completed: "+ fetchResult.file.getName(), Toast.LENGTH_SHORT).show();
+      Toast.makeText(this, "Saved "+ fetchResult.file.getName(), Toast.LENGTH_SHORT).show();
     }
     else {
       if (fetchResult.status != UHSFetchResult.STATUS_CANCELLED) {
