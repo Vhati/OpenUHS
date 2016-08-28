@@ -320,12 +320,12 @@ public class DownloaderActivity extends AppCompatActivity implements Observer, U
 
     progressDlg.dismiss();
     if (fetchResult.status == UHSFetchResult.STATUS_COMPLETED) {
-      Toast.makeText(this, "Download completed: "+ fetchResult.file.getName(), Toast.LENGTH_SHORT);
+      Toast.makeText(this, "Download completed: "+ fetchResult.file.getName(), Toast.LENGTH_SHORT).show();
     }
     else {
       if (fetchResult.status != UHSFetchResult.STATUS_CANCELLED) {
         String message = (fetchResult.message != null) ? fetchResult.message : "Unknown error";
-        Toast.makeText(this, "Download failed: "+ message, Toast.LENGTH_LONG);
+        Toast.makeText(this, "Download failed: "+ message, Toast.LENGTH_LONG).show();
       }
       if (fetchResult.file != null && fetchResult.file.exists()) {
         fetchResult.file.delete();
