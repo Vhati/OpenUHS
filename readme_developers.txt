@@ -140,7 +140,7 @@ About Gradle
 
   The Android plugin is... more elaborate. A project can have multiple flavors (e.g., paid & free), each flavor with multiple build-types (debug & release). (Conceivably 'flavor groups' could multiply things further.) Each combination is called a build-variant, and the plugin dynamically generates tasks for it (e.g., "assembleDebug" & "assembleRelease").
 
-  The android plugin also defines the following tasks to (re)install/delete the app on a running [virtual] device.
+  The android plugin also defines the following tasks to (re)install/delete the app on a running [virtual] device. Reinstalling will preserve files on the device, which would have otherwise been deleted during an uninstall.
 
   gradle installDebug
   gradle installRelease
@@ -150,3 +150,9 @@ About Gradle
   The android plugin doesn't run the app once it's there, so a custom task fills the role.
 
   gradle runAndroidReader - Runs the android reader on a device. (Debug variant)
+
+
+Android Notes
+
+  anyContext.getExternalFilesDir(null) resolves to:
+    /sdcard/Android/data/net.vhati.openuhs.androidreader/files/

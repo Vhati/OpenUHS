@@ -14,7 +14,6 @@ import java.util.zip.ZipEntry;
 
 import android.content.Context;
 import android.os.AsyncTask;
-import android.os.PowerManager;
 
 import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
 
@@ -25,16 +24,27 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
   // It reports the second generic, [a percentage], to onProgressUpdate().
   // It returns the third generic [result] to onPostExecute().
 
-  private String userAgent = "UHSWIN/5.2";
   private Context context;
-  private PowerManager.WakeLock wakeLock;
 
-  private UHSFetchObserver delegate;
+  private UHSFetchObserver delegate = null;
+  private String userAgent = System.getProperty("http.agent");
 
 
-  public UHSFetchTask(Context context, UHSFetchObserver delegate) {
+  public UHSFetchTask(Context context) {
     this.context = context;
+  }
+
+
+  public void setObserver(UHSFetchObserver delegate) {
     this.delegate = delegate;
+  }
+
+  public void setUserAgent(String s) {
+    this.userAgent = s;
+  }
+
+  public String getUserAgent() {
+    return userAgent;
   }
 
 
@@ -121,22 +131,18 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
   @Override
   protected void onPreExecute() {
     super.onPreExecute();
-    //PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
-    //wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, this.getClass().getName());
-    //wakeLock.acquire();
     delegate.uhsFetchStarted();
   }
 
   @Override
   protected void onProgressUpdate(Integer... progress) {
     super.onProgressUpdate(progress);
-    delegate.uhsFetchUpdate(progress[0].intValue());
+    if (delegate != null) delegate.uhsFetchUpdate(progress[0].intValue());
   }
 
   @Override
   protected void onPostExecute(UHSFetchResult fetchResult) {
-    //wakeLock.release();
-    delegate.uhsFetchEnded(fetchResult);
+    if (delegate != null) delegate.uhsFetchEnded(fetchResult);
   }
 
 
