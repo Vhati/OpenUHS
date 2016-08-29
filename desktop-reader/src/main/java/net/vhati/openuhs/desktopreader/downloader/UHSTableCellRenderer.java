@@ -5,11 +5,14 @@ import java.awt.Component;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
 
 
 public class UHSTableCellRenderer extends DefaultTableCellRenderer {
+  private Color localColor = new Color(225, 225, 225);
+  private Color newerColor = new Color(255, 255, 200);
+
   Color normalUnselColor = null;
 
 
@@ -21,21 +24,24 @@ public class UHSTableCellRenderer extends DefaultTableCellRenderer {
 
   @Override
   public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-    Component c = super.getTableCellRendererComponent(table,value,isSelected,hasFocus,row,column);
+    Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-    boolean custom = false;
-    if (!isSelected && table != null && table.getModel() instanceof DownloadableUHSTableModel) {
-      DownloadableUHSTableModel model = (DownloadableUHSTableModel)table.getModel();
+    if (table != null && table.getModel() instanceof DownloadableUHSTableModel) {
+      if (!isSelected) {
+        DownloadableUHSTableModel model = (DownloadableUHSTableModel)table.getModel();
+        DownloadableUHS tmpUHS = model.getUHS(row);
+        Color rowColor = normalUnselColor;
 
-      DownloadableUHS tmpUHS = model.getUHS(row);
-      if (tmpUHS != null && tmpUHS.getColor() != null) {
-        c.setBackground(tmpUHS.getColor());
-        custom = true;
+        if (tmpUHS != null) {
+          if (tmpUHS.isNewer()) {
+            rowColor = newerColor;
+          }
+          else if (tmpUHS.isLocal()) {
+            rowColor = localColor;
+          }
+        }
+        c.setBackground(rowColor);
       }
-    }
-
-    if (!isSelected && !custom) {
-      c.setBackground(normalUnselColor);
     }
 
     return c;

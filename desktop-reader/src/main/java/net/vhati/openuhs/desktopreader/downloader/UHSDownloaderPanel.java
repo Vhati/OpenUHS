@@ -12,6 +12,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import javax.swing.AbstractAction;
@@ -35,18 +36,15 @@ import javax.swing.event.ListSelectionListener;
 
 import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.desktopreader.AppliablePanel;
 import net.vhati.openuhs.desktopreader.Nerfable;
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
 import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
 import net.vhati.openuhs.desktopreader.downloader.UHSTableCellRenderer;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
 public class UHSDownloaderPanel extends JPanel implements ActionListener {
-  public static Color EXISTS_COLOR = new Color(225, 225, 225);
-  public static Color NEWER_COLOR = new Color(255, 255, 200);
-
   private UHSErrorHandler errorHandler = null;
 
   private UHSDownloaderPanel pronoun = this;
@@ -262,14 +260,16 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
     for (int i=0; i < uhsTableModel.getRowCount(); i++) {
       DownloadableUHS tmpUHS = uhsTableModel.getUHS(i);
+      tmpUHS.resetState();
 
       if (Arrays.binarySearch(hintNames, tmpUHS.getName()) >= 0) {
-        File tmpFile = new File( hintsPath +"/"+ tmpUHS.getName() );
-        String tmpDate = new java.sql.Date(tmpFile.lastModified()).toString();
-        if (tmpUHS.hasFixedDate() && tmpUHS.getDate().compareTo(tmpDate) > 0)
-          tmpUHS.setColor(NEWER_COLOR);
-        else
-          tmpUHS.setColor(EXISTS_COLOR);
+        tmpUHS.setLocal(true);
+        File uhsFile = new File(hintsPath +"/"+ tmpUHS.getName());
+        Date localDate = new Date(uhsFile.lastModified());
+
+        if (tmpUHS.getDate().after(localDate)) {
+          tmpUHS.setNewer(true);
+        }
       }
     }
     uhsTable.repaint();

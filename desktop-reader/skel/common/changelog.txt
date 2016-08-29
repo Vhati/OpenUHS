@@ -6,6 +6,7 @@
  - Added an experimental Android reader.
  - Added a tar distribution for OSX/Linux with launcher scripts.
  - License changed to GPLv3.
+ - Added CatalogParser and DownloadableUHS to the core library.
 
 ## [0.6.7]  (Unreleased)
  - Moved printNode() from the parser to become a method in UHSNode objects.

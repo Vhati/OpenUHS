@@ -1,10 +1,12 @@
-package net.vhati.openuhs.androidreader.downloader;
+package net.vhati.openuhs.core.downloader;
 
 import java.util.Date;
 
 
 /**
  * Catalog info about a UHS catalog entry (and its local file).
+ *
+ * 
  */
 public class DownloadableUHS {
   private String title = "";
@@ -24,7 +26,7 @@ public class DownloadableUHS {
 
 
   public void setTitle(String s) {
-    title = (s != null ? s : "");
+    title = ((s != null) ? s : "");
   }
 
   public String getTitle() {
@@ -32,7 +34,7 @@ public class DownloadableUHS {
   }
 
   public void setUrl(String s) {
-    url = (s != null ? s : "");
+    url = ((s != null) ? s : "");
   }
 
   public String getUrl() {
@@ -40,7 +42,7 @@ public class DownloadableUHS {
   }
 
   public void setName(String s) {
-    name = (s != null ? s : "");
+    name = ((s != null) ? s : "");
   }
 
   public String getName() {
@@ -56,7 +58,7 @@ public class DownloadableUHS {
   }
 
   public void setCompressedSize(String s) {
-    compressedSize = (s != null ? s : "");
+    compressedSize = ((s != null) ? s : "");
   }
 
   public String getCompressedSize() {
@@ -64,7 +66,7 @@ public class DownloadableUHS {
   }
 
   public void setFullSize(String s) {
-    fullSize = (s != null ? s : "");
+    fullSize = ((s != null) ? s : "");
   }
 
   public String getFullSize() {
@@ -74,6 +76,8 @@ public class DownloadableUHS {
 
   /**
    * Sets whether there is a local file with this catalog entry's name.
+   *
+   * @see resetState()
    */
   public void setLocal(boolean b) {
     stateLocal = b;
@@ -85,6 +89,8 @@ public class DownloadableUHS {
 
   /**
    * Sets whether the catalog entry is newer than the local file.
+   *
+   * @see resetState()
    */
   public void setNewer(boolean b) {
     stateNewer = b;
@@ -94,6 +100,12 @@ public class DownloadableUHS {
     return stateNewer;
   }
 
+  /**
+   * Resets the catalog-vs-local state flage.
+   *
+   * @see setLocal(boolean)
+   * @see setNewer(boolean)
+   */
   public void resetState() {
     setLocal(false);
     setNewer(false);

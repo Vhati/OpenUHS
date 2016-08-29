@@ -15,7 +15,7 @@ import java.util.zip.ZipEntry;
 import android.content.Context;
 import android.os.AsyncTask;
 
-import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
 public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTask.UHSFetchResult> {
@@ -24,14 +24,14 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
   // It reports the second generic, [a percentage], to onProgressUpdate().
   // It returns the third generic [result] to onPostExecute().
 
-  private Context context;
-
   private UHSFetchObserver delegate = null;
   private String userAgent = System.getProperty("http.agent");
 
+  private File destDir;
 
-  public UHSFetchTask(Context context) {
-    this.context = context;
+
+  public UHSFetchTask(File destDir) {
+    this.destDir = destDir;
   }
 
 
@@ -88,7 +88,7 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 
         // Presumably ze.getName().equals(tmpUHS.getName()).
 
-        uhsFile = new File(context.getExternalFilesDir(null), tmpUHS.getName());
+        uhsFile = new File(destDir, tmpUHS.getName());
         fetchResult.file = uhsFile;
         os = new FileOutputStream(uhsFile);
 

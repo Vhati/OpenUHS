@@ -7,6 +7,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
@@ -14,9 +15,9 @@ import javax.swing.JTable;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.desktopreader.Nerfable;
 import net.vhati.openuhs.desktopreader.SettingsPanel;
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
 import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
 import net.vhati.openuhs.desktopreader.downloader.UHSDownloaderPanel;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
@@ -61,7 +62,7 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
           int row = tmpTable.getSelectedRow();
           if (row == -1) return;
           DownloadableUHS tmpUHS = ((DownloadableUHSTableModel)tmpTable.getModel()).getUHS(row);
-          java.io.File tmpFile = new java.io.File( HINTS_PATH +"/"+ tmpUHS.getName() );
+          File tmpFile = new File( HINTS_PATH +"/"+ tmpUHS.getName() );
           if (tmpFile.exists()) {
             tabbedPane.setSelectedIndex(tabbedPane.indexOfTab("Reader"));
             readerPanel.openFile(tmpFile.getPath());

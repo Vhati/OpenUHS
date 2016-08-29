@@ -1,21 +1,25 @@
 package net.vhati.openuhs.desktopreader.downloader;
 
-import javax.swing.table.AbstractTableModel;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
+import javax.swing.table.AbstractTableModel;
 
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
 public class DownloadableUHSTableModel extends AbstractTableModel {
-  public static int SORT_TITLE = 0;
-  public static int SORT_DATE = 1;
-  public static int SORT_FULLSIZE = 2;
-  public static int SORT_NAME = 3;
+  public static final int SORT_TITLE = 0;
+  public static final int SORT_DATE = 1;
+  public static final int SORT_FULLSIZE = 2;
+  public static final int SORT_NAME = 3;
 
   private int sortOrder = SORT_TITLE;
+  private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
   List<DownloadableUHS> dataVector = new Vector<DownloadableUHS>();
   List<String> colVector = new Vector<String>();
 
@@ -51,7 +55,8 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
       value = dataVector.get(row).getName();
     }
     else if (getColumnName(column).equals("Date")) {
-      value = dataVector.get(row).getDate();
+      Date uhsDate = dataVector.get(row).getDate();
+      value = ((uhsDate != null) ? dateFormat.format(dataVector.get(row).getDate()) : "");
     }
     else if (getColumnName(column).equals("Size")) {
       value = dataVector.get(row).getCompressedSize();
@@ -116,10 +121,12 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
           if (sortOrder == SORT_DATE) return a.getDate().compareTo(b.getDate()) * -1;
           if (sortOrder == SORT_FULLSIZE) {
             if (a.getFullSize().matches("^[0-9]+$") && b.getFullSize().matches("^[0-9]+$")) {
-              if (a.getFullSize().length() > b.getFullSize().length())
-                return 1;
-              if (a.getFullSize().length() < b.getFullSize().length())
-                return -1;
+              if (a.getFullSize().length() == b.getFullSize().length()) {
+                return a.getFullSize().compareTo(b.getFullSize());
+              }
+              else {
+                return ((a.getFullSize().length() > b.getFullSize().length()) ? 1 : -1);
+              }
             }
             return a.getFullSize().compareTo(b.getFullSize());
           }

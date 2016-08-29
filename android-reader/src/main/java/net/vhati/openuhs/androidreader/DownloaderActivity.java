@@ -33,8 +33,6 @@ import android.support.v7.widget.Toolbar;
 
 import net.vhati.openuhs.androidreader.R;
 import net.vhati.openuhs.androidreader.AndroidUHSErrorHandler;
-import net.vhati.openuhs.androidreader.downloader.CatalogParser;
-import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
 import net.vhati.openuhs.androidreader.downloader.DownloadableUHSArrayAdapter;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchObserver;
@@ -42,6 +40,8 @@ import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchResult;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchObserver;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchResult;
+import net.vhati.openuhs.core.downloader.CatalogParser;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
 public class DownloaderActivity extends AppCompatActivity implements UHSFetchObserver {
@@ -217,7 +217,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
   private void fetchUHS(DownloadableUHS duh) {
     cancelFetching();
 
-    uhsFetchTask = new UHSFetchTask(this);
+    uhsFetchTask = new UHSFetchTask(this.getExternalFilesDir(null));
     uhsFetchTask.setUserAgent(CatalogParser.DEFAULT_USER_AGENT);
     uhsFetchTask.execute(duh);
   }

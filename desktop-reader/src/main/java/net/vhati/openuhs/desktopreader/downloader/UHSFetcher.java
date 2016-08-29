@@ -25,15 +25,18 @@ import javax.swing.ProgressMonitorInputStream;
 
 import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandlerManager;
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.CatalogParser;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
 /**
  * A collection of utility methods for downloading/saving files and parsing the official UHS catalog.
  */
 public class UHSFetcher {
-  public static String catalogUrl = "http://www.uhs-hints.com:80/cgi-bin/update.cgi";
-  public static String userAgent = "UHSWIN/5.2";
+  public static String catalogUrl = CatalogParser.DEFAULT_CATALOG_URL;
+  public static String userAgent = CatalogParser.DEFAULT_USER_AGENT;
+
+  private static CatalogParser catalogParser = new CatalogParser();
 
 
   /**
@@ -55,7 +58,7 @@ public class UHSFetcher {
       URLConnection connection = url.openConnection();
       if (connection instanceof HttpURLConnection) {
         HttpURLConnection httpConnection = (HttpURLConnection)connection;
-          httpConnection.addRequestProperty("User-Agent", userAgent);
+          httpConnection.setRequestProperty("User-Agent", userAgent);
           httpConnection.connect();
         int response = httpConnection.getResponseCode();
         if (response < 200 || response >= 300) {
@@ -142,51 +145,10 @@ public class UHSFetcher {
     byte[] responseBytes = fetchURL(parentComponent, "Fetching Catalog...", catalogUrl);
     if (responseBytes == null) return catalog;
 
-    String response = new String(responseBytes);
-    response = response.replaceAll("[\r\n]", "");
-
-    int length = response.length();
-    for (int i=0; i < length;) {
-      String fileChunk = parseChunk(response, "<FILE>", "</FILE>", i);
-      if (fileChunk == null) break;
-      i = response.indexOf("<FILE>", i) + 6 + fileChunk.length() + 7;
-
-      DownloadableUHS tmpUHS = new DownloadableUHS();
-        tmpUHS.setTitle( parseChunk(fileChunk, "<FTITLE>", "</FTITLE>", 0) );
-
-        tmpUHS.setUrl( parseChunk(fileChunk, "<FURL>", "</FURL>", 0) );
-
-        tmpUHS.setName( parseChunk(fileChunk, "<FNAME>", "</FNAME>", 0) );
-
-        tmpUHS.setDate( parseChunk(fileChunk, "<FDATE>", "</FDATE>", 0) );
-
-        tmpUHS.setCompressedSize( parseChunk(fileChunk, "<FSIZE>", "</FSIZE>", 0) );
-
-        tmpUHS.setFullSize( parseChunk(fileChunk, "<FFULLSIZE>", "</FFULLSIZE>", 0) );
-
-      catalog.add(tmpUHS);
-    }
+    String catalogString = new String(responseBytes);
+    catalog = catalogParser.parseCatalog(catalogString);
 
     return catalog;
-  }
-
-
-  /**
-   * Extracts a substring between known tokens.
-   * <br />This is used to parse the catalog's xml-like markup.
-   *
-   * @return the substring, or null if the tokens are not present.
-   */
-  private static String parseChunk(String line, String prefix, String suffix, int fromIndex) {
-    int start = line.indexOf(prefix, fromIndex);
-    if (start == -1) return null;
-    start += prefix.length();
-    int end = line.indexOf(suffix, start);
-    if (end == -1) return null;
-
-    if (end - start < 0) return null;
-    String tmp = line.substring(start, end);
-    return tmp;
   }
 
 

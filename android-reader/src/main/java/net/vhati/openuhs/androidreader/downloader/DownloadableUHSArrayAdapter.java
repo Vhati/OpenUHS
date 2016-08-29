@@ -10,7 +10,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
 public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {

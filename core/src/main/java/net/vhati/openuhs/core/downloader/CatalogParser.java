@@ -1,4 +1,4 @@
-package net.vhati.openuhs.androidreader.downloader;
+package net.vhati.openuhs.core.downloader;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
 import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
 /**
