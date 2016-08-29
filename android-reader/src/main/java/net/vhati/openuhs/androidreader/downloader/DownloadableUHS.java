@@ -1,101 +1,107 @@
 package net.vhati.openuhs.androidreader.downloader;
 
+import java.util.Date;
+
 
 /**
- * Catalog info about a UHS file.
+ * Catalog info about a UHS catalog entry (and its local file).
  */
 public class DownloadableUHS {
-  private static String[] MONTHS = new String[] {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
-
   private String title = "";
   private String url = "";
   private String name = "";
-  private String date = "";
+  private Date date = null;
   private String compressedSize = "";
   private String fullSize = "";
-  private int color = -1;  // See android.graphics.Color
+
+  // Abstracting to avoid "java.awt.Color" vs "android.graphics.Color".
+  private boolean stateLocal = false;
+  private boolean stateNewer = false;
 
 
-  public DownloadableUHS() {}
+  public DownloadableUHS() {
+  }
 
-
-  public String getTitle() {return title;}
 
   public void setTitle(String s) {
-    if (s==null) title = "";
-    else title = s;
+    title = (s != null ? s : "");
   }
 
-
-  public String getUrl() {return url;}
+  public String getTitle() {
+    return title;
+  }
 
   public void setUrl(String s) {
-    if (s==null) url = "";
-    else url = s;
+    url = (s != null ? s : "");
   }
 
-
-  public String getName() {return name;}
+  public String getUrl() {
+    return url;
+  }
 
   public void setName(String s) {
-    if (s==null) name = "";
-    else name = s;
+    name = (s != null ? s : "");
   }
 
-
-  public String getDate() {return date;}
-
-  public void setDate(String s) {
-    if (s==null) date = "";
-
-    String tmpDate = fixDate(s);
-    if (tmpDate != null) date = tmpDate;
-    else date = s;
+  public String getName() {
+    return name;
   }
 
-  private String fixDate(String s) {
-    if (!s.matches("^[0-3][0-9]-[A-Z][a-z][a-z]-[0-9][0-9]$")) return null;
-
-    String[] parts = s.split("-");
-
-    int month = -1;
-    for (int i=0; i < MONTHS.length; i++) {
-      if (parts[1].equals(MONTHS[i])) {
-        month = i+1;
-        break;
-      }
-    }
-    if (month == -1) return null;
-
-    if (parts[2].matches("^[7-9].")) parts[2] = "19"+ parts[2];
-    else parts[2] = "20"+ parts[2];
-
-    return parts[2] +"-"+ (month<10?"0":"") + month +"-"+ parts[0];
+  public void setDate(Date d) {
+    date = d;
   }
 
-  public boolean hasFixedDate() {return getDate().matches("[0-9]{4}-[0-9]{2}-[0-9]{2}");}
-
-
-  public String getCompressedSize() {return compressedSize;}
+  public Date getDate() {
+    return date;
+  }
 
   public void setCompressedSize(String s) {
-    if (s==null) compressedSize = "";
-    else compressedSize = s;
+    compressedSize = (s != null ? s : "");
   }
 
-
-  public String getFullSize() {return fullSize;}
+  public String getCompressedSize() {
+    return compressedSize;
+  }
 
   public void setFullSize(String s) {
-    if (s==null) fullSize = "";
-    else fullSize = s;
+    fullSize = (s != null ? s : "");
+  }
+
+  public String getFullSize() {
+    return fullSize;
   }
 
 
-  public int getColor() {return color;}
+  /**
+   * Sets whether there is a local file with this catalog entry's name.
+   */
+  public void setLocal(boolean b) {
+    stateLocal = b;
+  }
 
-  public void setColor(int c) {color = c;}
+  public boolean isLocal() {
+    return stateLocal;
+  }
+
+  /**
+   * Sets whether the catalog entry is newer than the local file.
+   */
+  public void setNewer(boolean b) {
+    stateNewer = b;
+  }
+
+  public boolean isNewer() {
+    return stateNewer;
+  }
+
+  public void resetState() {
+    setLocal(false);
+    setNewer(false);
+  }
 
 
-  public String toString() {return getTitle();}
+  @Override
+  public String toString() {
+    return getTitle();
+  }
 }

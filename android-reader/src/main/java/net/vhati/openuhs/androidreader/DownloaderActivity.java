@@ -1,6 +1,7 @@
 package net.vhati.openuhs.androidreader;
 
 import java.io.File;
+import java.util.Date;
 import java.util.List;
 
 import android.app.Activity;
@@ -44,10 +45,6 @@ import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchRes
 
 
 public class DownloaderActivity extends AppCompatActivity implements UHSFetchObserver {
-  private static final int CATALOG_COLOR_REMOTE = android.graphics.Color.BLACK;
-  private static final int CATALOG_COLOR_LOCAL = android.graphics.Color.DKGRAY;
-  private static final int CATALOG_COLOR_NEWER = android.graphics.Color.LTGRAY;
-
   private Toolbar toolbar = null;
   private ListView catalogListView = null;
 
@@ -330,21 +327,35 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
   }
 
 
+  /**
+   * Updates state flags on all catalog entries.
+   *
+   * Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.
+   */
   public void colorizeCatalog(List<DownloadableUHS> catalog) {
     for (DownloadableUHS tmpUHS : catalog) {
       colorizeCatalogRow(tmpUHS);
     }
   }
 
+  /**
+   * Updates state flags on a catalog entry.
+   *
+   * Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.
+   */
   public void colorizeCatalogRow(DownloadableUHS tmpUHS) {
-    int c = CATALOG_COLOR_REMOTE;
+    tmpUHS.resetState();
+
     if (tmpUHS.getName().length() > 0) {
       File uhsFile = new File(getExternalFilesDir(null), tmpUHS.getName());
       if (uhsFile.exists()) {
-        c = CATALOG_COLOR_LOCAL;
+        tmpUHS.setLocal(true);
+
+        if (tmpUHS.getDate() != null && tmpUHS.getDate().after(new Date(uhsFile.lastModified()))) {
+            tmpUHS.setNewer(true);
+        }
       }
     }
-    tmpUHS.setColor(c);
   }
 
 

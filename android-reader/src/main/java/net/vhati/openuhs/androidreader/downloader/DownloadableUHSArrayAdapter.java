@@ -14,6 +14,10 @@ import net.vhati.openuhs.androidreader.downloader.DownloadableUHS;
 
 
 public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {
+  private int remoteColor = android.graphics.Color.BLACK;
+  private int localColor = android.graphics.Color.DKGRAY;
+  private int newerColor = android.graphics.Color.LTGRAY;
+
   private int resXmlId = -1;
   private int resImgId = -1;
   private int resLblId = -1;
@@ -24,6 +28,19 @@ public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {
     resXmlId = resource;
     resImgId = imageViewResourceId;
     resLblId = textViewResourceId;
+  }
+
+
+  public void setRemoteColor(int c) {
+    remoteColor = c;
+  }
+
+  public void setLocalColor(int c) {
+    localColor = c;
+  }
+
+  public void setNewerColor(int c) {
+    newerColor = c;
   }
 
 
@@ -41,7 +58,15 @@ public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {
     //if (position%2 == 0) icon.setImageResource(android.R.drawable.checkbox_on_background);
 
     icon.setImageResource(android.R.drawable.checkbox_off_background);
-    if (rowUHS.getColor() != -1) icon.setBackgroundColor(rowUHS.getColor());
+    if (rowUHS.isNewer()) {
+      icon.setBackgroundColor(newerColor);
+    }
+    else if (rowUHS.isLocal()) {
+      icon.setBackgroundColor(localColor);
+    }
+    else {
+      icon.setBackgroundColor(remoteColor);
+    }
 
     return row;
   }
