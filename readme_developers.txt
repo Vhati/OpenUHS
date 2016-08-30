@@ -147,12 +147,17 @@ About Gradle
   gradle uninstallDebug
   gradle uninstallRelease
 
-  The android plugin doesn't run the app once it's there, so a custom task fills the role.
+  Sidenote: the first attempt to communicate with a device will probably fail, as the adb daemon needs a few seconds to initially find devices. After that, you can repeatedly use installDebug to compile & send in one step.
+
+  The android plugin doesn't run the app once it's there, so a custom task fills the role. Manually clicking the app on the device is faster though.
 
   gradle runAndroidReader - Runs the android reader on a device. (Debug variant)
 
 
 Android Notes
 
-  anyContext.getExternalFilesDir(null) resolves to:
-    /sdcard/Android/data/net.vhati.openuhs.androidreader/files/
+  The *.uhs files downloaded by the app are kept in 'external' storage. It resolves to: "/sdcard/Android/data/net.vhati.openuhs.androidreader/files/".
+
+  The "adb" command is found in the Android SDK under "platform-tools/". With "adb", you can (un)install apks, transfer files, or run commands in the device's shell.
+
+  It can also dump the device's log: "adb logcat". The dump can be made less messy with filters: "adb logcat -s OpenUHS AndroidRuntime".
