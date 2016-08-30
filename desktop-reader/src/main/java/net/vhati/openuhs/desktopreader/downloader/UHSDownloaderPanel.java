@@ -60,7 +60,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
   private UHSReaderPanel readerPanel = null;
   private MouseListener readerClickListener = null;
 
-  private String hintsPath = ".";
+  private File hintsDir = new File(".");
 
 
   public UHSDownloaderPanel() {
@@ -201,24 +201,19 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 
   /**
-   * Get the dir in which to look for UHS files.
-   *
-   * @return the path
-   */
-  public String getHintsPath() {return hintsPath;}
-
-  /**
-   * Set the dir in which to look for UHS files.
-   * The path must exist and have no trailing slash.
+   * Sets the dir in which to look for UHS files.
    *
    * The default path is "."
-   *
-   * @param s the path
    */
-  public void setHintsPath(String s) {
-    File tmpFile = new File(s);
-    if (tmpFile.exists() && tmpFile.isDirectory())
-      hintsPath = s;
+  public void setHintsDir(File d) {
+    hintsDir = d;
+  }
+
+  /**
+   * Returns the dir in which to look for UHS files.
+   */
+  public File getHintsDir() {
+    return hintsDir;
   }
 
 
@@ -255,7 +250,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
   private void colorizeTable() {
     uhsTable.clearSelection();
 
-    String[] hintNames = new File(hintsPath).list();
+    String[] hintNames = hintsDir.list();
     Arrays.sort(hintNames);
 
     for (int i=0; i < uhsTableModel.getRowCount(); i++) {
@@ -264,10 +259,10 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
       if (Arrays.binarySearch(hintNames, tmpUHS.getName()) >= 0) {
         tmpUHS.setLocal(true);
-        File uhsFile = new File(hintsPath +"/"+ tmpUHS.getName());
+        File uhsFile = new File(hintsDir, tmpUHS.getName());
         Date localDate = new Date(uhsFile.lastModified());
 
-        if (tmpUHS.getDate().after(localDate)) {
+        if (tmpUHS.getDate() != null && tmpUHS.getDate().after(localDate)) {
           tmpUHS.setNewer(true);
         }
       }
@@ -297,7 +292,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
           DownloadableUHS tmpUHS = wants[i];
           byte[] bytes = UHSFetcher.fetchUHS(parentComponent, tmpUHS);
           if (bytes != null) {
-            boolean success = UHSFetcher.saveBytes(parentComponent, hintsPath +"/"+ tmpUHS.getName(), bytes);
+            boolean success = UHSFetcher.saveBytes(parentComponent, new File(hintsDir, tmpUHS.getName()).getAbsolutePath(), bytes);
             if (errorHandler != null) {
               if (success) errorHandler.log(UHSErrorHandler.INFO, pronoun, "Saved "+ tmpUHS.getName(), 0, null);
               else errorHandler.log(UHSErrorHandler.ERROR, pronoun, "Could not save "+ tmpUHS.getName(), 0, null);

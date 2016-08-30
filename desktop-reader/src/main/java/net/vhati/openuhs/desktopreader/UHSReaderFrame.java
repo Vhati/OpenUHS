@@ -24,9 +24,7 @@ import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
 public class UHSReaderFrame extends JFrame implements Nerfable {
-  private static String HINTS_PATH = "./hints";
-
-  private UHSReaderFrame pronoun = this;
+  private File hintsDir = null;
 
   private String titlePrefix = "";
   private UHSReaderPanel readerPanel = new UHSReaderPanel();
@@ -36,24 +34,37 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 
   public UHSReaderFrame() {
     super();
+    hintsDir = new File("./hints");
+
     JPanel pane = new JPanel(new BorderLayout());
 
     final JTabbedPane tabbedPane = new JTabbedPane();
-      readerPanel.setHintsPath(HINTS_PATH);
-      tabbedPane.add(readerPanel, "Reader");
+    readerPanel.setHintsDir(hintsDir);
+    tabbedPane.add(readerPanel, "Reader");
 
-      downloaderPanel.setHintsPath(HINTS_PATH);
-      tabbedPane.add(downloaderPanel, "Downloader");
+    downloaderPanel.setHintsDir(hintsDir);
+    tabbedPane.add(downloaderPanel, "Downloader");
 
-      tabbedPane.add(settingsPanel, "Settings");
+    tabbedPane.add(settingsPanel, "Settings");
 
     readerPanel.addAncestorListener(new AncestorListener() {
-      public void ancestorAdded(AncestorEvent event) {pronoun.setTitle(readerPanel.getReaderTitle());}
-      public void ancestorMoved(AncestorEvent event) {}
-      public void ancestorRemoved(AncestorEvent event) {pronoun.setTitle(null);}
+      @Override
+      public void ancestorAdded(AncestorEvent event) {
+        UHSReaderFrame.this.setTitle(readerPanel.getReaderTitle());
+      }
+
+      @Override
+      public void ancestorMoved(AncestorEvent event) {
+      }
+
+      @Override
+      public void ancestorRemoved(AncestorEvent event) {
+        UHSReaderFrame.this.setTitle(null);
+      }
     });
 
     downloaderPanel.getUHSTable().addMouseListener(new MouseAdapter() {
+      @Override
       public void mouseClicked(MouseEvent e) {
         JTable tmpTable = (JTable)e.getSource();
         if (tmpTable.getRowCount() == 0) return;
@@ -62,22 +73,28 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
           int row = tmpTable.getSelectedRow();
           if (row == -1) return;
           DownloadableUHS tmpUHS = ((DownloadableUHSTableModel)tmpTable.getModel()).getUHS(row);
-          File tmpFile = new File( HINTS_PATH +"/"+ tmpUHS.getName() );
-          if (tmpFile.exists()) {
+          File uhsFile = new File(hintsDir, tmpUHS.getName());
+          if (uhsFile.exists()) {
             tabbedPane.setSelectedIndex(tabbedPane.indexOfTab("Reader"));
-            readerPanel.openFile(tmpFile.getPath());
+            readerPanel.openFile(uhsFile);
           }
         }
       }
     });
 
     settingsPanel.addAncestorListener(new AncestorListener() {
+      @Override
       public void ancestorAdded(AncestorEvent event) {
         settingsPanel.clear();
         settingsPanel.addSection("Reader", readerPanel.getSettingsPanel());
         settingsPanel.addSection("Downloader", downloaderPanel.getSettingsPanel());
       }
-      public void ancestorMoved(AncestorEvent event) {}
+
+      @Override
+      public void ancestorMoved(AncestorEvent event) {
+      }
+
+      @Override
       public void ancestorRemoved(AncestorEvent event) {
         settingsPanel.clear();
       }
@@ -87,13 +104,31 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
     this.getGlassPane().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
     this.getGlassPane().setFocusTraversalKeysEnabled(false);
     this.getGlassPane().addMouseListener(new MouseAdapter() {
-      public void mousePressed(MouseEvent e) {e.consume();}
-      public void mouseReleased(MouseEvent e) {e.consume();}
+      @Override
+      public void mousePressed(MouseEvent e) {
+        e.consume();
+      }
+
+      @Override
+      public void mouseReleased(MouseEvent e) {
+        e.consume();
+      }
     });
     this.getGlassPane().addKeyListener(new KeyListener() {
-      public void keyPressed(KeyEvent e) {e.consume();}
-      public void keyReleased(KeyEvent e) {e.consume();}
-      public void keyTyped(KeyEvent e) {e.consume();}
+      @Override
+      public void keyPressed(KeyEvent e) {
+        e.consume();
+      }
+
+      @Override
+      public void keyReleased(KeyEvent e) {
+        e.consume();
+      }
+
+      @Override
+      public void keyTyped(KeyEvent e) {
+        e.consume();
+      }
     });
 
     pane.add(tabbedPane, BorderLayout.CENTER);
@@ -101,11 +136,17 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
   }
 
 
-  public UHSReaderPanel getUHSReaderPanel() {return readerPanel;}
+  public UHSReaderPanel getUHSReaderPanel() {
+    return readerPanel;
+  }
 
-  public UHSDownloaderPanel getUHSDownloaderPanel() {return downloaderPanel;}
+  public UHSDownloaderPanel getUHSDownloaderPanel() {
+    return downloaderPanel;
+  }
 
-  public SettingsPanel getSettingsPanel() {return settingsPanel;}
+  public SettingsPanel getSettingsPanel() {
+    return settingsPanel;
+  }
 
 
   public void setTitlePrefix(String s) {
@@ -119,6 +160,7 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
   }
 
 
+  @Override
   public void setNerfed(boolean b) {
     //button mnemonics will still work
     Component glassPane = this.getGlassPane();

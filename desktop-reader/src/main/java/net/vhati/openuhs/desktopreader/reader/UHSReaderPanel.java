@@ -49,7 +49,7 @@ import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
  *
  * UHSReaderPanel readerPanel = new UHSReaderPanel();
  * UHSParser uhsParser = new UHSParser();
- * UHSRootNode rootNode = uhsParser.parseFile("./hints/somefile.uhs");
+ * UHSRootNode rootNode = uhsParser.parseFile(new File("./hints/somefile.uhs"));
  * if (rootNode != null) {
  *   readerPanel.setUHSNodes(rootNode, rootNode);
  * }</pre>
@@ -81,7 +81,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
   private JButton showNextBtn = null;
   private JCheckBox showAllBox = null;
 
-  private String hintsPath = ".";
+  private File hintsDir = new File(".");
 
 
   public UHSReaderPanel() {
@@ -173,6 +173,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
       FileFilter uhsFilter = new FileFilter() {
         @Override
         public String getDescription() {return "UHS Files (*.uhs)";}
+
         @Override
         public boolean accept(File f) {
           return (f.isDirectory() || f.getName().toLowerCase().endsWith(".uhs"));
@@ -181,34 +182,22 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
       FileFilter puhsFilter = new FileFilter() {
         @Override
         public String getDescription() {return "Proto UHS Files (*.puhs)";}
+
         @Override
         public boolean accept(File f) {
           return (f.isDirectory() || f.getName().toLowerCase().endsWith(".puhs"));
         }
       };
 
-      String fileName = "";
-      String homePath = hintsPath;
-      File fileHomePath = new File(homePath);
-      String homePathAb = fileHomePath.getAbsolutePath().substring(0,fileHomePath.getAbsolutePath().length()-1);
-
-      JFileChooser chooser = new JFileChooser(homePath);
+      JFileChooser chooser = new JFileChooser(hintsDir);
         chooser.addChoosableFileFilter(uhsFilter);
         chooser.addChoosableFileFilter(puhsFilter);
         chooser.setFileFilter(uhsFilter);
 
       int status = chooser.showOpenDialog(pronoun);
       if (status == 0) {
-        File filegrab = chooser.getSelectedFile();
-        if (filegrab.getAbsolutePath().startsWith(homePathAb) == true && filegrab.getAbsolutePath().length() > homePathAb.length())
-          fileName = homePath + filegrab.getAbsolutePath().substring(homePathAb.length(), filegrab.getAbsolutePath().length()).replace('\\','/');
-        else
-          fileName = filegrab.getAbsolutePath().replace('\\','/');
+        openFile(chooser.getSelectedFile());
       }
-      else return;
-
-      final String finalName = fileName;
-      openFile(finalName);
     }
     else if (source == backBtn) {
       setReaderNode(historyArray.get(historyArray.size()-1));
@@ -239,24 +228,19 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 
   /**
-   * Get the dir in which to look for UHS files.
-   *
-   * @return the path
-   */
-  public String getHintsPath() {return hintsPath;}
-
-  /**
-   * Set the dir in which to look for UHS files.
-   * The path must exist and have no trailing slash.
+   * Sets the dir in which to look for UHS files.
    *
    * The default path is "."
-   *
-   * @param s the path
    */
-  public void setHintsPath(String s) {
-    java.io.File tmpFile = new java.io.File(s);
-    if (tmpFile.exists() && tmpFile.isDirectory())
-      hintsPath = s;
+  public void setHintsDir(File d) {
+    hintsDir = d;
+  }
+
+  /**
+   * Returns the dir in which to look for UHS files.
+   */
+  public File getHintsDir() {
+    return hintsDir;
   }
 
 
@@ -286,26 +270,26 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
   /**
    * Opens a UHS file.
    *
-   * @param path location of the file
+   * @param f the location of the file
    */
-  public void openFile(final String path) {
+  public void openFile(final File f) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
     ancestorSetNerfed(true);
 
     if (errorHandler != null) {
-      errorHandler.log(UHSErrorHandler.INFO, this, "Opened "+ (new File(path)).getName(), 0, null);
+      errorHandler.log(UHSErrorHandler.INFO, this, String.format("Opened %s", f.getName()), 0, null);
     }
 
     Thread parseWorker = new Thread() {
       public void run() {
         UHSRootNode rootNode = null;
-        if (path.toLowerCase().endsWith(".uhs")) {
+        if (f.getName().matches("(?i).*[.]uhs$")) {
           UHSParser uhsParser = new UHSParser();
-          rootNode = uhsParser.parseFile(path, UHSParser.AUX_NEST);
+          rootNode = uhsParser.parseFile(f, UHSParser.AUX_NEST);
         }
-        else if (path.toLowerCase().endsWith(".puhs")) {
+        else if (f.getName().matches("(?i).*[.]puhs")) {
           Proto4xUHSParser protoParser = new Proto4xUHSParser();
-          rootNode = protoParser.parseFile(path, Proto4xUHSParser.AUX_NEST);
+          rootNode = protoParser.parseFile(f, Proto4xUHSParser.AUX_NEST);
         }
 
         final UHSRootNode finalRootNode = rootNode;

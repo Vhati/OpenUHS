@@ -20,12 +20,12 @@ import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.UHSWriter;
 import net.vhati.openuhs.desktopreader.UHSReaderFrame;
-import net.vhati.openuhs.desktopreader.downloader.*;
-import net.vhati.openuhs.desktopreader.reader.*;
+import net.vhati.openuhs.desktopreader.UHSXML;
 
 
 public class UHSReaderMain {
-  public static final String VERSION = "0.6.7";
+  public static final String VERSION = "0.7.0";
+
   private static final String OPTION_CLI          = "OPTION_CLI";
   private static final String OPTION_HELP         = "OPTION_HELP";
   private static final String OPTION_VERSION      = "OPTION_VERSION";
@@ -42,7 +42,7 @@ public class UHSReaderMain {
   private static DefaultUHSErrorHandler errorHandler = new DefaultUHSErrorHandler(System.err);
   private static UHSReaderFrame frame = null;
 
-  private static String fileName = null;
+  private static String fileArg = null;
 
 
   public static void main(String[] args) {
@@ -69,39 +69,39 @@ public class UHSReaderMain {
         UHSErrorHandlerManager.setErrorHandler(errorHandler);
       }
 
+      
       UHSRootNode rootNode = null;
-      if (fileName.toLowerCase().endsWith(".uhs")) {
+      if (fileArg.matches("(?i).*[.]uhs$")) {
         UHSParser uhsParser = new UHSParser();
-        rootNode = uhsParser.parseFile(fileName, UHSParser.AUX_NEST);
+        rootNode = uhsParser.parseFile(new File(fileArg), UHSParser.AUX_NEST);
       }
-      else if (fileName.toLowerCase().endsWith(".puhs")) {
+      else if (fileArg.matches("(?i).*[.]puhs")) {
         Proto4xUHSParser protoParser = new Proto4xUHSParser();
-        rootNode = protoParser.parseFile(fileName, Proto4xUHSParser.AUX_NEST);
+        rootNode = protoParser.parseFile(new File(fileArg), Proto4xUHSParser.AUX_NEST);
       }
 
       if (rootNode == null) {
-        if (optionMap.get(OPTION_TEST) == Boolean.TRUE)
+        if (optionMap.get(OPTION_TEST) == Boolean.TRUE) {
           System.out.println("Test: Parsing failed");
-        else
+        } else {
           System.out.println("Error: Unreadable file or parsing error");
+        }
         System.exit(1);
       } else {
         if (optionMap.get(OPTION_TEST) == Boolean.TRUE)
           System.out.println("Test: Parsing succeeded");
         if (optionMap.get(OPTION_HINT_TITLE) == Boolean.TRUE) {
           String hintTitle = rootNode.getUHSTitle();
-          if (hintTitle == null) hintTitle = "Unknown";
-          System.out.println("Title: "+ hintTitle);
+          System.out.println(String.format("Title: %s", ((hintTitle != null) ? hintTitle : "Unknown")));
         }
         if (optionMap.get(OPTION_HINT_VERSION) == Boolean.TRUE) {
           String hintVersion = rootNode.getUHSVersion();
-          if (hintVersion == null) hintVersion = "Unknown";
-          System.out.println("Version: "+ hintVersion);
+          System.out.println(String.format("Version: %s", ((hintVersion != null) ? hintVersion : "Unknown")));
         }
         if (optionMap.get(OPTION_PRINT_TEXT) == Boolean.TRUE)
           rootNode.printNode("", "\t", System.out);
         if (optionMap.get(OPTION_SAVE_XML) == Boolean.TRUE) {
-          String basename = (new File(fileName)).getName().replaceAll("[.][^.]*$", "");
+          String basename = (new File(fileArg)).getName().replaceAll("[.][^.]*$", "");
           FileOutputStream xmlOS = null;
           try {
             xmlOS = new FileOutputStream("./"+ basename +".xml");
@@ -112,19 +112,16 @@ public class UHSReaderMain {
             if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, null, "Could not export xml", 0, e);
           }
           finally {
-            if (xmlOS != null && xmlOS.getChannel().isOpen()) {
-              try {xmlOS.close();}
-              catch (Exception f) {}
-            }
+            try {if (xmlOS != null && xmlOS.getChannel().isOpen()) xmlOS.close();} catch (IOException e) {}
           }
         }
         if (optionMap.get(OPTION_SAVE_BIN) == Boolean.TRUE) {
-          String basename = (new File(fileName)).getName().replaceAll("[.][^.]*$", "");
-          extractNode(rootNode, "./", basename +"_", 1);
+          String basename = (new File(fileArg)).getName().replaceAll("[.][^.]*$", "");
+          extractNode(rootNode, new File("./"), basename +"_", 1);
         }
         if (optionMap.get(OPTION_SAVE_88A) == Boolean.TRUE) {
           UHSWriter uhsWriter = new UHSWriter();
-          String basename = (new File(fileName)).getName().replaceAll("[.][^.]*$", "");
+          String basename = (new File(fileArg)).getName().replaceAll("[.][^.]*$", "");
           FileOutputStream fos = null;
           try {
             fos = new FileOutputStream("./"+ basename +".uhs");
@@ -135,15 +132,12 @@ public class UHSReaderMain {
             if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, null, "Could not write 88a file", 0, e);
           }
           finally {
-            if (fos != null && fos.getChannel().isOpen()) {
-              try {fos.close();}
-              catch (Exception f) {}
-            }
+            try {if (fos != null && fos.getChannel().isOpen()) fos.close();} catch (IOException e) {}
           }
         }
         if (optionMap.get(OPTION_SAVE_9X) == Boolean.TRUE) {
           UHSWriter uhsWriter = new UHSWriter();
-          String basename = (new File(fileName)).getName().replaceAll("[.][^.]*$", "");
+          String basename = (new File(fileArg)).getName().replaceAll("[.][^.]*$", "");
           FileOutputStream fos = null;
           try {
             fos = new FileOutputStream("./"+ basename +".uhs");
@@ -154,10 +148,7 @@ public class UHSReaderMain {
             if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, null, "Could not write 9x file", 0, e);
           }
           finally {
-            if (fos != null && fos.getChannel().isOpen()) {
-              try {fos.close();}
-              catch (Exception f) {}
-            }
+            try {if (fos != null && fos.getChannel().isOpen()) fos.close();} catch (IOException e) {}
           }
         }
         System.exit(0);
@@ -172,10 +163,9 @@ public class UHSReaderMain {
     }
     catch (IOException e) {
       e.printStackTrace();
-      if (logOS != null) {
-        try {logOS.close();}
-        catch (Exception f) {}
-      }
+    }
+    finally {
+      try {if (logOS != null) logOS.close();} catch (IOException e) {}
     }
     errorHandler.logWelcomeMessage();
 
@@ -184,8 +174,8 @@ public class UHSReaderMain {
       frame.setTitlePrefix("OpenUHS "+ UHSReaderMain.VERSION);
       frame.setTitle(null);
 
-    if (fileName != null) {
-      frame.getUHSReaderPanel().openFile(fileName);
+    if (fileArg != null) {
+      frame.getUHSReaderPanel().openFile(new File(fileArg));
     }
 
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -204,13 +194,13 @@ public class UHSReaderMain {
    * Extensions are guessed.
    *
    * @param currentNode a node to start extracting from
-   * @param destDir path to the destination dir
+   * @param destDir the destination dir
    * @param basename prefix for extracted files
    * @param n a number for uniqueness, incrementing with each file
    * @return a new value for n
    * @see org.openuhs.UHSUtil#getFileExtension(byte[]) getFileExtension(byte[])
    */
-  public static int extractNode(UHSNode currentNode, String destDir, String basename, int n) {
+  public static int extractNode(UHSNode currentNode, File destDir, String basename, int n) {
     boolean extractable = false;
     if (currentNode.getContentType() == UHSNode.IMAGE) extractable = true;
     else if (currentNode.getContentType() == UHSNode.AUDIO) extractable = true;
@@ -224,7 +214,7 @@ public class UHSReaderMain {
 
       FileOutputStream fos = null;
       try {
-        String destFile = destDir + basename + n + idStr +"."+ extension;
+        File destFile = new File(destDir, (basename + n + idStr +"."+ extension));
         fos = new FileOutputStream(destFile);
         fos.write(content);
         fos.close();
@@ -233,10 +223,7 @@ public class UHSReaderMain {
         if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, null, "Could not save a binary", 0, e);
       }
       finally {
-        if (fos != null && fos.getChannel().isOpen()) {
-          try {fos.close();}
-          catch (Exception f) {}
-        }
+        try {if (fos != null && fos.getChannel().isOpen()) fos.close();} catch (IOException e) {}
       }
       n++;
     }
@@ -396,7 +383,7 @@ public class UHSReaderMain {
     }
     // These are non-opts or anything after "--"
     for (int i=g.getOptind(); i < argv.length; i++) {
-      if (fileName == null) fileName = argv[i];
+      if (fileArg == null) fileArg = argv[i];
       else {
         System.err.println("Error: Extraneous argument: '"+ argv[i] +"'");
         optFailed = true;
@@ -404,7 +391,7 @@ public class UHSReaderMain {
     }
 
 
-    if (needFileArg && fileName == null) {
+    if (needFileArg && fileArg == null) {
       optFailed = true;
       System.err.println("Error: No file was specified");
     }
@@ -442,7 +429,7 @@ public class UHSReaderMain {
 
   public static void showVersion() {
     System.out.println("OpenUHS "+ UHSReaderMain.VERSION);
-    System.out.println("Copyright (C) 2016 David Millis");
+    System.out.println("Copyright (C) 2007-2009, 2011, 2012, 2016 David Millis");
     System.out.println("");
     System.out.println("This program is free software; you can redistribute it and/or modify");
     System.out.println("it under the terms of the GNU General Public License as published by");

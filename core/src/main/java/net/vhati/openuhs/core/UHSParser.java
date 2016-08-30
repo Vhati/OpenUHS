@@ -1,5 +1,6 @@
 package net.vhati.openuhs.core;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -161,13 +162,13 @@ public class UHSParser {
    * <br />
    * <br />This is likely the only method you'll need.
    *
-   * @param filePath file to read
+   * @param f a file to read
    * @param auxStyle option for 9x files: AUX_NORMAL, AUX_IGNORE, or AUX_NEST
    * @return the root of a tree of nodes representing the hint file
    * @see #parse88Format(List, String, int) parse88Format(List, String, int)
    * @see #parse9xFormat(List, byte[], long, int) parse9xFormat(List, byte[], long, int)
    */
-  public UHSRootNode parseFile(String filePath, int auxStyle) {
+  public UHSRootNode parseFile(File f, int auxStyle) {
     if (auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST) return null;
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
     logHeader = 0; logLine = -1;
@@ -186,7 +187,7 @@ public class UHSParser {
     byte[] rawuhs = new byte[0];
 
     try {
-      RandomAccessFile inFile = new RandomAccessFile(filePath, "r");
+      RandomAccessFile inFile = new RandomAccessFile(f, "r");
 
       logHeader++;  // For risky IO operations, increment beforehand
       tmp = inFile.readLine();
@@ -273,7 +274,7 @@ public class UHSParser {
       rootNode = parse9xFormat(uhsFileArray, rawuhs, rawOffset, auxStyle);
 
       long storedSum = readChecksum(rawuhs);
-      long calcSum = calcChecksum(filePath);
+      long calcSum = calcChecksum(f);
       if (storedSum == -1) {
         if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, this, "Could not read the stored security checksum from this file", 0, null);
       } else if (calcSum == -1) {
@@ -1520,7 +1521,7 @@ public class UHSParser {
    * minus the last two bytes.
    *
    */
-  public long calcChecksum(String filePath) {
+  public long calcChecksum(File f) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
     long result = -1;
 
@@ -1529,7 +1530,7 @@ public class UHSParser {
     try {
       int readCount = -1;
       byte[] tmpBytes = new byte[1024];
-      inFile = new RandomAccessFile(filePath, "r");
+      inFile = new RandomAccessFile(f, "r");
       long len = inFile.length();
 
       while ((readCount = inFile.read(tmpBytes)) != -1) {
@@ -1571,7 +1572,7 @@ public class UHSParser {
     finally {
       if (inFile != null && inFile.getChannel().isOpen()) {
         try {inFile.close();}
-        catch (IOException f) {}
+        catch (IOException e) {}
       }
     }
 
@@ -1581,13 +1582,13 @@ public class UHSParser {
   /**
    * Reads the security checksum stored in a UHS file.
    */
-  private long readChecksum(String filePath) {
+  private long readChecksum(File f) {
     UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
     int result = -1;
 
     RandomAccessFile inFile = null;
     try {
-      inFile = new RandomAccessFile(filePath, "r");
+      inFile = new RandomAccessFile(f, "r");
       long len = inFile.length();
       if (len >= 2) {
         inFile.getChannel().position(len-2);
@@ -1614,12 +1615,12 @@ public class UHSParser {
       inFile.close();
     }
     catch (IOException e) {
-      if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, this, "Couldn't read stored checksum from "+ filePath, 0, null);
+      if (errorHandler != null) errorHandler.log(UHSErrorHandler.ERROR, this, String.format("Couldn't read stored checksum from: ", f.getAbsolutePath()), 0, null);
     }
     finally {
       if (inFile != null && inFile.getChannel().isOpen()) {
         try {inFile.close();}
-        catch (IOException f) {}
+        catch (IOException e) {}
       }
     }
 

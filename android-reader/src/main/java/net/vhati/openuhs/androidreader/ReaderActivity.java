@@ -134,10 +134,9 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
     if (uhsPath != null) {
       UHSRootNode inRootNode = null;
       try {
-        //File uhsFile = new File(getExternalFilesDir(null), "overseer.uhs");
-        //String fileName = uhsFile.getPath();
+        File uhsFile = new File(uhsPath);
         UHSParser uhsParser = new UHSParser();
-        inRootNode = uhsParser.parseFile(uhsPath, UHSParser.AUX_NEST);
+        inRootNode = uhsParser.parseFile(uhsFile, UHSParser.AUX_NEST);
       }
       catch (Exception e) {
         // TODO: Report the error properly.

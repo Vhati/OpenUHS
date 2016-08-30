@@ -77,7 +77,7 @@ public class DownloadableUHS {
   /**
    * Sets whether there is a local file with this catalog entry's name.
    *
-   * @see resetState()
+   * @see #resetState()
    */
   public void setLocal(boolean b) {
     stateLocal = b;
@@ -90,7 +90,7 @@ public class DownloadableUHS {
   /**
    * Sets whether the catalog entry is newer than the local file.
    *
-   * @see resetState()
+   * @see #resetState()
    */
   public void setNewer(boolean b) {
     stateNewer = b;
@@ -103,8 +103,8 @@ public class DownloadableUHS {
   /**
    * Resets the catalog-vs-local state flage.
    *
-   * @see setLocal(boolean)
-   * @see setNewer(boolean)
+   * @see #setLocal(boolean)
+   * @see #setNewer(boolean)
    */
   public void resetState() {
     setLocal(false);

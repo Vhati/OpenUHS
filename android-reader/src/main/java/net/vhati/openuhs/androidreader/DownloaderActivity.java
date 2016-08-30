@@ -1,6 +1,7 @@
 package net.vhati.openuhs.androidreader;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -40,6 +41,7 @@ import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchResult;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchObserver;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchResult;
+import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.downloader.CatalogParser;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
@@ -47,6 +49,9 @@ import net.vhati.openuhs.core.downloader.DownloadableUHS;
 public class DownloaderActivity extends AppCompatActivity implements UHSFetchObserver {
   private Toolbar toolbar = null;
   private ListView catalogListView = null;
+
+  private File externalDir = null;
+  private File hintsDir = null;
 
   private AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler("OpenUHS");
   private CatalogParser catalogParser = null;
@@ -66,6 +71,17 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
     toolbar = (Toolbar)findViewById(R.id.downloaderToolbar);
     this.setSupportActionBar(toolbar);
 
+    externalDir = this.getExternalFilesDir(null);
+    hintsDir = new File(externalDir, "hints");
+
+    if (!hintsDir.exists()) {
+      if (hintsDir.mkdir()) {
+        errorHandler.log(UHSErrorHandler.INFO, this, String.format("Created 'hints/' dir: %s", hintsDir.getAbsolutePath()), 0, null);
+      } else {
+        errorHandler.log(UHSErrorHandler.ERROR, this, String.format("Failed to created 'hints/' dir: %s", hintsDir.getAbsolutePath()), 0, null);
+      }
+    }
+
     catalogListView = (ListView)findViewById(R.id.catalogList);
     this.registerForContextMenu(catalogListView);
 
@@ -75,10 +91,10 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
         File uhsFile = null;
 
         if (tmpUHS != null && tmpUHS.getName().length() > 0) {
-          uhsFile = new File(DownloaderActivity.this.getExternalFilesDir(null), tmpUHS.getName());
+          uhsFile = new File(hintsDir, tmpUHS.getName());
         }
         if (uhsFile != null && uhsFile.exists()) {
-          openFile(uhsFile.getPath());
+          openFile(uhsFile.getAbsolutePath());
         } else {
           view.showContextMenu();
         }
@@ -141,7 +157,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
       menu.setHeaderTitle(tmpUHS.getName());
 
-      File uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
+      File uhsFile = new File(hintsDir, tmpUHS.getName());
       if (uhsFile.exists()) {
         menu.findItem(R.id.openFileContextAction).setEnabled(true);
         menu.findItem(R.id.deleteFileContextAction).setEnabled(true);
@@ -162,8 +178,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
           // TODO: Complain.
           return false;
         }
-        uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
-        String uhsPath = uhsFile.getPath();
+        uhsFile = new File(hintsDir, tmpUHS.getName());
+        String uhsPath = uhsFile.getAbsolutePath();
         if (!uhsFile.exists()) {
           // TODO: Complain.
           return false;
@@ -177,11 +193,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
           // TODO: Complain.
           return false;
         }
-        uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
 
-        if (!uhsFile.exists()) {
-          fetchUHS(tmpUHS);
-        }
+        fetchUHS(tmpUHS);
         return true;
 
       case R.id.deleteFileContextAction:
@@ -190,7 +203,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
           // TODO: Complain.
           return false;
         }
-        uhsFile = new File(this.getExternalFilesDir(null), tmpUHS.getName());
+        uhsFile = new File(hintsDir, tmpUHS.getName());
         if (uhsFile.exists()) {
           uhsFile.delete();
           colorizeCatalogRow(tmpUHS);
@@ -217,8 +230,9 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
   private void fetchUHS(DownloadableUHS duh) {
     cancelFetching();
 
-    uhsFetchTask = new UHSFetchTask(this.getExternalFilesDir(null));
+    uhsFetchTask = new UHSFetchTask(hintsDir);
     uhsFetchTask.setUserAgent(CatalogParser.DEFAULT_USER_AGENT);
+    uhsFetchTask.setObserver(this);
     uhsFetchTask.execute(duh);
   }
 
@@ -333,8 +347,22 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
    * Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.
    */
   public void colorizeCatalog(List<DownloadableUHS> catalog) {
+
+    String[] hintNames = hintsDir.list();
+    Arrays.sort(hintNames);
+
     for (DownloadableUHS tmpUHS : catalog) {
-      colorizeCatalogRow(tmpUHS);
+      tmpUHS.resetState();
+
+      if (Arrays.binarySearch(hintNames, tmpUHS.getName()) >= 0) {
+        tmpUHS.setLocal(true);
+        File uhsFile = new File(hintsDir, tmpUHS.getName());
+        Date localDate = new Date(uhsFile.lastModified());
+
+        if (tmpUHS.getDate() != null && tmpUHS.getDate().after(localDate)) {
+          tmpUHS.setNewer(true);
+        }
+      }
     }
   }
 
@@ -347,7 +375,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
     tmpUHS.resetState();
 
     if (tmpUHS.getName().length() > 0) {
-      File uhsFile = new File(getExternalFilesDir(null), tmpUHS.getName());
+      File uhsFile = new File(hintsDir, tmpUHS.getName());
       if (uhsFile.exists()) {
         tmpUHS.setLocal(true);
 
