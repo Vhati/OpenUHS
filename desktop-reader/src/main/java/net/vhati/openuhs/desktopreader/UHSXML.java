@@ -25,8 +25,10 @@ public class UHSXML {
 
   /**
    * Sets the error handler to notify of exceptions.
-   * This is a convenience for logging/muting.
-   * The default handler prints to System.err.
+   *
+   * <p>This is a convenience for logging/muting.</p>
+   *
+   * <p>The default handler prints to System.err.</p>
    *
    * @param eh the error handler, or null, for quiet parsing
    */
@@ -56,13 +58,14 @@ public class UHSXML {
 
   /**
    * Recursively exports a node and its children to xml Elements.
-   * Extensions are guessed.
+   *
+   * <p>Extensions are guessed.</p>
    *
    * @param currentNode a node to start extracting from
    * @param basename prefix for referenced binary files
    * @param n a number for uniqueness, incrementing with each file
    * @return a new value for n
-   * @see org.openuhs.UHSUtil#getFileExtension(byte[]) getFileExtension(byte[])
+   * @see net.vhati.openuhs.desktopreader.UHSUtil#getFileExtension(byte[])
    */
   private static int exportNode(Element parentElement, UHSNode currentNode, String basename, int n) {
     Element currentElement = null;

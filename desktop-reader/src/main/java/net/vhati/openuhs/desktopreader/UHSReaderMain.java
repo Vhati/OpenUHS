@@ -191,14 +191,15 @@ public class UHSReaderMain {
 
   /**
    * Recursively extracts the contents of a node and its children to files.
-   * Extensions are guessed.
+   *
+   * <p>Extensions are guessed.</p>
    *
    * @param currentNode a node to start extracting from
    * @param destDir the destination dir
    * @param basename prefix for extracted files
    * @param n a number for uniqueness, incrementing with each file
    * @return a new value for n
-   * @see org.openuhs.UHSUtil#getFileExtension(byte[]) getFileExtension(byte[])
+   * @see net.vhati.openuhs.desktopreader.UHSUtil#getFileExtension(byte[])
    */
   public static int extractNode(UHSNode currentNode, File destDir, String basename, int n) {
     boolean extractable = false;

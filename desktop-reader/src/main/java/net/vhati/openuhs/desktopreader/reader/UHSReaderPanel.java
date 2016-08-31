@@ -42,17 +42,18 @@ import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
 
 /**
  * A panel to navigate UHS nodes.
- * <br />
- * <pre> Typical usage:
+ *
+ * Typical usage...
+ * <pre><code>
  * import org.openuhs.core.*;
  * import org.openuhs.reader.*;
  *
  * UHSReaderPanel readerPanel = new UHSReaderPanel();
  * UHSParser uhsParser = new UHSParser();
  * UHSRootNode rootNode = uhsParser.parseFile(new File("./hints/somefile.uhs"));
- * if (rootNode != null) {
- *   readerPanel.setUHSNodes(rootNode, rootNode);
- * }</pre>
+ *
+ * if (rootNode != null) readerPanel.setUHSNodes(rootNode, rootNode);
+ * </code></pre>
  */
 public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionListener {
   public static final int SCROLL_TO_TOP = 0;
@@ -330,7 +331,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
   /**
    * Displays a new node within the current tree.
-   * <br />If the node is the same as the next/prev one, breadcrumbs will be traversed.
+   * <p>If the node is the same as the next/prev one, breadcrumbs will be traversed.</p>
    *
    * @param newNode the new node
    */
@@ -422,9 +423,10 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
   /**
    * Displays a new node within the current tree.
-   * <br />Nothing will happen if the ID isn't among the root node's list of link targets.
    *
-   * @param id ID of the new node
+   * <p>Nothing will happen if the ID isn't among the root node's list of link targets.</p>
+   *
+   * @param id the id of the new node
    */
   @Override
   public void setReaderNode(int id) {
@@ -462,10 +464,10 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
   /**
    * Recursively searches for a phrase within children of a node.
-   * <br />
-   * <br />This'll go into an infinite loop if two nodes have each other as children.
-   * <br />Luckily real UHS files aren't structured that way.
-   * Link targets don't count as children.
+   *
+   * <p>This'll go into an infinite loop if two nodes have each other as children.
+   * Luckily real UHS files aren't structured that way.
+   * Link targets don't count as children.</p>
    *
    * @param resultsNode an existing temporary node to add results to
    * @param prefix phrase to prepend to result titles (use "")
@@ -526,14 +528,16 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
   /**
    * Scrolls to the top/bottom of the visible hints.
-   * <br />This enqueues a thread to do the scrolling at the next opportunity.
-   * <br />The third option defers completeness checking until the thread runs: top if true, bottom otherwise.
-   * <br />
-   * <br />The threading and yielding is a workaround for JScrollPane goofiness when the content grows.
    *
-   * @param position either SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
-   * @see SwingUtilities#invokeLater(Runnable) SwingUtilities.InvokeLater(Runnable)
-   * @see Thread#yield() Thread.yield()
+   * <p>This enqueues a thread to do the scrolling at the next opportunity.</p>
+   *
+   * <p>SCROLL_IF_INCOMPLETE option defers completeness checking until the thread runs: top if true, bottom otherwise.</p>
+   *
+   * <p>The threading and yielding is a workaround for JScrollPane goofiness when the content grows.</p>
+   *
+   * @param position one of: SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
+   * @see SwingUtilities#invokeLater(Runnable)
+   * @see Thread#yield()
    */
   public void scrollTo(int position) {
     // Wait a bit longer.
@@ -598,6 +602,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
   /**
    * Calls setNerfed on the top-level ancestor, if nerfable.
+   *
    * A dedicated method was easier than passing the ancestor to runnables.
    */
   private void ancestorSetNerfed(boolean b) {

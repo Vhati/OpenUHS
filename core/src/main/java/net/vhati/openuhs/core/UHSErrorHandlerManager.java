@@ -5,7 +5,8 @@ import net.vhati.openuhs.core.*;
 
 /**
  * A globally accessable place to find a logger.
- * A DefaultUHSErrorHandler(System.err) will be used initially.
+ *
+ * <p>A DefaultUHSErrorHandler(System.err) will be used initially.</p>
  */
 public class UHSErrorHandlerManager {
   private static UHSErrorHandler errorHandler = new DefaultUHSErrorHandler(System.err);

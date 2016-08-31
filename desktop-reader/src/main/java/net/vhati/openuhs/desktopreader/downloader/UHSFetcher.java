@@ -226,7 +226,8 @@ public class UHSFetcher {
   /**
    *
    * Saves an array of bytes to a file.
-   * <br />If the destination exists, a confirmation dialog will appear.
+   *
+   * <p>If the destination exists, a confirmation dialog will appear.</p>
    *
    * @param parentComponent a component to be the parent of any error popups
    * @param path path to a file to save
@@ -279,7 +280,7 @@ public class UHSFetcher {
    * Gets the User-Agent to use for http requests.
    *
    * @return the agent text
-   * @see #setUserAgent(String) setUserAgent(String)
+   * @see #setUserAgent(String)
    */
   public static String getUserAgent() {
     return userAgent;
@@ -288,10 +289,10 @@ public class UHSFetcher {
   /**
    * Sets the User-Agent to use for http requests.
    *
-   * The default is "UHSWIN/5.2".
+   * <p>The default is "UHSWIN/5.2".</p>
    *
    * @param s the agent text
-   * @see #getUserAgent() getUserAgent()
+   * @see #getUserAgent()
    */
   public static void setUserAgent(String s) {
     if (s != null) userAgent = s;
@@ -302,7 +303,7 @@ public class UHSFetcher {
    * Gets the url of the hint catalog.
    *
    * @return the url
-   * @see #setCatalogUrl(String) setCatalogUrl(String)
+   * @see #setCatalogUrl(String)
    */
   public static String getCatalogUrl() {
     return catalogUrl;
@@ -311,10 +312,10 @@ public class UHSFetcher {
   /**
    * Gets the url of the hint catalog.
    *
-   * The default is "http://www.uhs-hints.com:80/cgi-bin/update.cgi".
+   * <p>The default is "http://www.uhs-hints.com:80/cgi-bin/update.cgi".</p>
    *
    * @param s the url
-   * @see #getCatalogUrl() getCatalogUrl()
+   * @see #getCatalogUrl()
    */
   public static void setCatalogUrl(String s) {
     if (s != null) catalogUrl = s;

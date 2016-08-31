@@ -40,8 +40,8 @@ public class UHSWriter {
    *
    * @param name the name of the master subject node of the UHS document (not the filename)
    * @return the key
-   * @see #encryptNestString(String, int[]) encryptNestString(String, int[])
-   * @see #encryptTextHunk(String, int[]) encryptTextHunk(String, int[])
+   * @see #encryptNestString(CharSequence, int[])
+   * @see #encryptTextHunk(CharSequence, int[])
    */
   public int[] generateKey(String name) {
     int[] key = new int[name.length()];
@@ -58,12 +58,13 @@ public class UHSWriter {
 
   /**
    * Encrypts the content of standalone 'hint' hunks, and all 88a blocks.
-   * <br />This is only necessary when saving a file.
+   *
+   * <p>This is only necessary when saving a file.</p>
    *
    * @param input plaintext
    * @return the encrypted text
    */
-  public String encryptString(String input) {
+  public String encryptString(CharSequence input) {
     StringBuffer tmp = new StringBuffer(input.length());
 
     for (int i=0; i < input.length(); i++) {
@@ -81,13 +82,14 @@ public class UHSWriter {
 
   /**
    * Encrypts the content of 'nesthint' and 'incentive' hunks.
-   * <br />This is only necessary when saving a file.
+   *
+   * <p>This is only necessary when saving a file.</p>
    *
    * @param input plaintext
    * @param key this file's hint decryption key
    * @return the encrypted text
    */
-  public String encryptNestString(String input, int[] key) {
+  public String encryptNestString(CharSequence input, int[] key) {
     StringBuffer tmp = new StringBuffer(input.length());
     int tmpChar = 0;
 
@@ -106,13 +108,14 @@ public class UHSWriter {
 
   /**
    * Encrypts the content of 'text' hunks.
-   * <br />This is only necessary when saving a file.
+   *
+   * <p>This is only necessary when saving a file.</p>
    *
    * @param input plaintext
    * @param key this file's hint decryption key
    * @return the encrypted text
    */
-  public String encryptTextHunk(String input, int[] key) {
+  public String encryptTextHunk(CharSequence input, int[] key) {
     StringBuffer tmp = new StringBuffer(input.length());
     int tmpChar = 0;
 
@@ -131,17 +134,20 @@ public class UHSWriter {
 
   /**
    * Tests whether a UHSRootNode can be expressed in 88a format.
-   * <br />The rootNode must contain:
-   * <pre> 0-or-more Subjects, containing:
+   *
+   * <p>The rootNode must contain...
+   * <pre>
+   * 0-or-more Subjects, containing:
    * - 1-or-more Questions, containing:
    * - - 1-or-more Hints
-   * 1 Credit, containing a text node</pre>
+   * 1 Credit, containing a text node
+   * </pre>
    *
-   * <br />All the nodes' content must be strings.
-   * <br />Newlines are not part of 88a, and will be stripped.
-   * <br />Accented and exotic characters will be asciified.
-   * <br />Markup within text will be stripped.
-   * <br />Version and Blank nodes will be omitted.
+   * <p>All the nodes' content must be strings.</p>
+   * <p>Newlines are not part of 88a, and will be stripped.</p>
+   * <p>Accented and exotic characters will be asciified.</p>
+   * <p>Markup within text will be stripped.</p>
+   * <p>Version and Blank nodes will be omitted.</p>
    *
    * @param rootNode an existing root node
    */
@@ -174,9 +180,12 @@ public class UHSWriter {
             if (rNode.isGroup()) return false;
           }
         }
-      } else if (oType.equals("Blank")) {
-      } else if (oType.equals("Version")) {
-      } else if (oType.equals("Credit")) {
+      }
+      else if (oType.equals("Blank")) {
+      }
+      else if (oType.equals("Version")) {
+      }
+      else if (oType.equals("Credit")) {
         if (hasCredit) return false;
         hasCredit = true;
         if (oNode.getChildCount() != 1) return false;
@@ -193,11 +202,13 @@ public class UHSWriter {
 
   /**
    * Writes the tree of a UHSRootnode in 88a format.
-   * If it cannot be expressed in 88a, nothing will be written.
-   * Newlines and "^break^" are replaced by " ".
+   *
+   * <p>If it cannot be expressed in 88a, nothing will be written.</p>
+   *
+   * <p>Newlines and "^break^" are replaced by " ".</p>
    *
    * @param rootNode an existing root node
-   * @see #isValid88Format(UHSRootNode) isValid88Format(UHSRootNode)
+   * @see #isValid88Format(UHSRootNode)
    */
   public void write88Format(UHSRootNode rootNode, OutputStream os) throws IOException, CharacterCodingException, UnsupportedEncodingException {
     if (!isValid88Format(rootNode)) {
@@ -586,8 +597,9 @@ public class UHSWriter {
 
   /**
    * Encodes a string and writes the bytes to info.nodeStream.
-   * If info.linesCollected is false, infi.line will increment
-   * by the number of line breaks in the string.
+   *
+   * <p>If info.linesCollected is false, infi.line will increment
+   * by the number of line breaks in the string.</p>
    */
   private void writeAsciiLines(UHS9xInfo info, String s) throws CharacterCodingException, UnsupportedEncodingException {
     byte[] tmpBytes = encodeAsciiBytes(s);
@@ -608,7 +620,7 @@ public class UHSWriter {
 
   /**
    * Encrypts the multiline string content of a node.
-   * Linebreaks will be converted from "^break^" to "\r\n".
+   * <p>Linebreaks will be converted from "^break^" to "\r\n".</p>
    */
   private String getEncryptedText(UHSNode currentNode, UHS9xInfo info, int encryption) throws CharacterCodingException, UnsupportedEncodingException {
     if (currentNode.getContentType() != UHSNode.STRING) return null;  // !?
@@ -638,7 +650,8 @@ public class UHSWriter {
 
   /**
    * Writes a node's content to a UHS9xInfo bin stream.
-   * String content is encoded into bytes.
+   *
+   * <p>String content is encoded into bytes.</p>
    */
   private void getBinData(UHSNode currentNode, UHS9xInfo info, int encryption) throws CharacterCodingException, UnsupportedEncodingException {
     byte[] tmpBytes = null;
@@ -654,27 +667,37 @@ public class UHSWriter {
 
   /**
    * Returns text from a UHSNode, escaped.
-   * <br />Unexpected non-ascii characters are replaced with <b>^?^</b>.
-   * <br />
-   * <br />Escapes have existed from version 88a onwards in most nodes' content and titles.
-   * <br />The # character is the main escape char and is written <b>##</b>.
    *
-   * <ul><li><b>#</b> a '#' character.</li>
+   * <p>Unexpected non-ascii characters are replaced with <b>^?^</b>.</p>
+   *
+   * <p>Escapes have existed from version 88a onwards in most nodes' content and titles.
+   * The # character is the main escape char.</p>
+   *
+   * <p><ul>
+   * <li><b>##</b> a '#' character.</li>
    * <li><b>#a+</b>[AaEeIiOoUu][:'`^]<b>#a-</b> accent enclosed letter; :=diaeresis,'=acute,`=grave,^=circumflex.</li>
    * <li><b>#a+</b>[Nn]~<b>#a-</b> accent enclosed letter with a tilde.</li>
    * <li><b>#a+</b>ae<b>#a-</b> an ash character.</li>
    * <li><b>#a+</b>TM<b>#a-</b> a trademark character.</li>
    * <li><b>#w.</b> raw newlines are spaces.</li>
    * <li><b>#w+</b> raw newlines are spaces (default).</li>
-   * <li><b>#w-</b> raw newlines are newlines.</li></ul>
+   * <li><b>#w-</b> raw newlines are newlines.</li>
+   * </ul></p>
    *
-   * The following are left for display code to handle (e.g., UHSTextArea).
-   * <ul><li><b>#p+</b> proportional font (default).</li>
-   * <li><b>#p-</b> non-proportional font.</li></ul>
+   * <p>The following are left for display code to handle (e.g., UHSTextArea).
+   * <ul>
+   * <li><b>#p+</b> proportional font (default).</li>
+   * <li><b>#p-</b> non-proportional font.</li>
+   * </ul></p>
    *
-   * This is displayed, but not a clickable hyperlink.
-   * <ul><li><b>#h+</b> through <b>#h-</b> is a hyperlink (http or email).</li></ul>
-   * <br />Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)
+   * <p>This is displayed as a hyperlink, but it is not clickable.
+   * <ul>
+   * <li><b>#h+</b> through <b>#h-</b> is a hyperlink (http or email).</li>
+   * </ul></p>
+   *
+   * <p><ul>
+   * <li>Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)</li>
+   * </ul></p>
    *
    * @param currentNode the node to get content from
    * @param plain false to add markup, true to replace with ascii equivalent characters

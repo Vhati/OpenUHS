@@ -6,7 +6,11 @@ import java.util.Date;
 /**
  * Catalog info about a UHS catalog entry (and its local file).
  *
- * 
+ * <p>The CatalogParser will set most fields.</p>
+ *
+ * <p>Additional state flags can be set for tracking the entry's relation to its local file.</p>
+ *
+ * @see net.vhati.openuhs.core.downloader.CatalogParser
  */
 public class DownloadableUHS {
   private String title = "";
@@ -16,7 +20,6 @@ public class DownloadableUHS {
   private String compressedSize = "";
   private String fullSize = "";
 
-  // Abstracting to avoid "java.awt.Color" vs "android.graphics.Color".
   private boolean stateLocal = false;
   private boolean stateNewer = false;
 
@@ -57,6 +60,9 @@ public class DownloadableUHS {
     return date;
   }
 
+  /**
+   * Sets the reported size of the zip file that wraps the UHS file.
+   */
   public void setCompressedSize(String s) {
     compressedSize = ((s != null) ? s : "");
   }
@@ -65,6 +71,9 @@ public class DownloadableUHS {
     return compressedSize;
   }
 
+  /**
+   * Sets the reported size of the UHS file, once extracted from the zip file.
+   */
   public void setFullSize(String s) {
     fullSize = ((s != null) ? s : "");
   }

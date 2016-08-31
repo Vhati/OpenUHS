@@ -9,9 +9,12 @@ import javax.swing.Scrollable;
 
 /**
  * A slightly modified JPanel.
- * <br />It grows no larger than its enclosing JScrollPane so flowing components within can wrap.
+ *
+ * <p>It grows no larger than its enclosing JScrollPane so flowing components within can wrap.</p>
  */
 public class JScrollablePanel extends JPanel implements Scrollable {
+
+
   public JScrollablePanel() {
     super();
   }
@@ -20,18 +23,29 @@ public class JScrollablePanel extends JPanel implements Scrollable {
     super(layout);
   }
 
-  @Override
-  public Dimension getPreferredScrollableViewportSize() {return new Dimension(1,1);}
 
   @Override
-  public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {return 40;}
+  public Dimension getPreferredScrollableViewportSize() {
+    return new Dimension(1, 1);
+  }
 
   @Override
-  public boolean getScrollableTracksViewportHeight() {return false;}
+  public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+    return 40;
+  }
 
   @Override
-  public boolean getScrollableTracksViewportWidth() {return true;}
+  public boolean getScrollableTracksViewportHeight() {
+    return false;
+  }
 
   @Override
-  public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {return 20;}
+  public boolean getScrollableTracksViewportWidth() {
+    return true;
+  }
+
+  @Override
+  public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+    return 20;
+  }
 }

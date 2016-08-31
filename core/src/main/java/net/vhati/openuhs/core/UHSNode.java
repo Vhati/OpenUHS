@@ -10,17 +10,21 @@ import net.vhati.openuhs.core.markup.StringDecorator;
 
 /**
  * A container for hierarchical content.
- * <br />A UHSNode has two attributes: a String indicating its
+ *
+ * <p>A UHSNode has two attributes: a String indicating its
  * type and an optional id. The id is what the root node uses
  * to determine link destinations.
- * <br />Each node has content: STRING, IMAGE, or AUDIO. Non-String
- * content is stored in raw byte[] form.
- * <br />A node may additionally act as a group, containing nested
+ *
+ * <p>Each node has content: STRING, IMAGE, or AUDIO. Non-String
+ * content is stored in raw byte[] form.</p>
+ *
+ * <p>A node may additionally act as a group, containing nested
  * child nodes. In this case, this node's content should be
  * considered a title. The revealed amount attribute tracks the nth
- * visible child.
+ * visible child.</p>
+ *
  * <br />A non-group node may act as a hyperlink to another node.
- * A link points to an id, resolved by the root node upon clicking.
+ * A link points to an id, resolved by the root node upon clicking.</p>
  */
 public class UHSNode {
   public static final int STRING = 0;
@@ -64,7 +68,7 @@ public class UHSNode {
    * Sets this node's content.
    *
    * @param inContent raw content (e.g., String or byte[])
-   * @param inContentType one of STRING, IMAGE, or AUDIO
+   * @param inContentType one of: STRING, IMAGE, or AUDIO
    */
   public void setContent(Object inContent, int inContentType) {
     if (inContentType != STRING && inContentType != IMAGE && inContentType != AUDIO) {
@@ -88,13 +92,14 @@ public class UHSNode {
 
   /**
    * Sets this node's id.
-   * If altering an existing node, remember to
+   *
+   * <p>If altering an existing node, remember to
    * call the rootNode's removeLink() before,
-   * and addLink() after.
+   * and addLink() after.</p>
    *
    * @param input a new id, or -1
-   * @see UHSRootNode#removeLink(UHSNode) UHSRootNode.removeLink(UHSNode)
-   * @see UHSRootNode#addLink(UHSNode) UHSRootNode.addLink(UHSNode)
+   * @see UHSRootNode#removeLink(UHSNode)
+   * @see UHSRootNode#addLink(UHSNode)
    */
   public void setId(int input) {
     if (input < -1) input = -1;
@@ -102,16 +107,17 @@ public class UHSNode {
   }
 
   /**
-   * Offsets the id this node.
-   * This calls the rootNode's removeLink()/addLink()
+   * Sets this node's id, offsetting the original by a relative amount.
+   *
+   * <p>This calls the rootNode's removeLink()/addLink()
    * before and after changes. If the offset would
    * result in a negative id, the id becomes -1. This
-   * does not affect the ids of children.
+   * does not affect the ids of children.</p>
    *
    * @param offset an amount to add/subtract
    * @param rootNode an existing root node
-   * @see UHSRootNode#removeLink(UHSNode) UHSRootNode.removeLink(UHSNode)
-   * @see UHSRootNode#addLink(UHSNode) UHSRootNode.addLink(UHSNode)
+   * @see UHSRootNode#removeLink(UHSNode)
+   * @see UHSRootNode#addLink(UHSNode)
    */
   public void shiftId(int offset, UHSRootNode rootNode) {
     if (id >= 0 && id + offset >= 0) {
@@ -144,9 +150,12 @@ public class UHSNode {
 
   /**
    * Returns this node's viewing restriction.
-   * <br />RESTRICT_NONE - Any reader can see children or the link target.
-   * <br />RESTRICT_NAG - This node is a nag message that should be hidden from registered readers.
-   * <br />RESTRICT_REGONLY - Only registered readers can see this node's children or link target.
+   *
+   * <UL>
+   * <li>RESTRICT_NONE - Any reader can see children or the link target.</li>
+   * <li>RESTRICT_NAG - This node is a nag message that should be hidden from registered readers.>/li?
+   * <li>RESTRICT_REGONLY - Only registered readers can see this node's children or link target.</li>
+   * </ul>
    */
   public int getRestriction() {
     return restriction;
@@ -290,7 +299,7 @@ public class UHSNode {
 
   /**
    * Returns the number of revealed children.
-   * <br />Or -1 if there are no children.
+   * Or -1 if there are no children.
    */
   public int getRevealedAmount() {
     return revealedAmt;

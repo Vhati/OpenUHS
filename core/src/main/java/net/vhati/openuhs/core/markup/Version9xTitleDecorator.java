@@ -14,10 +14,12 @@ import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 
 /**
  * A StringDecorator for "Link" and various group nodes.
- * Their content is a single-line heading.
  *
- * <br />Line breaks are replaced with " ".
- * <br />Standard symbols and decorations are handled.
+ * <p>Their content is a single-line heading.</p>
+ *
+ * <p>Line breaks are replaced with " ".</p>
+ *
+ * <p>Standard symbols and decorations are handled.</p>
  */
 public class Version9xTitleDecorator extends Version9xStringDecorator {
 

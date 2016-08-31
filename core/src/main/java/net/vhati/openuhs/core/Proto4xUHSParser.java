@@ -39,9 +39,10 @@ public class Proto4xUHSParser {
 
   /**
    * Creates a Proto4xUHSParser.
-   * A DefaultUHSErrorHandler(System.err) will be used.
    *
-   * @see #setErrorHandler(UHSErrorHandler) setErrorHandler(UHSErrorHandler)
+   * <p>A DefaultUHSErrorHandler(System.err) will be used.</p>
+   *
+   * @see #setErrorHandler(UHSErrorHandler)
    */
   public Proto4xUHSParser() {
     this(new DefaultUHSErrorHandler(System.err));
@@ -50,7 +51,7 @@ public class Proto4xUHSParser {
   /**
    * Creates a Proto4xUHSParser and sets an error handler.
    *
-   * @see #setErrorHandler(UHSErrorHandler) setErrorHandler(UHSErrorHandler)
+   * @see #setErrorHandler(UHSErrorHandler)
    */
   public Proto4xUHSParser(UHSErrorHandler eh) {
     setErrorHandler(eh);
@@ -59,7 +60,8 @@ public class Proto4xUHSParser {
 
   /**
    * Sets the error handler to notify of exceptions.
-   * This is a convenience for logging/muting.
+   *
+   * <p>This is a convenience for logging/muting.</p>
    *
    * @param eh the error handler, or null, for quiet parsing
    */
@@ -71,13 +73,13 @@ public class Proto4xUHSParser {
   /**
    * Reads a Proto4xUHS file into a List of text lines.
    * Then calls an appropriate parser to construct a UHSRootNode and a tree of UHSNodes.
-   * <br />
-   * <br />This is likely the only method you'll need.
+   *
+   * <p>This is likely the only method you'll need.</p>
    *
    * @param f a file to read
    * @param auxStyle option for 9x files AUX_NORMAL, AUX_IGNORE, or AUX_NEST
    * @return the root of a tree of nodes representing the hint file
-   * @see #parse4xFormat(List, String, int) parse4xFormat(List, String, int)
+   * @see #parse4xFormat(List, File, int)
    */
   public UHSRootNode parseFile(File f, int auxStyle) {
     if (auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST) return null;
@@ -123,16 +125,19 @@ public class Proto4xUHSParser {
 
   /**
    * Generates a tree of UHSNodes from Proto UHS 4.x.
-   * <br />
-   * <br />These have not been seen in the wild.
-   * <br />They're unencrypted and intended to be submitted by
+   *
+   * <p>These have not been seen in the wild.</p>
+   *
+   * <p>They're unencrypted and intended to be submitted by
    * authors directly to the publisher. Oddly,
    * UHS Source Editor 4.x (and presumably this format) doesn't
-   * fully support the features in the UHS 9x formats.
-   * <br />Each node is given an arbitrary id on its START
-   * line, and it encloses everything until a matching END line.
+   * fully support the features in the UHS 9x formats.</p>
    *
-   * <pre> proto_UHS
+   * <p>Each node is given an arbitrary id on its START
+   * line, and it encloses everything until a matching END line.</p>
+   *
+   * <pre>@{code
+   * proto_UHS
    * 0 proto_subject
    * START *********** #
    * title
@@ -145,18 +150,21 @@ public class Proto4xUHSParser {
    * title File Information
    * ...
    * END *********** #
-   * </pre>
-   * <br />
-   * <br />The root node would normally contain up to two children.
-   * <br />A 'subject', containing all the subjects, hints, etc., that users care about.
-   * <br />An 'info', mentioning the author, publisher, etc.
-   * <br />For convenience, auxiliary nodes can be treated differently.
+   * }</pre>
+   *
+   * <p>The root node would normally contain up to two children.
+   * <ul>
+   * <li>A 'subject', containing all the subjects, hints, etc., that users care about.</li>
+   * <li>An 'info', mentioning the author, publisher, etc.</li>
+   * </ul></p>
+   *
+   * <p>For convenience, these auxiliary nodes can be treated differently.</p>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param workingDir the dir containing the hint file, for finding relative paths
    * @param auxStyle AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
    * @return the root of a tree of nodes
-   * @see #buildNodes(List, UHSRootNode, UHSNode, int, String) buildNodes(List, UHSRootNode, UHSNode, int, String)
+   * @see #buildNodes(List, UHSRootNode, UHSNode, int, File)
    */
   public UHSRootNode parse4xFormat(List<String> uhsFileArray, File workingDir, int auxStyle) {
     if (auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST) return null;
@@ -201,8 +209,9 @@ public class Proto4xUHSParser {
 
   /**
    * Recursively parses Proto UHS.
-   * <br />This recognizes various types of hints, and runs specialized methods to decode them.
-   * <br />Unrecognized hints are harmlessly omitted.
+   *
+   * <p>This recognizes various types of hints, and runs specialized methods to decode them.
+   * Unrecognized hints are harmlessly omitted.</p>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -380,14 +389,16 @@ public class Proto4xUHSParser {
   /**
    * Generates a subject UHSNode and its contents.
    *
-   * <pre> 0 proto_subject
+   * <pre>@{code
+   * 0 proto_subject
    * START *********** #
    * title
    * =
    * embedded hunk
    * =
    * embedded hunk
-   * END *********** #</pre>
+   * END *********** #
+   * }</pre>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -439,13 +450,15 @@ public class Proto4xUHSParser {
   /**
    * Generates a normal hint UHSNode.
    *
-   * <pre> 0 proto_hint
+   * <pre>@{code
+   * 0 proto_hint
    * START *********** #
    * Question
    * hint (not encrypted)
    * -
    * hint (not encrypted)
-   * END *********** #</pre>
+   * END *********** #
+   * }</pre>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -519,17 +532,19 @@ public class Proto4xUHSParser {
   /**
    * Generates a text UHSNode.
    *
-   * <pre> 0 proto_text
+   * <pre>@{code
+   * 0 proto_text
    * START *********** #
    * title
    * sentence
    * sentence
    * sentence
-   * END *********** #</pre>
+   * END *********** #
+   * }</pre>
    *
-   * Rather than assuming "\n" everywhere, in-file linebreaks
+   * <p>Rather than assuming "\n" everywhere, in-file linebreaks
    * are preserved (for context-sensitive escaping later).
-   * Markup will be inserted to begin with that as the default.
+   * Markup will be inserted to begin with that as the default.</p>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -597,17 +612,19 @@ public class Proto4xUHSParser {
   /**
    * Generates a comment UHSNode.
    *
-   * <pre> 0 proto_comment
+   * <pre>@{code
+   * 0 proto_comment
    * START *********** #
    * title
    * sentence
    * sentence
    * sentence
-   * END *********** #</pre>
+   * END *********** #
+   * }</pre>
    *
-   * Rather than assuming " " everywhere, in-file linebreaks
+   * <p>Rather than assuming " " everywhere, in-file linebreaks
    * are preserved (for context-sensitive escaping later).
-   * Markup will be inserted to begin with that as the default.
+   * Markup will be inserted to begin with that as the default.</p>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -672,17 +689,19 @@ public class Proto4xUHSParser {
   /**
    * Generates a credit UHSNode.
    *
-   * <pre> 0 proto_credit
+   * <pre>@{code
+   * 0 proto_credit
    * START *********** #
    * title
    * sentence
    * sentence
    * sentence
-   * END *********** #</pre>
+   * END *********** #
+   * }</pre>
    *
-   * Rather than assuming " " everywhere, in-file linebreaks
+   * <p>Rather than assuming " " everywhere, in-file linebreaks
    * are preserved (for context-sensitive escaping later).
-   * Markup will be inserted to begin with that as the default.
+   * Markup will be inserted to begin with that as the default.</p>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -746,12 +765,15 @@ public class Proto4xUHSParser {
 
   /**
    * Generates a link UHSNode.
-   * <br />Nodes like this that have link targets behave like conventional hyperlinks instead of containing child nodes.
    *
-   * <pre> 0 proto_link
+   * <p>Nodes like this that have link targets behave like conventional hyperlinks instead of containing child nodes.</p>
+   *
+   * <pre>@{code
+   * 0 proto_link
    * START *********** #
    * title
-   * index</pre>
+   * index
+   * }</pre>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -803,10 +825,13 @@ public class Proto4xUHSParser {
 
   /**
    * Generates an image-filled UHSNode.
-   * <br />The UHS format allows for regions that trigger links or reveal overlaid subimages.
-   * <br />UHSHotSpotNode was written to handle regions.
    *
-   * <pre> 0 proto_hyperpng
+   * <p>The UHS format allows for regions that trigger links or reveal overlaid subimages.</p>
+   *
+   * <p>UHSHotSpotNode was written to handle regions.</p>
+   *
+   * <pre>@{code
+   * 0 proto_hyperpng
    * START *********** #
    * title
    * file-path 0 0
@@ -837,19 +862,22 @@ public class Proto4xUHSParser {
    * START *********** #
    * title
    * file-path 0 0 x y
-   * END *********** #</pre>
+   * END *********** #
+   * }</pre>
    *
-   * <br />Paths point to png images (spaces are replaced with "?").
-   * <br />There is no comparable gifa structure.
-   * <br />
-   * <br />To create this in the UHS Source Editor...
-   * <br />Add_Menu-HyperPNG, pick a title and image.
-   * <br />- Add_Menu-Link, pick a target.
-   * <br />- - Highlight the link in the list, then drag a region on the image.
-   * <br />- Add_Menu-Overlay, pick a title and image.
-   * <br />- - Click somewhere in the overlay popup's image to set the top-left.
-   * <br />- - Close the overlay's popup.
-   * <br />- - Highlight the overlay in the list, then drag a region on the image
+   * <p>Paths point to png images (spaces are replaced with "?").</p>
+   * <p>There is no comparable gifa structure.</p>
+   *
+   * <p>To create this in the UHS Source Editor...
+   * <ul>
+   * <li>Add_Menu-HyperPNG, pick a title and image.</li>
+   * <li> - Add_Menu-Link, pick a target.</li>
+   * <li> - - Highlight the link in the list, then drag a region on the image.</li>
+   * <li> - Add_Menu-Overlay, pick a title and image.</li>
+   * <li> - - Click somewhere in the overlay popup's image to set the top-left.</li>
+   * <li> - - Close the overlay's popup.</li>
+   * <li> - - Highlight the overlay in the list, then drag a region on the image.</li>
+   * </ul></p>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node
@@ -1005,7 +1033,8 @@ public class Proto4xUHSParser {
   /**
    * Generates an info UHSNode.
    *
-   * <pre> 0 proto_info
+   * <pre>@{code
+   * 0 proto_info
    * START *********** #
    * title
    * author=name
@@ -1014,7 +1043,8 @@ public class Proto4xUHSParser {
    * game-note=sentence
    * copyright=sentence
    * comments=sentence
-   * END *********** #</pre>
+   * END *********** #
+   * }</pre>
    *
    * @param uhsFileArray a List of all available lines in the file
    * @param rootNode an existing root node

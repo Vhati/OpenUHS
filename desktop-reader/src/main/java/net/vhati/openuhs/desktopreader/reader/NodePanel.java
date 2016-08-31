@@ -35,6 +35,8 @@ public class NodePanel extends JScrollablePanel {
 
 
   /**
+   * Constructor.
+   *
    * @param n the UHSNode to be used
    * @param c callback used to replace this panel when a child is clicked
    * @param showAll true if all child hints should be revealed, false otherwise

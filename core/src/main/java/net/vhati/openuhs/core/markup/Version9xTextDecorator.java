@@ -15,10 +15,12 @@ import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 /**
  * A StringDecorator for "TextData" nodes.
  *
- * <br />Line breaks are initially replaced with "\n" by default.
- * <br />Lines with only a space ("^break^ ^break^") become "\n \n"
- * regardless of linebreak markup context.
- * <br />Standard symbols and decorations are handled.
+ * <p>Line breaks are initially replaced with "\n" by default.</p>
+ *
+ * <p>Lines with only a space ("^break^ ^break^") become "\n \n"
+ * regardless of linebreak markup context.</p>
+ *
+ * <p>Standard symbols and decorations are handled.</p>
  */
 public class Version9xTextDecorator extends Version9xStringDecorator {
   private static final char[] emptyline = getEmptyLineChars();
@@ -76,9 +78,10 @@ public class Version9xTextDecorator extends Version9xStringDecorator {
 
   /**
    * Builds the empty line char sequence.
-   * That is: "^break^ ^break^".
    *
-   * @see StringDecorator#linebreak StringDecorator.linebreak
+   * <p>That is: "^break^ ^break^".</p>
+   *
+   * @see StringDecorator#linebreak
    */
   private static char[] getEmptyLineChars() {
     char[] linebreak = StringDecorator.linebreak;

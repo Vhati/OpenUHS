@@ -18,27 +18,39 @@ import net.vhati.openuhs.core.downloader.DownloadableUHS;
 /**
  * A parser for catalogs downloaded from the official UHS server.
  *
- * Note: The catalog text varies depending on the user-agent that downloaded it!
+ * <p>The catalog advertises zip archives, each with a lone UHS file inside.</p>
  *
- * This is what "Mozilla" user-agents see:
- * <pre>&lt;FILE&gt;&lt;FTITLE&gt;The 11th Hour&lt;/FTITLE&gt;
- * &lt;FURL&gt;http://www.uhs-hints.com/rfiles/11thhour.zip&lt;/FURL&gt;
- * &lt;FNAME&gt;11thhour.uhs&lt;/FNAME&gt;&lt;FDATE&gt;24-Jan-96 00:01:39&lt;/FDATE&gt;
- * &lt;FSIZE&gt;25024&lt;/FSIZE&gt;
- * &lt;FFULLSIZE&gt;51278&lt;/FFULLSIZE&gt;&lt;/FILE&gt;</pre>
+ * <p>Note: The catalog text varies depending on the user-agent that downloaded it!</p>
  *
- * This is what "UHSWIN/5.2" user-agents see:
- * <pre>&lt;MESSAGE&gt;A new version of the UHS Reader is now available.  Version 6.00 offers [...]&lt;/MESSAGE&gt;
- * &lt;FILE&gt;&lt;FTITLE&gt;The 11th Hour&lt;/FTITLE&gt;
- * &lt;FURL&gt;http://www.uhs-hints.com/rfiles/11thhour.zip&lt;/FURL&gt;
- * &lt;FNAME&gt;11thhour.uhs&lt;/FNAME&gt;&lt;FDATE&gt;23-Jan-96&lt;/FDATE&gt;
- * &lt;FSIZE&gt;25024&lt;/FSIZE&gt;
- * &lt;FFULLSIZE&gt;51278&lt;/FFULLSIZE&gt;&lt;/FILE&gt;</pre>
+ * <p>This is what "Mozilla" user-agents see...</p>
  *
- * MESSAGE only appears for old UHS user-agents since "UHSWIN/4.0".
- * FDATE is usually just date. Except for "Mozilla", it's both date AND time (and +1 day!?).
+ * <pre>{@code
+ * <FILE><FTITLE>The 11th Hour</FTITLE>
+ * <FURL>http://www.uhs-hints.com/rfiles/11thhour.zip</FURL>
+ * <FNAME>11thhour.uhs</FNAME><FDATE>24-Jan-96 00:01:39</FDATE>
+ * <FSIZE>25024</FSIZE>
+ * <FFULLSIZE>51278</FFULLSIZE></FILE>
+ * }</pre>
  *
- * So FDATE can be "dd-MMM-yy" or "dd-MMM-yy HH:mm:ss".
+ * <p>This is what "UHSWIN/5.2" user-agents see:</p>
+ *
+ * <pre>@{code
+ * <MESSAGE>A new version of the UHS Reader is now available.  Version 6.00 offers [...]</MESSAGE>
+ * <FILE><FTITLE>The 11th Hour</FTITLE>
+ * <FURL>http://www.uhs-hints.com/rfiles/11thhour.zip</FURL>
+ * <FNAME>11thhour.uhs</FNAME><FDATE>23-Jan-96</FDATE>
+ * <FSIZE>25024</FSIZE>
+ * <FFULLSIZE>51278</FFULLSIZE></FILE>
+ * }</pre>
+ *
+ * <p>FSIZE is the size of the zip file.</p>
+ * <p>FFULLSIZE is the size of the UHS file, inside the zip, after extraction.</p>
+ * <p>MESSAGE only appears for old UHS user-agents since "UHSWIN/4.0".</p>
+ * <p>FDATE is usually just date. Except for "Mozilla", it's both date AND time (and +1 day!?).</p>
+ *
+ * <p>So FDATE can be "dd-MMM-yy" or "dd-MMM-yy HH:mm:ss".</p>
+ *
+ * @see net.vhati.openuhs.core.downloader.DownloadableUHS
  */
 public class CatalogParser {
   public static final String DEFAULT_CATALOG_URL = "http://www.uhs-hints.com:80/cgi-bin/update.cgi";
@@ -64,8 +76,10 @@ public class CatalogParser {
 
   /**
    * Sets the error handler to notify of exceptions.
-   * This is a convenience for logging/muting.
-   * The default handler prints to System.err.
+   *
+   * <p>This is a convenience for logging/muting.</p>
+   *
+   * <p>The default handler prints to System.err.</p>
    *
    * @param eh the error handler, or null, for quiet parsing
    */

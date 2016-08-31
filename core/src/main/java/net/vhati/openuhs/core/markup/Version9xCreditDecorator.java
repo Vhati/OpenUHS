@@ -15,8 +15,9 @@ import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 /**
  * A StringDecorator for "CreditData" nodes.
  *
- * <br />Line breaks are initially replaced with " " by default.
- * <br />Standard symbols and decorations are handled.
+ * <p>Line breaks are initially replaced with " " by default.</p>
+ *
+ * <p>Standard symbols and decorations are handled.</p>
  */
 public class Version9xCreditDecorator extends Version9xStringDecorator {
 

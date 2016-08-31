@@ -7,7 +7,8 @@ import java.util.Map;
 
 /**
  * A node to hold all others.
- * <br />Additionally a root node is responsible for tracking nodes that are link targets.
+ *
+ * <p>Additionally a root node is responsible for tracking nodes that are link targets.</p>
  */
 public class UHSRootNode extends UHSNode {
   private Map<String, UHSNode> linkMap = new HashMap<String, UHSNode>();
@@ -56,8 +57,9 @@ public class UHSRootNode extends UHSNode {
 
   /**
    * Gets a node by its id.
-   * The node itself will always be returned,
-   * without any temporary group wrapping it.
+   *
+   * <p>The node itself will always be returned,
+   * without any temporary group wrapping it.</p>
    *
    * @param id ID of the node to get
    * @return the node, or null if not found
@@ -72,10 +74,11 @@ public class UHSRootNode extends UHSNode {
 
   /**
    * Gets a link's target.
-   * If the target is not a group, a temporary
+   *
+   * <p>If the target is not a group, a temporary
    * encapsulating group will be created so that
    * the target's content will not be treated as
-   * a title.
+   * a title.</p>
    *
    * @param id ID of the node to get
    * @return the node, or null if not found
@@ -113,8 +116,9 @@ public class UHSRootNode extends UHSNode {
 
   /**
    * Returns the title of this hint tree.
-   * It may be the root's content, or the content of the
-   * first child, if it's a Subject node with String content.
+   *
+   * <p>It may be the root's content, or the content of the
+   * first child, if it's a Subject node with String content.</p>
    *
    * @return the title of the hint file, or null if absent or blank
    */
@@ -143,9 +147,10 @@ public class UHSRootNode extends UHSNode {
 
   /**
    * Reverse-searches immediate children and returns the last Version node's content.
-   * It may be inaccurate, blank, or conflict with what is claimed in the info node.
    *
-   * <br />"Version: " will be stripped from the beginning.
+   * <p>It may be inaccurate, blank, or conflict with what is claimed in the info node.</p>
+   *
+   * <p>"Version: " will be stripped from the beginning.</p>
    *
    * @return the reported hint version (e.g., "96a"), or null if absent or blank
    */

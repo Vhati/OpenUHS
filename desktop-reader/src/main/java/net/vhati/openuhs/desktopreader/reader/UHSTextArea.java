@@ -42,7 +42,7 @@ public class UHSTextArea extends JTextPane {
   }
 
   /**
-   * Constructs a text area.
+   * Constructor.
    *
    * @param n the UHSNode to display.
    * @param styleContext a collection of font styles to use.
@@ -105,17 +105,21 @@ public class UHSTextArea extends JTextPane {
 
 
   /**
-   * Returns a populated StyleContext for UHSTextAreas.
-   * Changes to a style will immediately affect existing
-   * components using its descendants only. That style
-   * will not update for some reason.<br />
-   * Java's default<br />
-   * - base<br />
-   * - - regular<br />
-   * - - - group<br />
-   * - - - link<br />
-   * - - - hyper<br />
+   * Returns a default-populated StyleContext for UHSTextAreas.
+   *
+   * <p>Changes to a style will immediately affect existing
+   * components using its descendants only. The style itself
+   * will not update for some reason.</p>
+   *
+   * <pre>@{code
+   * Java's default
+   * - base
+   * - - regular
+   * - - - group
+   * - - - link
+   * - - - hyper
    * - - - monospaced
+   * }</pre>
    */
   private static StyleContext getDefaultStyleContext() {
     StyleContext result = new StyleContext();

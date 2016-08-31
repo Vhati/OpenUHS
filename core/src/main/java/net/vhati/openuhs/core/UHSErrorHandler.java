@@ -15,7 +15,8 @@ public interface UHSErrorHandler {
 
   /**
    * Logs an event.
-   * It would be wise to synchronize on a lock object.
+   *
+   * <p>It would be wise to synchronize on a lock object.</p>
    *
    * @param severity ERROR or INFO
    * @param source the responsible object, or null

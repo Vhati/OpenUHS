@@ -190,8 +190,10 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
   /**
    * Sets the error handler to notify of exceptions.
-   * This is a convenience for logging/muting.
-   * The default handler prints to System.err.
+   *
+   * <p>This is a convenience for logging/muting.</p>
+   *
+   * <p>The default handler prints to System.err.</p>
    *
    * @param eh the error handler, or null, for quiet parsing
    */
@@ -351,8 +353,9 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 
   /**
-   * Get the table displaying the catalog.
-   * This is so parent containers can add listeners to the downloader's GUI.
+   * Returns the table displaying the catalog.
+   *
+   * <p>This is so parent containers can add listeners to the downloader's GUI.</p>
    *
    * @return the table
    */
@@ -489,7 +492,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
   /**
    * Calls setNerfed on the top-level ancestor, if nerfable.
-   * A dedicated method was easier than passing the ancestor to runnables.
+   *
+   * <p>A dedicated method was easier than passing the ancestor to runnables.</p>
    */
   private void ancestorSetNerfed(boolean b) {
     boolean nerfable = false;
@@ -503,7 +507,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
   /**
    * Returns the top level ancestor, cast as a Component.
-   * Otherwise returns null.
+   *
+   * <p>Otherwise returns null.</p>
    */
   private Component getAncestorComponent() {
     Component ancestorComponent = null;

@@ -10,8 +10,8 @@ import net.vhati.openuhs.core.UHSNode;
 /**
  * A container for UHSNodes that have clickable regions.
  *
- * Children are initially invisible and associated with clickable zones.
- * When the zone is clicked, that child node is revealed, at a given position.
+ * <p>Children are initially invisible and associated with clickable zones.
+ * When the zone is clicked, that child node is revealed, at a given position.</p>
  *
  * @see net.vhati.openuhs.core.HotSpot
  */
@@ -81,7 +81,7 @@ public class UHSHotSpotNode extends UHSNode {
    * Overridden to make linking impossible.
    *
    * @param n ID of the node to target
-   * @see net.vhati.openuhs.core.UHSNode#setLinkTarget(int) UHSNode.setLinkTarget(int)
+   * @see net.vhati.openuhs.core.UHSNode#setLinkTarget(int)
    */
   public void setLinkTarget(int n) {
     return;
@@ -90,7 +90,8 @@ public class UHSHotSpotNode extends UHSNode {
 
   /**
    * Replace or initialize the current children.
-   * <br />This method gives the new nodes default zones/positions.
+   *
+   * <p>This method gives the new nodes default zones/positions.</p>
    *
    * @param inChildren a List of new child UHSNodes
    */
