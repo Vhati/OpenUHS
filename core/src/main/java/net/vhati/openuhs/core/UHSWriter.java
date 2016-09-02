@@ -718,19 +718,19 @@ public class UHSWriter {
 		String accentSuffix = "#a-";
 
 		char[] diaeresisMarkup = new char[] {':'};
-		char[] diaeresisAccent = new char[] {'ƒ','À','œ','÷','‹','‰','Î','Ô','ˆ','¸'};
+		char[] diaeresisAccent = new char[] {'√Ñ','√ã','√è','√ñ','√ú','√§','√´','√Ø','√∂','√º'};
 		char[] diaeresisNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 		char[] acuteMarkup = new char[] {'\''};
-		char[] acuteAccent = new char[] {'¡','…','Õ','”','⁄','·','È','Ì','Û','˙'};
+		char[] acuteAccent = new char[] {'√Å','√â','√ç','√ì','√ö','√°','√©','√≠','√≥','√∫'};
 		char[] acuteNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 		char[] graveMarkup = new char[] {'`'};
-		char[] graveAccent = new char[] {'¿','»','Ã','“','Ÿ','‡','Ë','Ï','Ú','˘'};
+		char[] graveAccent = new char[] {'√Ä','√à','√å','√í','√ô','√†','√®','√¨','√≤','√π'};
 		char[] graveNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 		char[] circumflexMarkup = new char[] {'^'};
-		char[] circumflexAccent = new char[] {'¬',' ','Œ','‘','€','‚','Í','Ó','Ù','˚'};
+		char[] circumflexAccent = new char[] {'√Ç','√ä','√é','√î','√õ','√¢','√™','√Æ','√¥','√ª'};
 		char[] circumflexNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 		char[] tildeMarkup = new char[] {'~'};
-		char[] tildeAccent = new char[] {'—','Ò'};
+		char[] tildeAccent = new char[] {'√ë','√±'};
 		char[] tildeNormal = new char[] {'N','n'};
 
 		char[][][] accents = new char[][][] {
@@ -761,7 +761,7 @@ public class UHSWriter {
 				}
 			}
 
-			if ( !escaped && tmp[c] == 'Ê' ) {
+			if ( !escaped && tmp[c] == '√¶' ) {
 				String normal = "ae";
 				if ( plain ) {
 					buf.append( normal );
@@ -770,7 +770,7 @@ public class UHSWriter {
 				}
 				escaped = true;
 			}
-			if ( !escaped && tmp[c] == 'ô' ) {
+			if ( !escaped && tmp[c] == '‚Ñ¢' ) {
 				String normal = "TM";
 				if ( plain ) {
 					buf.append( normal );

@@ -311,62 +311,62 @@ public class Proto4xUHSParser {
 					chunkB = new char[] {tmp[c+5],tmp[c+6],tmp[c+7]};
 					if (Arrays.equals( chunkA, accentPrefix ) && Arrays.equals( chunkB, accentSuffix )) {
 						if ( tmp[c+4] == ':' ) {
-							if ( tmp[c+3] == 'A' ) {buf.append( 'ƒ' ); c+=7; continue;}
-							if ( tmp[c+3] == 'E' ) {buf.append( 'À' ); c+=7; continue;}
-							if ( tmp[c+3] == 'I' ) {buf.append( 'œ' ); c+=7; continue;}
-							if ( tmp[c+3] == 'O' ) {buf.append( '÷' ); c+=7; continue;}
-							if ( tmp[c+3] == 'U' ) {buf.append( '‹' ); c+=7; continue;}
-							if ( tmp[c+3] == 'a' ) {buf.append( '‰' ); c+=7; continue;}
-							if ( tmp[c+3] == 'e' ) {buf.append( 'Î' ); c+=7; continue;}
-							if ( tmp[c+3] == 'i' ) {buf.append( 'Ô' ); c+=7; continue;}
-							if ( tmp[c+3] == 'o' ) {buf.append( 'ˆ' ); c+=7; continue;}
-							if ( tmp[c+3] == 'u' ) {buf.append( '¸' ); c+=7; continue;}
+							if ( tmp[c+3] == 'A' ) {buf.append( '√Ñ' ); c+=7; continue;}
+							if ( tmp[c+3] == 'E' ) {buf.append( '√ã' ); c+=7; continue;}
+							if ( tmp[c+3] == 'I' ) {buf.append( '√è' ); c+=7; continue;}
+							if ( tmp[c+3] == 'O' ) {buf.append( '√ñ' ); c+=7; continue;}
+							if ( tmp[c+3] == 'U' ) {buf.append( '√ú' ); c+=7; continue;}
+							if ( tmp[c+3] == 'a' ) {buf.append( '√§' ); c+=7; continue;}
+							if ( tmp[c+3] == 'e' ) {buf.append( '√´' ); c+=7; continue;}
+							if ( tmp[c+3] == 'i' ) {buf.append( '√Ø' ); c+=7; continue;}
+							if ( tmp[c+3] == 'o' ) {buf.append( '√∂' ); c+=7; continue;}
+							if ( tmp[c+3] == 'u' ) {buf.append( '√º' ); c+=7; continue;}
 						}
 						else if ( tmp[c+4] == '\'' ) {
-							if ( tmp[c+3] == 'A' ) {buf.append( '¡' ); c+=7; continue;}
-							if ( tmp[c+3] == 'E' ) {buf.append( '…' ); c+=7; continue;}
-							if ( tmp[c+3] == 'I' ) {buf.append( 'Õ' ); c+=7; continue;}
-							if ( tmp[c+3] == 'O' ) {buf.append( '”' ); c+=7; continue;}
-							if ( tmp[c+3] == 'U' ) {buf.append( '⁄' ); c+=7; continue;}
-							if ( tmp[c+3] == 'a' ) {buf.append( '·' ); c+=7; continue;}
-							if ( tmp[c+3] == 'e' ) {buf.append( 'È' ); c+=7; continue;}
-							if ( tmp[c+3] == 'i' ) {buf.append( 'Ì' ); c+=7; continue;}
-							if ( tmp[c+3] == 'o' ) {buf.append( 'Û' ); c+=7; continue;}
-							if ( tmp[c+3] == 'u' ) {buf.append( '˙' ); c+=7; continue;}
+							if ( tmp[c+3] == 'A' ) {buf.append( '√Å' ); c+=7; continue;}
+							if ( tmp[c+3] == 'E' ) {buf.append( '√â' ); c+=7; continue;}
+							if ( tmp[c+3] == 'I' ) {buf.append( '√ç' ); c+=7; continue;}
+							if ( tmp[c+3] == 'O' ) {buf.append( '√ì' ); c+=7; continue;}
+							if ( tmp[c+3] == 'U' ) {buf.append( '√ö' ); c+=7; continue;}
+							if ( tmp[c+3] == 'a' ) {buf.append( '√°' ); c+=7; continue;}
+							if ( tmp[c+3] == 'e' ) {buf.append( '√©' ); c+=7; continue;}
+							if ( tmp[c+3] == 'i' ) {buf.append( '√≠' ); c+=7; continue;}
+							if ( tmp[c+3] == 'o' ) {buf.append( '√≥' ); c+=7; continue;}
+							if ( tmp[c+3] == 'u' ) {buf.append( '√∫' ); c+=7; continue;}
 						}
 						else if ( tmp[c+4] == '`' ) {
-							if ( tmp[c+3] == 'A' ) {buf.append( '¿' ); c+=7; continue;}
-							if ( tmp[c+3] == 'E' ) {buf.append( '»' ); c+=7; continue;}
-							if ( tmp[c+3] == 'I' ) {buf.append( 'Ã' ); c+=7; continue;}
-							if ( tmp[c+3] == 'O' ) {buf.append( '“' ); c+=7; continue;}
-							if ( tmp[c+3] == 'U' ) {buf.append( 'Ÿ' ); c+=7; continue;}
-							if ( tmp[c+3] == 'a' ) {buf.append( '‡' ); c+=7; continue;}
-							if ( tmp[c+3] == 'e' ) {buf.append( 'Ë' ); c+=7; continue;}
-							if ( tmp[c+3] == 'i' ) {buf.append( 'Ï' ); c+=7; continue;}
-							if ( tmp[c+3] == 'o' ) {buf.append( 'Ú' ); c+=7; continue;}
-							if ( tmp[c+3] == 'u' ) {buf.append( '˘' ); c+=7; continue;}
+							if ( tmp[c+3] == 'A' ) {buf.append( '√Ä' ); c+=7; continue;}
+							if ( tmp[c+3] == 'E' ) {buf.append( '√à' ); c+=7; continue;}
+							if ( tmp[c+3] == 'I' ) {buf.append( '√å' ); c+=7; continue;}
+							if ( tmp[c+3] == 'O' ) {buf.append( '√í' ); c+=7; continue;}
+							if ( tmp[c+3] == 'U' ) {buf.append( '√ô' ); c+=7; continue;}
+							if ( tmp[c+3] == 'a' ) {buf.append( '√†' ); c+=7; continue;}
+							if ( tmp[c+3] == 'e' ) {buf.append( '√®' ); c+=7; continue;}
+							if ( tmp[c+3] == 'i' ) {buf.append( '√¨' ); c+=7; continue;}
+							if ( tmp[c+3] == 'o' ) {buf.append( '√≤' ); c+=7; continue;}
+							if ( tmp[c+3] == 'u' ) {buf.append( '√π' ); c+=7; continue;}
 						}
 						else if ( tmp[c+4] == '^' ) {
-							if ( tmp[c+3] == 'A' ) {buf.append( '¬' ); c+=7; continue;}
-							if ( tmp[c+3] == 'E' ) {buf.append( ' ' ); c+=7; continue;}
-							if ( tmp[c+3] == 'I' ) {buf.append( 'Œ' ); c+=7; continue;}
-							if ( tmp[c+3] == 'O' ) {buf.append( '‘' ); c+=7; continue;}
-							if ( tmp[c+3] == 'U' ) {buf.append( '€' ); c+=7; continue;}
-							if ( tmp[c+3] == 'a' ) {buf.append( '‚' ); c+=7; continue;}
-							if ( tmp[c+3] == 'e' ) {buf.append( 'Í' ); c+=7; continue;}
-							if ( tmp[c+3] == 'i' ) {buf.append( 'Ó' ); c+=7; continue;}
-							if ( tmp[c+3] == 'o' ) {buf.append( 'Ù' ); c+=7; continue;}
-							if ( tmp[c+3] == 'u' ) {buf.append( '˚' ); c+=7; continue;}
+							if ( tmp[c+3] == 'A' ) {buf.append( '√Ç' ); c+=7; continue;}
+							if ( tmp[c+3] == 'E' ) {buf.append( '√ä' ); c+=7; continue;}
+							if ( tmp[c+3] == 'I' ) {buf.append( '√é' ); c+=7; continue;}
+							if ( tmp[c+3] == 'O' ) {buf.append( '√î' ); c+=7; continue;}
+							if ( tmp[c+3] == 'U' ) {buf.append( '√õ' ); c+=7; continue;}
+							if ( tmp[c+3] == 'a' ) {buf.append( '√¢' ); c+=7; continue;}
+							if ( tmp[c+3] == 'e' ) {buf.append( '√™' ); c+=7; continue;}
+							if ( tmp[c+3] == 'i' ) {buf.append( '√Æ' ); c+=7; continue;}
+							if ( tmp[c+3] == 'o' ) {buf.append( '√¥' ); c+=7; continue;}
+							if ( tmp[c+3] == 'u' ) {buf.append( '√ª' ); c+=7; continue;}
 						}
 						else if ( tmp[c+4] == '~' ) {
-							if ( tmp[c+3] == 'N' ) {buf.append( '—' ); c+=7; continue;}
-							if ( tmp[c+3] == 'n' ) {buf.append( 'Ò' ); c+=7; continue;}
+							if ( tmp[c+3] == 'N' ) {buf.append( '√ë' ); c+=7; continue;}
+							if ( tmp[c+3] == 'n' ) {buf.append( '√±' ); c+=7; continue;}
 						}
 						else if ( tmp[c+3] == 'a' && tmp[c+4] == 'e' ) {
-							buf.append( 'Ê' ); c+=7; continue;
+							buf.append( '√¶' ); c+=7; continue;
 						}
 						else if ( tmp[c+3] == 'T' && tmp[c+4] == 'M' ) {
-							buf.append( 'ô' ); c+=7; continue;
+							buf.append( '‚Ñ¢' ); c+=7; continue;
 						}
 						else {
 							if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, this, "Unknown accent: "+ tmp[c+3] + tmp[c+4], logLine+1, null );

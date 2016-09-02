@@ -3,7 +3,9 @@ import org.apache.tools.ant.filters.FixCrLfFilter
 apply plugin: "java"
 
 
-compileJava.options.encoding = "Windows-1252"  // Someday "UTF-8"?
+def sourceEncoding = "UTF-8"
+
+compileJava.options.encoding = sourceEncoding
 compileJava.options.compilerArgs.addAll(["-Xlint:unchecked", "-Xlint:deprecation", "-Xlint:cast"])
 sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6

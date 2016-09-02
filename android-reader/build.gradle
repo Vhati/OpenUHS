@@ -24,6 +24,8 @@ buildscript {
 apply plugin: "com.android.application"
 
 
+def sourceEncoding = "UTF-8"
+
 project.ext.packageName = "net.vhati.openuhs.androidreader"
 project.ext.activityClassName = "${packageName}.MainActivity"
 
@@ -34,7 +36,7 @@ android {
 	buildToolsVersion = "24.0.1"
 
 	compileOptions {
-		encoding = "UTF-8"
+		encoding = sourceEncoding
 		sourceCompatibility JavaVersion.VERSION_1_6
 		targetCompatibility JavaVersion.VERSION_1_6
 	}

@@ -35,19 +35,19 @@ public class Version9xStringDecorator extends StringDecorator {
 	private static final char[] accentSuffix = new char[] {'#','a','-'};
 
 	private static final char[] diaeresisMarkup = new char[] {':'};
-	private static final char[] diaeresisAccent = new char[] {'ƒ','À','œ','÷','‹','‰','Î','Ô','ˆ','¸'};
+	private static final char[] diaeresisAccent = new char[] {'√Ñ','√ã','√è','√ñ','√ú','√§','√´','√Ø','√∂','√º'};
 	private static final char[] diaeresisNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 	private static final char[] acuteMarkup = new char[] {'\''};
-	private static final char[] acuteAccent = new char[] {'¡','…','Õ','”','⁄','·','È','Ì','Û','˙'};
+	private static final char[] acuteAccent = new char[] {'√Å','√â','√ç','√ì','√ö','√°','√©','√≠','√≥','√∫'};
 	private static final char[] acuteNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 	private static final char[] graveMarkup = new char[] {'`'};
-	private static final char[] graveAccent = new char[] {'¿','»','Ã','“','Ÿ','‡','Ë','Ï','Ú','˘'};
+	private static final char[] graveAccent = new char[] {'√Ä','√à','√å','√í','√ô','√†','√®','√¨','√≤','√π'};
 	private static final char[] graveNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 	private static final char[] circumflexMarkup = new char[] {'^'};
-	private static final char[] circumflexAccent = new char[] {'¬',' ','Œ','‘','€','‚','Í','Ó','Ù','˚'};
+	private static final char[] circumflexAccent = new char[] {'√Ç','√ä','√é','√î','√õ','√¢','√™','√Æ','√¥','√ª'};
 	private static final char[] circumflexNormal = new char[] {'A','E','I','O','U','a','e','i','o','u'};
 	private static final char[] tildeMarkup = new char[] {'~'};
-	private static final char[] tildeAccent = new char[] {'—','Ò'};
+	private static final char[] tildeAccent = new char[] {'√ë','√±'};
 	private static final char[] tildeNormal = new char[] {'N','n'};
 
 	private static final char[][][] accents = new char[][][] {
@@ -146,10 +146,10 @@ public class Version9xStringDecorator extends StringDecorator {
 					}
 				}
 				if ( !replaced && tmp[c+3] == 'a' && tmp[c+4] == 'e' ) {
-					buf.append( 'Ê' ); replaced = true;
+					buf.append( '√¶' ); replaced = true;
 				}
 				if ( !replaced && tmp[c+3] == 'T' && tmp[c+4] == 'M' ) {
-					buf.append( 'ô' ); replaced = true;
+					buf.append( '‚Ñ¢' ); replaced = true;
 				}
 				if ( !replaced ) {
 					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();

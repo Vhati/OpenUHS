@@ -3,10 +3,14 @@ import org.apache.tools.ant.filters.FixCrLfFilter
 apply plugin: "java"
 
 
-compileJava.options.encoding = "Windows-1252"  // Someday "UTF-8"?
+def sourceEncoding = "UTF-8"  // Originally Windows-1252.
+
+compileJava.options.encoding = sourceEncoding
 compileJava.options.compilerArgs.addAll(["-Xlint:unchecked", "-Xlint:deprecation", "-Xlint:cast"])
 sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6
+
+reporting.apiDocTitle = "OpenUHS-${project.name}"
 
 
 jar {
@@ -16,6 +20,7 @@ jar {
 
 task generateJavadocs(type: Javadoc) {
 	source = sourceSets.main.allJava
+	options.encoding = sourceEncoding
 }
 
 task packageDist(type: Zip) {
