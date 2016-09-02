@@ -53,106 +53,106 @@ import net.vhati.openuhs.core.downloader.DownloadableUHS;
  * @see net.vhati.openuhs.core.downloader.DownloadableUHS
  */
 public class CatalogParser {
-  public static final String DEFAULT_CATALOG_URL = "http://www.uhs-hints.com:80/cgi-bin/update.cgi";
+	public static final String DEFAULT_CATALOG_URL = "http://www.uhs-hints.com:80/cgi-bin/update.cgi";
 
-  // According to the server's Content-Type HTTP response header.
-  public static final String DEFAULT_CATALOG_ENCODING = "ISO-8859-1";
+	// According to the server's Content-Type HTTP response header.
+	public static final String DEFAULT_CATALOG_ENCODING = "ISO-8859-1";
 
-  public static final String DEFAULT_USER_AGENT = "UHSWIN/5.2";
-
-
-  /*
-   * SimpleDateFormat stops reading strings longer than the pattern.
-   * So just parse date. The time segment, if present, will be ignored.
-   */
-  private DateFormat goofyDateFormat = new SimpleDateFormat("dd-MMM-yy");
-
-  private UHSErrorHandler errorHandler = new DefaultUHSErrorHandler(System.err);
+	public static final String DEFAULT_USER_AGENT = "UHSWIN/5.2";
 
 
-  public CatalogParser() {
-  }
+	/*
+	 * SimpleDateFormat stops reading strings longer than the pattern.
+	 * So just parse date. The time segment, if present, will be ignored.
+	 */
+	private DateFormat goofyDateFormat = new SimpleDateFormat( "dd-MMM-yy" );
+
+	private UHSErrorHandler errorHandler = new DefaultUHSErrorHandler( System.err );
 
 
-  /**
-   * Sets the error handler to notify of exceptions.
-   *
-   * <p>This is a convenience for logging/muting.</p>
-   *
-   * <p>The default handler prints to System.err.</p>
-   *
-   * @param eh the error handler, or null, for quiet parsing
-   */
-  public void setErrorHandler(UHSErrorHandler eh) {
-    errorHandler = eh;
-  }
+	public CatalogParser() {
+	}
 
 
-  /**
-   *
-   * Parses the catalog of available hint files.
-   *
-   * @param catalogString the xml-like string downloaded from the server
-   * @return a List of DownloadableUHS objects
-   */
-  public List<DownloadableUHS> parseCatalog(String catalogString) {
-    errorHandler.log(UHSErrorHandler.INFO, null, "Catalog parse started", 0, null);
+	/**
+	 * Sets the error handler to notify of exceptions.
+	 *
+	 * <p>This is a convenience for logging/muting.</p>
+	 *
+	 * <p>The default handler prints to System.err.</p>
+	 *
+	 * @param eh the error handler, or null, for quiet parsing
+	 */
+	public void setErrorHandler( UHSErrorHandler eh ) {
+		errorHandler = eh;
+	}
 
-    List<DownloadableUHS> catalog = new ArrayList<DownloadableUHS>();
 
-    if (catalogString == null || catalogString.length() == 0) return catalog;
+	/**
+	 *
+	 * Parses the catalog of available hint files.
+	 *
+	 * @param catalogString the xml-like string downloaded from the server
+	 * @return a List of DownloadableUHS objects
+	 */
+	public List<DownloadableUHS> parseCatalog( String catalogString ) {
+		errorHandler.log( UHSErrorHandler.INFO, null, "Catalog parse started", 0, null );
+
+		List<DownloadableUHS> catalog = new ArrayList<DownloadableUHS>();
+
+		if (catalogString == null || catalogString.length() == 0) return catalog;
 
 
-    Pattern msgPtn = Pattern.compile("<MESSAGE>(.*?)</MESSAGE>");
+		Pattern msgPtn = Pattern.compile( "<MESSAGE>(.*?)</MESSAGE>" );
 
-    Pattern fileChunkPtn = Pattern.compile("(?s)<FILE>(.*?)</FILE>\\s*");
-    Pattern titlePtn = Pattern.compile("<FTITLE>(.*?)</FTITLE>");
-    Pattern urlPtn = Pattern.compile("<FURL>(.*?)</FURL>");
-    Pattern namePtn = Pattern.compile("<FNAME>(.*?)</FNAME>");
-    Pattern datePtn = Pattern.compile("<FDATE>(.*?)</FDATE>");
-    Pattern compressedSizePtn = Pattern.compile("<FSIZE>(.*?)</FSIZE>");
-    Pattern fullSizePtn = Pattern.compile("<FFULLSIZE>(.*?)</FFULLSIZE>");
+		Pattern fileChunkPtn = Pattern.compile( "(?s)<FILE>(.*?)</FILE>\\s*" );
+		Pattern titlePtn = Pattern.compile( "<FTITLE>(.*?)</FTITLE>" );
+		Pattern urlPtn = Pattern.compile( "<FURL>(.*?)</FURL>" );
+		Pattern namePtn = Pattern.compile( "<FNAME>(.*?)</FNAME>" );
+		Pattern datePtn = Pattern.compile( "<FDATE>(.*?)</FDATE>" );
+		Pattern compressedSizePtn = Pattern.compile( "<FSIZE>(.*?)</FSIZE>" );
+		Pattern fullSizePtn = Pattern.compile( "<FFULLSIZE>(.*?)</FFULLSIZE>" );
 
-    // Let chunk's find() skip the <MESSAGE> tag, if present.
-    // Could've done find(index) from the end of the message.
-    //   and used "\\G" (previous match) for strict back-to-back <FILE> parsing.
+		// Let chunk's find() skip the <MESSAGE> tag, if present.
+		// Could've done find(index) from the end of the message.
+		//   and used "\\G" (previous match) for strict back-to-back <FILE> parsing.
 
-    Matcher fileChunkMatcher = fileChunkPtn.matcher(catalogString);
-    Matcher m = null;
-    while (fileChunkMatcher.find()) {
-      String fileChunk = fileChunkMatcher.group(1);
-      DownloadableUHS tmpUHS = new DownloadableUHS();
+		Matcher fileChunkMatcher = fileChunkPtn.matcher( catalogString );
+		Matcher m = null;
+		while (fileChunkMatcher.find()) {
+			String fileChunk = fileChunkMatcher.group( 1 );
+			DownloadableUHS tmpUHS = new DownloadableUHS();
 
-      m = titlePtn.matcher(fileChunk);
-      if (m.find()) tmpUHS.setTitle(m.group(1));
+			m = titlePtn.matcher( fileChunk );
+			if ( m.find() ) tmpUHS.setTitle( m.group( 1 ) );
 
-      m = urlPtn.matcher(fileChunk);
-      if (m.find()) tmpUHS.setUrl(m.group(1));
+			m = urlPtn.matcher( fileChunk );
+			if ( m.find() ) tmpUHS.setUrl( m.group( 1 ) );
 
-      m = namePtn.matcher(fileChunk);
-      if (m.find()) tmpUHS.setName(m.group(1));
+			m = namePtn.matcher( fileChunk );
+			if ( m.find() ) tmpUHS.setName( m.group( 1 ) );
 
-      m = datePtn.matcher(fileChunk);
-      if (m.find()) {
-        try {
-          tmpUHS.setDate(goofyDateFormat.parse(m.group(1)));
-        }
-        catch (ParseException e) {
-          errorHandler.log(UHSErrorHandler.ERROR, null, String.format("Unexpected date format: '%s'", m.group(1)), 0, null);
-        }
-      }
+			m = datePtn.matcher( fileChunk );
+			if ( m.find() ) {
+				try {
+					tmpUHS.setDate( goofyDateFormat.parse( m.group( 1 ) ) );
+				}
+				catch ( ParseException e ) {
+					errorHandler.log( UHSErrorHandler.ERROR, null, String.format( "Unexpected date format: '%s'", m.group( 1 ) ), 0, null );
+				}
+			}
 
-      m = compressedSizePtn.matcher(fileChunk);
-      if (m.find()) tmpUHS.setCompressedSize(m.group(1));
+			m = compressedSizePtn.matcher( fileChunk );
+			if ( m.find() ) tmpUHS.setCompressedSize( m.group( 1 ) );
 
-      m = fullSizePtn.matcher(fileChunk);
-      if (m.find()) tmpUHS.setFullSize(m.group(1));
+			m = fullSizePtn.matcher( fileChunk );
+			if ( m.find() ) tmpUHS.setFullSize( m.group(1) );
 
-      catalog.add(tmpUHS);
-    }
+			catalog.add( tmpUHS );
+		}
 
-    errorHandler.log(UHSErrorHandler.INFO, null, String.format("Catalog parse finished (count: %d)", catalog.size()), 0, null);
+		errorHandler.log( UHSErrorHandler.INFO, null, String.format( "Catalog parse finished (count: %d)", catalog.size() ), 0, null );
 
-    return catalog;
-  }
+		return catalog;
+	}
 }

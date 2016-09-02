@@ -13,28 +13,28 @@ package net.vhati.openuhs.core;
  * @see net.vhati.openuhs.core.UHSHotSpotNode
  */
 public class HotSpot {
-  public int zoneX;
-  public int zoneY;
-  public int zoneW;
-  public int zoneH;
-  public int x;
-  public int y;
+	public int zoneX;
+	public int zoneY;
+	public int zoneW;
+	public int zoneH;
+	public int x;
+	public int y;
 
 
-  public HotSpot(int zX, int zY, int zW, int zH, int pX, int pY) {
-    zoneX = zX;
-    zoneY = zY;
-    zoneW = zW;
-    zoneH = zH;
-    x = pX;
-    y = pY;
-  }
+	public HotSpot( int zX, int zY, int zW, int zH, int pX, int pY ) {
+		zoneX = zX;
+		zoneY = zY;
+		zoneW = zW;
+		zoneH = zH;
+		x = pX;
+		y = pY;
+	}
 
-  public HotSpot(int zX, int zY, int zW, int zH) {
-    this(zX, zY, zW, zH, -1, -1);
-  }
+	public HotSpot( int zX, int zY, int zW, int zH ) {
+		this( zX, zY, zW, zH, -1, -1 );
+	}
 
-  public HotSpot() {
-    this(0, 0, 10, 10, -1, -1);
-  }
+	public HotSpot() {
+		this( 0, 0, 10, 10, -1, -1 );
+	}
 }

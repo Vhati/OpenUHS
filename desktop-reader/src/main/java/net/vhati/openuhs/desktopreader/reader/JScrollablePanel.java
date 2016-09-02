@@ -15,37 +15,37 @@ import javax.swing.Scrollable;
 public class JScrollablePanel extends JPanel implements Scrollable {
 
 
-  public JScrollablePanel() {
-    super();
-  }
+	public JScrollablePanel() {
+		super();
+	}
 
-  public JScrollablePanel(LayoutManager layout) {
-    super(layout);
-  }
+	public JScrollablePanel( LayoutManager layout ) {
+		super( layout );
+	}
 
 
-  @Override
-  public Dimension getPreferredScrollableViewportSize() {
-    return new Dimension(1, 1);
-  }
+	@Override
+	public Dimension getPreferredScrollableViewportSize() {
+		return new Dimension( 1, 1 );
+	}
 
-  @Override
-  public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
-    return 40;
-  }
+	@Override
+	public int getScrollableBlockIncrement( Rectangle visibleRect, int orientation, int direction ) {
+		return 40;
+	}
 
-  @Override
-  public boolean getScrollableTracksViewportHeight() {
-    return false;
-  }
+	@Override
+	public boolean getScrollableTracksViewportHeight() {
+		return false;
+	}
 
-  @Override
-  public boolean getScrollableTracksViewportWidth() {
-    return true;
-  }
+	@Override
+	public boolean getScrollableTracksViewportWidth() {
+		return true;
+	}
 
-  @Override
-  public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
-    return 20;
-  }
+	@Override
+	public int getScrollableUnitIncrement( Rectangle visibleRect, int orientation, int direction ) {
+		return 20;
+	}
 }

@@ -15,158 +15,158 @@ import net.vhati.openuhs.core.UHSNode;
 
 
 public class NodeAdapter extends BaseAdapter {
-  private Context context;
-  private UHSNode node = null;
+	private Context context;
+	private UHSNode node = null;
 
 
-  public NodeAdapter(Context context, UHSNode node, boolean showAll) {
-    super();
-    this.context = context;
-    setNode(node, showAll);
-  }
+	public NodeAdapter(Context context, UHSNode node, boolean showAll) {
+		super();
+		this.context = context;
+		setNode(node, showAll);
+	}
 
 
-  public void setNode(UHSNode node, boolean showAll) {
-    this.node = node;
+	public void setNode(UHSNode node, boolean showAll) {
+		this.node = node;
 
-    boolean allgroup = true;
-    if (node instanceof UHSHotSpotNode) {
-      // TODO: ...
-    }
-    else {
-      for (int i=0; i < node.getChildCount(); i++) {
-        UHSNode tmpNode = node.getChild(i);
-        int contentType = node.getChild(i).getContentType();
+		boolean allgroup = true;
+		if (node instanceof UHSHotSpotNode) {
+			// TODO: ...
+		}
+		else {
+			for (int i=0; i < node.getChildCount(); i++) {
+				UHSNode tmpNode = node.getChild(i);
+				int contentType = node.getChild(i).getContentType();
 
-        if (contentType == UHSNode.STRING) {
-          if (tmpNode.isGroup() || tmpNode.isLink()) {
-            // Nothing to do on Android.
-          }
-          else if (tmpNode.getType().equals("Blank") == false) {
-            allgroup = false;
-          }
-        }
-      }
-    }
+				if (contentType == UHSNode.STRING) {
+					if (tmpNode.isGroup() || tmpNode.isLink()) {
+						// Nothing to do on Android.
+					}
+					else if (tmpNode.getType().equals("Blank") == false) {
+						allgroup = false;
+					}
+				}
+			}
+		}
 
-    if (allgroup || showAll) {
-      node.setRevealedAmount(node.getChildCount());
-    }
-  }
-
-
-  /**
-   * Reveals the next child hint.
-   *
-   * @return the child's index or -1 if no more to see
-   */
-  public int showNext() {
-    int revealedAmt = node.getRevealedAmount();
-
-    if (revealedAmt != -1 && revealedAmt < node.getChildCount()) {
-      node.setRevealedAmount(revealedAmt + 1);
-      return node.getRevealedAmount()-1;
-    }
-    return -1;
-  }
+		if (allgroup || showAll) {
+			node.setRevealedAmount(node.getChildCount());
+		}
+	}
 
 
-  /**
-   * Determines whether the child hints have all been revealed.
-   *
-   * @return true if all children are revealed, false otherwise
-   */
-  public boolean isComplete() {
-    if (node.getChildCount() == node.getRevealedAmount()) return true;
-    else return false;
-  }
+	/**
+	 * Reveals the next child hint.
+	 *
+	 * @return the child's index or -1 if no more to see
+	 */
+	public int showNext() {
+		int revealedAmt = node.getRevealedAmount();
+
+		if (revealedAmt != -1 && revealedAmt < node.getChildCount()) {
+			node.setRevealedAmount(revealedAmt + 1);
+			return node.getRevealedAmount()-1;
+		}
+		return -1;
+	}
 
 
-  @Override
-  public int getCount() {
-    int revealedAmt = node.getRevealedAmount();
-    return (revealedAmt != -1 ? revealedAmt : 0);
-  }
+	/**
+	 * Determines whether the child hints have all been revealed.
+	 *
+	 * @return true if all children are revealed, false otherwise
+	 */
+	public boolean isComplete() {
+		if (node.getChildCount() == node.getRevealedAmount()) return true;
+		else return false;
+	}
 
-  @Override
-  public Object getItem(int position) {
-    return node.getChild(position);
-  }
 
-  @Override
-  public long getItemId(int position) {
-    return position;
-  }
+	@Override
+	public int getCount() {
+		int revealedAmt = node.getRevealedAmount();
+		return (revealedAmt != -1 ? revealedAmt : 0);
+	}
 
-  /**
-   * Returns the number of potential View classes in this list.
-   */
-  @Override
-  public int getViewTypeCount() {
-    return 4;
-  }
+	@Override
+	public Object getItem(int position) {
+		return node.getChild(position);
+	}
 
-  /**
-   * Returns an int for categorizing View classes for getView() recycling.
-   *
-   * @return a number from 0 through getViewTypeCount()-1
-   */
-  @Override
-  public int getItemViewType(int position) {
-    int childContentType = node.getChild(position).getContentType();
+	@Override
+	public long getItemId(int position) {
+		return position;
+	}
 
-    if (childContentType == UHSNode.STRING) return 1;
-    if (childContentType == UHSNode.IMAGE) return 2;
-    if (childContentType == UHSNode.AUDIO) return 3;
+	/**
+	 * Returns the number of potential View classes in this list.
+	 */
+	@Override
+	public int getViewTypeCount() {
+		return 4;
+	}
 
-    return 0;
-  }
+	/**
+	 * Returns an int for categorizing View classes for getView() recycling.
+	 *
+	 * @return a number from 0 through getViewTypeCount()-1
+	 */
+	@Override
+	public int getItemViewType(int position) {
+		int childContentType = node.getChild(position).getContentType();
 
-  /**
-   * Get a View that displays the data at the specified position in the data set.
-   *
-   * @param position the position of the item within the adapter's data set whose view we want
-   * @param convertView the old view to reuse, if possible (if non-null and the right type).
-   * @param parent the parent that this view will eventually be attached to
-   */
-  @Override
-  public View getView(int position, View convertView, ViewGroup parent) {
-    View childView;
-    final LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		if (childContentType == UHSNode.STRING) return 1;
+		if (childContentType == UHSNode.IMAGE) return 2;
+		if (childContentType == UHSNode.AUDIO) return 3;
 
-    int childContentType = node.getChild(position).getContentType();
-    if (childContentType == UHSNode.STRING) {
-      if (convertView instanceof UHSTextView) {
-        childView = convertView;
-      } else {
-        childView = new UHSTextView(context);
-      }
-      ((UHSTextView)childView).setNode(node.getChild(position));
-    }
-    else if (childContentType == UHSNode.IMAGE) {
-      if (convertView instanceof UHSImageView) {
-        childView = convertView;
-      } else {
-        childView = new UHSImageView(context);
-      }
-      ((UHSImageView)childView).setNode(node.getChild(position));
-    }
-    else if (childContentType == UHSNode.AUDIO) {
-      if (convertView instanceof UHSSoundView) {
-        childView = convertView;
-      } else {
-        childView = new UHSSoundView(context);
-      }
-      ((UHSSoundView)childView).setNode(node.getChild(position));
-    }
-    else {
-      if (convertView instanceof UHSUnknownView) {
-        childView = convertView;
-      } else {
-        childView = new UHSUnknownView(context);
-      }
-    }
+		return 0;
+	}
 
-    return childView;
-  }
+	/**
+	 * Get a View that displays the data at the specified position in the data set.
+	 *
+	 * @param position the position of the item within the adapter's data set whose view we want
+	 * @param convertView the old view to reuse, if possible (if non-null and the right type).
+	 * @param parent the parent that this view will eventually be attached to
+	 */
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		View childView;
+		final LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+		int childContentType = node.getChild(position).getContentType();
+		if (childContentType == UHSNode.STRING) {
+			if (convertView instanceof UHSTextView) {
+				childView = convertView;
+			} else {
+				childView = new UHSTextView(context);
+			}
+			((UHSTextView)childView).setNode(node.getChild(position));
+		}
+		else if (childContentType == UHSNode.IMAGE) {
+			if (convertView instanceof UHSImageView) {
+				childView = convertView;
+			} else {
+				childView = new UHSImageView(context);
+			}
+			((UHSImageView)childView).setNode(node.getChild(position));
+		}
+		else if (childContentType == UHSNode.AUDIO) {
+			if (convertView instanceof UHSSoundView) {
+				childView = convertView;
+			} else {
+				childView = new UHSSoundView(context);
+			}
+			((UHSSoundView)childView).setNode(node.getChild(position));
+		}
+		else {
+			if (convertView instanceof UHSUnknownView) {
+				childView = convertView;
+			} else {
+				childView = new UHSUnknownView(context);
+			}
+		}
+
+		return childView;
+	}
 }

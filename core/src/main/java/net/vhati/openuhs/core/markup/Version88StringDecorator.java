@@ -17,17 +17,17 @@ import net.vhati.openuhs.core.markup.StringDecorator;
 public class Version88StringDecorator extends StringDecorator {
 
 
-  public Version88StringDecorator() {
-    super();
-  }
+	public Version88StringDecorator() {
+		super();
+	}
 
 
-  @Override
-  public DecoratedFragment[] getDecoratedString(String rawContent) {
-    String fragment = rawContent;
-    String[] decoNames = new String[0];
-    Map[] argMaps = new LinkedHashMap[0];
-    DecoratedFragment[] result = new DecoratedFragment[] {new DecoratedFragment(fragment, decoNames, argMaps)};
-    return result;
-  }
+	@Override
+	public DecoratedFragment[] getDecoratedString( String rawContent ) {
+		String fragment = rawContent;
+		String[] decoNames = new String[0];
+		Map[] argMaps = new LinkedHashMap[0];
+		DecoratedFragment[] result = new DecoratedFragment[] {new DecoratedFragment( fragment, decoNames, argMaps )};
+		return result;
+	}
 }
