@@ -41,7 +41,9 @@ Projects
 
 Build Environment
 
-Here's a batch file that spawns a gradle-capable prompt when double-clicked (edit the vars).
+WARNING: All text and source code here is encoded in UTF-8 (no BOM). For most purposes, this is identical to ANSI Windows-1252. However, accented characters in a few files may confuse text editors if they're expecting ANSI. Java tools ordinarily default to the OS's standard encoding, but gradle scripts will override that. The specs for UTF-8 allow for an optional binary header, called a byte-order mark (BOM). Make sure your text editors DO NOT save UTF-8 w/BOM!
+
+Here's a Windows batch file that spawns a gradle-capable prompt when double-clicked (edit the vars).
 - - - -
 @ECHO OFF
 SETLOCAL
