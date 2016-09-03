@@ -17,7 +17,7 @@ jar {
 }
 
 task generateJavadocs(type: Javadoc) {
-	title = "OpenUHS-Core"
+	title = "OpenUHS-Core ${project.version}"
 
 	source = sourceSets.main.allJava
 	options.encoding = sourceEncoding
