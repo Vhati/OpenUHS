@@ -5,12 +5,12 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jdom.Document;
-import org.jdom.JDOMException;
-import org.jdom.Element;
-import org.jdom.CDATA;
-import org.jdom.output.XMLOutputter;
-import org.jdom.output.Format;
+import org.jdom2.Document;
+import org.jdom2.JDOMException;
+import org.jdom2.Element;
+import org.jdom2.CDATA;
+import org.jdom2.output.XMLOutputter;
+import org.jdom2.output.Format;
 
 import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.HotSpot;

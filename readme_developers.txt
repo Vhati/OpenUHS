@@ -29,7 +29,7 @@ Projects
           http://docs.oracle.com/javase/6/docs/api/
       - Java-getopt
           http://www.urbanophile.com/~arenn/hacking/download.html
-      - JDOM 1.x
+      - JDOM 2.x
           http://www.jdom.org/
 
   android-reader - Android UHS reader.
