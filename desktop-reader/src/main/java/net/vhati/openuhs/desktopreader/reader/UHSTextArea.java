@@ -111,7 +111,8 @@ public class UHSTextArea extends JTextPane {
 	 * components using its descendants only. The style itself
 	 * will not update for some reason.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * @{code
 	 * Java's default
 	 * - base
 	 * - - regular
@@ -119,7 +120,8 @@ public class UHSTextArea extends JTextPane {
 	 * - - - link
 	 * - - - hyper
 	 * - - - monospaced
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 */
 	private static StyleContext getDefaultStyleContext() {
 		StyleContext result = new StyleContext();

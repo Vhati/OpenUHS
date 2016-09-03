@@ -44,7 +44,8 @@ import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
  * A panel to navigate UHS nodes.
  *
  * Typical usage...
- * <pre><code>
+ * <blockquote><pre>
+ * <code>
  * import org.openuhs.core.*;
  * import org.openuhs.reader.*;
  *
@@ -53,7 +54,8 @@ import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
  * UHSRootNode rootNode = uhsParser.parseFile(new File("./hints/somefile.uhs"));
  *
  * if (rootNode != null) readerPanel.setUHSNodes(rootNode, rootNode);
- * </code></pre>
+ * </code>
+ * </pre></blockquote>
  */
 public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionListener {
 	public static final int SCROLL_TO_TOP = 0;

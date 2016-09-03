@@ -136,7 +136,8 @@ public class Proto4xUHSParser {
 	 * <p>Each node is given an arbitrary id on its START
 	 * line, and it encloses everything until a matching END line.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * proto_UHS
 	 * 0 proto_subject
 	 * START *********** #
@@ -150,7 +151,8 @@ public class Proto4xUHSParser {
 	 * title File Information
 	 * ...
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>The root node would normally contain up to two children.
 	 * <ul>
@@ -392,7 +394,8 @@ public class Proto4xUHSParser {
 	/**
 	 * Generates a subject UHSNode and its contents.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_subject
 	 * START *********** #
 	 * title
@@ -401,7 +404,8 @@ public class Proto4xUHSParser {
 	 * =
 	 * embedded hunk
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param rootNode an existing root node
@@ -453,7 +457,8 @@ public class Proto4xUHSParser {
 	/**
 	 * Generates a normal hint UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_hint
 	 * START *********** #
 	 * Question
@@ -461,7 +466,8 @@ public class Proto4xUHSParser {
 	 * -
 	 * hint (not encrypted)
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param rootNode an existing root node
@@ -535,7 +541,8 @@ public class Proto4xUHSParser {
 	/**
 	 * Generates a text UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_text
 	 * START *********** #
 	 * title
@@ -543,7 +550,8 @@ public class Proto4xUHSParser {
 	 * sentence
 	 * sentence
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Rather than assuming "\n" everywhere, in-file linebreaks
 	 * are preserved (for context-sensitive escaping later).
@@ -615,7 +623,8 @@ public class Proto4xUHSParser {
 	/**
 	 * Generates a comment UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_comment
 	 * START *********** #
 	 * title
@@ -623,7 +632,8 @@ public class Proto4xUHSParser {
 	 * sentence
 	 * sentence
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Rather than assuming " " everywhere, in-file linebreaks
 	 * are preserved (for context-sensitive escaping later).
@@ -692,7 +702,8 @@ public class Proto4xUHSParser {
 	/**
 	 * Generates a credit UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_credit
 	 * START *********** #
 	 * title
@@ -700,7 +711,8 @@ public class Proto4xUHSParser {
 	 * sentence
 	 * sentence
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Rather than assuming " " everywhere, in-file linebreaks
 	 * are preserved (for context-sensitive escaping later).
@@ -771,12 +783,14 @@ public class Proto4xUHSParser {
 	 *
 	 * <p>Nodes like this that have link targets behave like conventional hyperlinks instead of containing child nodes.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_link
 	 * START *********** #
 	 * title
 	 * index
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param rootNode an existing root node
@@ -833,7 +847,8 @@ public class Proto4xUHSParser {
 	 *
 	 * <p>UHSHotSpotNode was written to handle regions.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_hyperpng
 	 * START *********** #
 	 * title
@@ -866,7 +881,8 @@ public class Proto4xUHSParser {
 	 * title
 	 * file-path 0 0 x y
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Paths point to png images (spaces are replaced with "?").</p>
 	 * <p>There is no comparable gifa structure.</p>
@@ -1036,7 +1052,8 @@ public class Proto4xUHSParser {
 	/**
 	 * Generates an info UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 0 proto_info
 	 * START *********** #
 	 * title
@@ -1047,7 +1064,8 @@ public class Proto4xUHSParser {
 	 * copyright=sentence
 	 * comments=sentence
 	 * END *********** #
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param rootNode an existing root node

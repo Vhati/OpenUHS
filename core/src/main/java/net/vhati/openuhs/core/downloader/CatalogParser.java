@@ -24,24 +24,28 @@ import net.vhati.openuhs.core.downloader.DownloadableUHS;
  *
  * <p>This is what "Mozilla" user-agents see...</p>
  *
- * <pre>{@code
+ * <blockquote><pre>
+ * {@code
  * <FILE><FTITLE>The 11th Hour</FTITLE>
  * <FURL>http://www.uhs-hints.com/rfiles/11thhour.zip</FURL>
  * <FNAME>11thhour.uhs</FNAME><FDATE>24-Jan-96 00:01:39</FDATE>
  * <FSIZE>25024</FSIZE>
  * <FFULLSIZE>51278</FFULLSIZE></FILE>
- * }</pre>
+ * }
+ * </pre></blockquote>
  *
  * <p>This is what "UHSWIN/5.2" user-agents see:</p>
  *
- * <pre>@{code
+ * <blockquote><pre>
+ * {@code
  * <MESSAGE>A new version of the UHS Reader is now available.  Version 6.00 offers [...]</MESSAGE>
  * <FILE><FTITLE>The 11th Hour</FTITLE>
  * <FURL>http://www.uhs-hints.com/rfiles/11thhour.zip</FURL>
  * <FNAME>11thhour.uhs</FNAME><FDATE>23-Jan-96</FDATE>
  * <FSIZE>25024</FSIZE>
  * <FFULLSIZE>51278</FFULLSIZE></FILE>
- * }</pre>
+ * }
+ * </pre></blockquote>
  *
  * <p>FSIZE is the size of the zip file.</p>
  * <p>FFULLSIZE is the size of the UHS file, inside the zip, after extraction.</p>

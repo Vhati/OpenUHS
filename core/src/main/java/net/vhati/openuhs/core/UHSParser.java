@@ -303,7 +303,8 @@ public class UHSParser {
 	 *
 	 * <p>A Version node will be added, since that was not natively reported in 88a.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * UHS
 	 * document title
 	 * # (index of first hint)
@@ -325,7 +326,8 @@ public class UHSParser {
 	 * hint (encrypted)
 	 * hint (encrypted)
 	 * credit sentences (several lines)
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Index references begin at the first subject,
 	 * as do the lines of uhsFileArray.</p>
@@ -423,7 +425,8 @@ public class UHSParser {
 	 * These UHS files are prepended with an 88a section containing an "upgrade your reader" notice.
 	 * Below, uhsFileArray begins after "** END OF 88A FORMAT **".</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * UHS
 	 * # Subject
 	 * title
@@ -440,7 +443,8 @@ public class UHSParser {
 	 * 0x1Ah character
 	 * {binary hunk}
 	 * {2-byte CRC16 of everything prior}
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>The root node would normally contain up to four children.
 	 * <ul>
@@ -574,13 +578,15 @@ public class UHSParser {
 	/**
 	 * Generates a subject UHSNode and its contents.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # subject
 	 * title
 	 * embedded hunk
 	 * embedded hunk
 	 * embedded hunk
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -617,7 +623,8 @@ public class UHSParser {
 	/**
 	 * Generates a nested hint UHSNode and its contents.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # nesthint
 	 * Question
 	 * hint (encrypted)
@@ -628,7 +635,8 @@ public class UHSParser {
 	 * rest of hint (encrypted)
 	 * -
 	 * hint (encrypted)
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -706,13 +714,15 @@ public class UHSParser {
 	/**
 	 * Generates a normal hint UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # hint
 	 * Question
 	 * hint (encrypted)
 	 * -
 	 * hint (encrypted)
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -774,13 +784,15 @@ public class UHSParser {
 	/**
 	 * Generates a comment UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # comment
 	 * title
 	 * sentence
 	 * sentence
 	 * sentence
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -826,13 +838,15 @@ public class UHSParser {
 	/**
 	 * Generates a credit UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # credit
 	 * title
 	 * sentence
 	 * sentence
 	 * sentence
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -878,11 +892,13 @@ public class UHSParser {
 	/**
 	 * Generates a text UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # text
 	 * title
 	 * 000000 0 offset length
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
 	 * <p>The binary content is encrypted.</p>
@@ -949,11 +965,13 @@ public class UHSParser {
 	 *
 	 * <p>Nodes like this that have link targets behave like conventional hyperlinks instead of containing child nodes.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # link
 	 * title
 	 * index
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -1005,7 +1023,8 @@ public class UHSParser {
 	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImg image)</li>
 	 * </ul></p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # hyperpng (or gifa)
 	 * title
 	 * 000000 offset length (the main image, gets id at this line)
@@ -1034,7 +1053,8 @@ public class UHSParser {
 	 * 3 hyperpng
 	 * title
 	 * 000000 offset length
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
 	 * <p>A gifa has the same structure, but might not officially contain regions.</p>
@@ -1212,11 +1232,13 @@ public class UHSParser {
 	 * <li>Illustrative UHS: <i>Tex Murphy: Overseer</i>: Day Two, Bosworth Clark's Lab, How do I operate that keypad?</li>
 	 * </ul></p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # sound
 	 * title
 	 * 000000 offset length
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
 	 *
@@ -1270,10 +1292,12 @@ public class UHSParser {
 	/**
 	 * Generates a blank UHSNode for spacing.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * 2 blank
 	 * -
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray a List of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -1306,13 +1330,15 @@ public class UHSParser {
 	 * <p>This is the version reported by the hint file.
 	 * It may be inaccurate, blank, or conflict with what is claimed in the info node.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # version
 	 * title
 	 * sentence
 	 * sentence
 	 * sentence
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>Frankenstein: Through the Eyes of the Monster</i> (blank version)</li>
@@ -1369,7 +1395,8 @@ public class UHSParser {
 	/**
 	 * Generates an info UHSNode.
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # info
 	 * -
 	 * length=#######
@@ -1383,7 +1410,8 @@ public class UHSParser {
 	 * >sentence
 	 * >sentence
 	 * >sentence
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * @param uhsFileArray array of all available lines in the file
 	 * @param binHunk array of raw bytes at the end of the file
@@ -1442,11 +1470,13 @@ public class UHSParser {
 	 * 'A' means only registered readers can see the node's children or link target.
 	 * In some files, there is no list, and this node only occupies 2 lines.</p>
 	 *
-	 * <pre>@{code
+	 * <blockquote><pre>
+	 * {@code
 	 * # incentive
 	 * -
 	 * ID list (encrypted)
-	 * }</pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>Upon parsing this node, all referenced ids will be
 	 * looked up by calling getLink(id) on the rootNode. The nodes

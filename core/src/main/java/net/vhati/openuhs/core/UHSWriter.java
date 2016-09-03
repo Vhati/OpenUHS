@@ -142,12 +142,14 @@ public class UHSWriter {
 	 * Tests whether a UHSRootNode can be expressed in 88a format.
 	 *
 	 * <p>The rootNode must contain...
-	 * <pre>
+	 * <blockquote><pre>
+	 * {@code
 	 * 0-or-more Subjects, containing:
 	 * - 1-or-more Questions, containing:
 	 * - - 1-or-more Hints
 	 * 1 Credit, containing a text node
-	 * </pre>
+	 * }
+	 * </pre></blockquote>
 	 *
 	 * <p>All the nodes' content must be strings.</p>
 	 * <p>Newlines are not part of 88a, and will be stripped.</p>
