@@ -2,7 +2,10 @@ package net.vhati.openuhs.desktopreader.reader;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -69,8 +72,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	private UHSNode currentNode = null;
 
 	private NodePanel currentNodePanel = null;
-	private JScrollPane scrollPane = null;
-	private JScrollablePanel scrollView = new JScrollablePanel( new BorderLayout() );
+	private JScrollPane centerScroll = null;
+	private JScrollablePanel centerScrollView = new JScrollablePanel( new BorderLayout() );
 
 	private List<UHSNode> historyArray = new ArrayList<UHSNode>();
 	private List<UHSNode> futureArray = new ArrayList<UHSNode>();
@@ -79,8 +82,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	private JButton forwardBtn = null;
 	private JButton findBtn = null;
 
-	private JLabel questionLabel = null;
-	private JLabel showLabel = null;
+	private JLabel questionLbl = null;
+	private JLabel showLbl = null;
 	private JButton showNextBtn = null;
 	private JCheckBox showAllBox = null;
 
@@ -90,66 +93,76 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	public UHSReaderPanel() {
 		super( new BorderLayout() );
 
-		JPanel ctrlPanel = new JPanel( new BorderLayout() );
-			JPanel ctrlLeftPanel = new JPanel();
-				ctrlLeftPanel.setLayout( new BoxLayout( ctrlLeftPanel, BoxLayout.X_AXIS ) );
-				openBtn = new JButton( "Open..." );
-					ctrlLeftPanel.add( openBtn );
-			ctrlPanel.add( ctrlLeftPanel, BorderLayout.WEST );
+		GridBagConstraints gridC = new GridBagConstraints();
 
-			JPanel ctrlCenterPanel = new JPanel();
-				ctrlCenterPanel.setLayout( new BoxLayout( ctrlCenterPanel, BoxLayout.Y_AXIS ) );
-				JPanel ctrlCenterHolderPanel = new JPanel();
-					ctrlCenterHolderPanel.setLayout( new BoxLayout( ctrlCenterHolderPanel, BoxLayout.X_AXIS ) );
+		JPanel topPanel = new JPanel( new BorderLayout() );
+			JPanel ctrlPanel = new JPanel( new GridLayout( 0, 3 ) );
+
+				JPanel ctrlLeftPanel = new JPanel( new GridBagLayout() );
+					gridC.gridx = 0;
+					gridC.weightx = 1.0;
+					gridC.fill = GridBagConstraints.NONE;
+					gridC.anchor = GridBagConstraints.WEST;
+					openBtn = new JButton( "Open..." );
+						ctrlLeftPanel.add( openBtn, gridC );
+				ctrlPanel.add( ctrlLeftPanel );
+
+				JPanel ctrlCenterPanel = new JPanel( new GridBagLayout() );
+					gridC.gridx = 0;
+					gridC.weightx = 1.0;
+					gridC.fill = GridBagConstraints.NONE;
+					gridC.anchor = GridBagConstraints.CENTER;
 					backBtn = new JButton( "<" );
 						backBtn.setEnabled( false );
-						ctrlCenterHolderPanel.add( backBtn );
+						ctrlCenterPanel.add( backBtn, gridC );
+					gridC.gridx++;
 					forwardBtn = new JButton( ">" );
 						forwardBtn.setEnabled( false );
-						ctrlCenterHolderPanel.add( forwardBtn );
-					ctrlCenterPanel.add( ctrlCenterHolderPanel );
-				ctrlPanel.add( ctrlCenterPanel, BorderLayout.CENTER );
+						ctrlCenterPanel.add( forwardBtn, gridC );
+					ctrlPanel.add( ctrlCenterPanel );
 
-			JPanel ctrlRightPanel = new JPanel();
-				ctrlRightPanel.setLayout( new BoxLayout( ctrlRightPanel, BoxLayout.X_AXIS ) );
-				findBtn = new JButton( "Find..." );
-					ctrlRightPanel.add( findBtn );
-				ctrlPanel.add( ctrlRightPanel, BorderLayout.EAST );
+				JPanel ctrlRightPanel = new JPanel( new GridBagLayout() );
+					gridC.gridx = 0;
+					gridC.weightx = 1.0;
+					gridC.fill = GridBagConstraints.NONE;
+					gridC.anchor = GridBagConstraints.EAST;
+					findBtn = new JButton( "Find..." );
+						ctrlRightPanel.add( findBtn, gridC );
+					ctrlPanel.add( ctrlRightPanel );
 
-			JPanel ctrlBottomPanel = new JPanel();
-				ctrlBottomPanel.setLayout( new BoxLayout( ctrlBottomPanel, BoxLayout.X_AXIS ) );
-				questionLabel = new JLabel( "" );
-					ctrlBottomPanel.add( questionLabel );
-				ctrlPanel.add( ctrlBottomPanel, BorderLayout.SOUTH );
+				topPanel.add( ctrlPanel, BorderLayout.CENTER );
+
+			JPanel questionPanel = new JPanel();
+				questionPanel.setLayout( new BoxLayout( questionPanel, BoxLayout.X_AXIS ) );
+				questionLbl = new JLabel( "" );
+					questionPanel.add( questionLbl );
+				topPanel.add( questionPanel, BorderLayout.SOUTH );
 
 
-		JPanel centerPanel = new JPanel();
-			centerPanel.setLayout( new BoxLayout( centerPanel, BoxLayout.Y_AXIS ) );
-			scrollPane = new JScrollPane( scrollView, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
+		JPanel centerPanel = new JPanel( new BorderLayout() );
+			centerScroll = new JScrollPane( centerScrollView, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
 				//The default scroll speed is too slow
-				scrollPane.getHorizontalScrollBar().setUnitIncrement( 25 );
-				scrollPane.getVerticalScrollBar().setUnitIncrement( 25 );
-				centerPanel.add( scrollPane );
+				centerScroll.getHorizontalScrollBar().setUnitIncrement( 25 );
+				centerScroll.getVerticalScrollBar().setUnitIncrement( 25 );
+				centerPanel.add( centerScroll );
 
 
-		JPanel showPanel = new JPanel( new GridLayout( 0,3 ) );
-			showLabel = new JLabel( "" );
-				showLabel.setHorizontalAlignment( SwingConstants.RIGHT );
-				showPanel.add( showLabel );
+		JPanel showPanel = new JPanel( new GridLayout( 0, 3 ) );
+			showLbl = new JLabel( "" );
+				showLbl.setHorizontalAlignment( SwingConstants.CENTER );
+				showPanel.add( showLbl );
 
-			JPanel showCenterPanel = new JPanel();
-				showCenterPanel.setLayout(new BoxLayout( showCenterPanel, BoxLayout.Y_AXIS ));
-				JPanel showCenterHolderPanel = new JPanel();
-					showCenterHolderPanel.setLayout( new BoxLayout( showCenterHolderPanel, BoxLayout.X_AXIS ) );
-					showNextBtn = new JButton( "V" );
-						showNextBtn.setEnabled( false );
-						showCenterHolderPanel.add( showNextBtn );
-					showCenterPanel.add( showCenterHolderPanel );
-				showPanel.add( showCenterPanel );
+			JPanel showNextHolderPanel = new JPanel( new GridBagLayout() );
+				showNextBtn = new JButton( "V" );
+					showNextBtn.setEnabled( false );
+					showNextBtn.setPreferredSize( new Dimension( showNextBtn.getPreferredSize().width*2, showNextBtn.getPreferredSize().height ) );
+					showNextHolderPanel.add( showNextBtn );
+				showPanel.add( showNextHolderPanel );
 
 			showAllBox = new JCheckBox( "Show All" );
 				showAllBox.setEnabled( true );
-				showAllBox.setHorizontalAlignment( SwingConstants.LEFT );
+				showAllBox.setHorizontalAlignment( SwingConstants.CENTER );
+				//showAllBox.setMaximumSize( showAllBox.getPreferredSize() );
 				showPanel.add( showAllBox );
 
 		openBtn.addActionListener( this );
@@ -160,7 +173,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		showAllBox.addActionListener( this );
 
 
-		this.add( ctrlPanel, BorderLayout.NORTH );
+		this.add( topPanel, BorderLayout.NORTH );
 		this.add( centerPanel, BorderLayout.CENTER );
 		this.add( showPanel, BorderLayout.SOUTH );
 
@@ -257,13 +270,13 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		forwardBtn.setEnabled( false );
 		findBtn.setEnabled( false );
 
-		showLabel.setText( "" );
+		showLbl.setText( "" );
 		showNextBtn.setEnabled( false );
 
 		rootNode = null;
 		currentNode = null;
 
-		scrollView.removeAll();
+		centerScrollView.removeAll();
 		currentNodePanel = null;
 
 		pronoun.setReaderTitle( null );
@@ -383,7 +396,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		boolean showAll = false;
 
 		if ( currentNode.equals(rootNode) ) {
-			questionLabel.setText( "" );
+			questionLbl.setText( "" );
 			pronoun.setReaderTitle( (String)currentNode.getContent() );
 			showAll = true;
 		}
@@ -401,21 +414,21 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 				else {
 					questionBuf.append( (String)currentNode.getContent() );
 				}
-				questionLabel.setText( questionBuf.toString() );
+				questionLbl.setText( questionBuf.toString() );
 			}
 			else {
-				questionLabel.setText( "" );
+				questionLbl.setText( "" );
 			}
 			showAll = showAllBox.isSelected();
 		}
-		scrollView.removeAll();
+		centerScrollView.removeAll();
 		currentNodePanel = new NodePanel( currentNode, pronoun, showAll );
-		scrollView.add( currentNodePanel );
+		centerScrollView.add( currentNodePanel );
 
 		scrollTo( SCROLL_IF_INCOMPLETE );
 
 		boolean complete = currentNodePanel.isComplete();
-		showLabel.setText( (( complete ) ? currentNode.getChildCount() : currentNode.getRevealedAmount()) +"/"+ currentNode.getChildCount() );
+		showLbl.setText( (( complete ) ? currentNode.getChildCount() : currentNode.getRevealedAmount()) +"/"+ currentNode.getChildCount() );
 		showNextBtn.setEnabled( !complete );
 
 		pronoun.validate();
@@ -524,7 +537,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		} else {
 			int hintCount = currentNodePanel.getNode().getChildCount();
 			if ( (revealedIndex+1) == hintCount ) showNextBtn.setEnabled( false );
-			showLabel.setText( (revealedIndex+1) +"/"+ hintCount);
+			showLbl.setText( (revealedIndex+1) +"/"+ hintCount);
 			return true;
 		}
 	}
@@ -555,7 +568,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 			SwingUtilities.invokeLater( new Runnable() {
 				@Override
 				public void run() {
-					scrollPane.getViewport().setViewPosition( new Point(0, 0) );
+					centerScroll.getViewport().setViewPosition( new Point(0, 0) );
 				}
 			});
 		}
@@ -565,10 +578,10 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 				public void run() {
 					// Wait some more.
 					Thread.yield();
-					int areaHeight = scrollView.getPreferredSize().height;
-					int viewHeight = scrollPane.getViewport().getExtentSize().height;
+					int areaHeight = centerScrollView.getPreferredSize().height;
+					int viewHeight = centerScroll.getViewport().getExtentSize().height;
 					if (areaHeight > viewHeight)
-					scrollPane.getViewport().setViewPosition( new Point( 0, areaHeight-viewHeight ) );
+					centerScroll.getViewport().setViewPosition( new Point( 0, areaHeight-viewHeight ) );
 				}
 			});
 		}
@@ -576,15 +589,28 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 
 	public AppliablePanel getSettingsPanel() {
-		AppliablePanel result = new AppliablePanel( new BorderLayout() );
+		GridBagConstraints gridC = new GridBagConstraints();
 
-		result.add( new JLabel( "Text Size" ), BorderLayout.WEST );
-		final JTextField textSizeField = new JTextField( "222" );
-			textSizeField.setHorizontalAlignment( JTextField.RIGHT );
-			textSizeField.setMaximumSize( textSizeField.getPreferredSize() );
-			textSizeField.setMinimumSize( textSizeField.getPreferredSize() );
-			textSizeField.setPreferredSize( textSizeField.getPreferredSize() );
-			result.add( textSizeField, BorderLayout.EAST );
+		AppliablePanel result = new AppliablePanel( new GridBagLayout() );
+
+			gridC.gridy = 0;
+			gridC.gridx = 0;
+			gridC.gridwidth = 1;
+			gridC.weightx = 0.0;
+			gridC.fill = GridBagConstraints.NONE;
+			gridC.anchor = GridBagConstraints.WEST;
+			JLabel textSizeLbl = new JLabel( "Text Size" );
+				result.add( textSizeLbl, gridC );
+			gridC.gridx++;
+			gridC.gridwidth = GridBagConstraints.REMAINDER;
+			gridC.weightx = 1.0;
+			gridC.fill = GridBagConstraints.NONE;
+			gridC.anchor = GridBagConstraints.EAST;
+			final JTextField textSizeField = new JTextField( "222" );
+				textSizeField.setHorizontalAlignment( JTextField.RIGHT );
+				textSizeField.setPreferredSize( textSizeField.getPreferredSize() );
+				textSizeField.setText( "" );
+				result.add( textSizeField, gridC );
 
 		Style regularStyle = UHSTextArea.DEFAULT_STYLES.getStyle( "regular" );
 		if ( regularStyle != null ) {

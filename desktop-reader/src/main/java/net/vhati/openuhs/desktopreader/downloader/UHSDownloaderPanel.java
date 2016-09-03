@@ -4,6 +4,10 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.EventQueue;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -50,7 +54,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	private UHSDownloaderPanel pronoun = this;
 	private DownloadableUHSTableModel uhsTableModel = new DownloadableUHSTableModel( new String[] {"Title","Date","FullSize","Name"} );
 	private JTable uhsTable = null;
-	private JScrollPane uhsTableScrollPane = null;
+	private JScrollPane uhsTableScroll = null;
 
 	private JButton reloadBtn = null;
 	private JButton downloadBtn = null;
@@ -68,27 +72,36 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 		setErrorHandler( new DefaultUHSErrorHandler( System.err ) );
 
-		JPanel ctrlPanel = new JPanel( new BorderLayout() );
-			JPanel ctrlLeftPanel = new JPanel();
-				ctrlLeftPanel.setLayout( new BoxLayout( ctrlLeftPanel, BoxLayout.X_AXIS ) );
+		GridBagConstraints gridC = new GridBagConstraints();
+
+		JPanel ctrlPanel = new JPanel( new GridLayout( 0, 3 ) );
+
+			JPanel ctrlLeftPanel = new JPanel( new GridBagLayout() );
+				gridC.gridx = 0;
+				gridC.weightx = 1.0;
+				gridC.fill = GridBagConstraints.NONE;
+				gridC.anchor = GridBagConstraints.WEST;
 				reloadBtn = new JButton( "Refresh" );
-					ctrlLeftPanel.add( reloadBtn );
-				ctrlPanel.add( ctrlLeftPanel, BorderLayout.WEST );
+					ctrlLeftPanel.add( reloadBtn, gridC );
+				ctrlPanel.add( ctrlLeftPanel );
 
-			JPanel ctrlCenterPanel = new JPanel();
-				ctrlCenterPanel.setLayout( new BoxLayout( ctrlCenterPanel, BoxLayout.Y_AXIS ) );
-			JPanel ctrlCenterHolderPanel = new JPanel();
-				ctrlCenterHolderPanel.setLayout( new BoxLayout( ctrlCenterHolderPanel, BoxLayout.X_AXIS ) );
+			JPanel ctrlCenterPanel = new JPanel( new GridBagLayout() );
+				gridC.gridx = 0;
+				gridC.weightx = 1.0;
+				gridC.fill = GridBagConstraints.NONE;
+				gridC.anchor = GridBagConstraints.CENTER;
 				// ...
-				ctrlCenterPanel.add( ctrlCenterHolderPanel );
-			ctrlPanel.add( ctrlCenterPanel, BorderLayout.CENTER );
+			ctrlPanel.add( ctrlCenterPanel );
 
-			JPanel ctrlRightPanel = new JPanel();
-				ctrlRightPanel.setLayout( new BoxLayout( ctrlRightPanel, BoxLayout.X_AXIS ) );
+			JPanel ctrlRightPanel = new JPanel( new GridBagLayout() );
+				gridC.gridx = 0;
+				gridC.weightx = 1.0;
+				gridC.fill = GridBagConstraints.NONE;
+				gridC.anchor = GridBagConstraints.EAST;
 				downloadBtn = new JButton( "Download" );
 					downloadBtn.setEnabled( false );
-					ctrlRightPanel.add( downloadBtn );
-				ctrlPanel.add( ctrlRightPanel, BorderLayout.EAST );
+					ctrlRightPanel.add( downloadBtn, gridC );
+				ctrlPanel.add( ctrlRightPanel );
 
 
 		uhsTable = new JTable();
@@ -108,26 +121,30 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 			uhsTable.getColumn( "FullSize" ).setPreferredWidth( 50 );
 			uhsTable.getColumn( "Name" ).setMaxWidth( 130 );
 			uhsTable.getColumn( "Name" ).setPreferredWidth( 100 );
-			uhsTableScrollPane = new JScrollPane( uhsTable );
+			uhsTableScroll = new JScrollPane( uhsTable );
 				uhsTable.addNotify();
 
 
-		JPanel infoPanel = new JPanel( new BorderLayout() );
-			JPanel infoCenterPanel = new JPanel();
-				infoCenterPanel.setLayout( new BoxLayout( infoCenterPanel, BoxLayout.Y_AXIS ) );
-				JLabel infoLbl = new JLabel( "Gray - Exists  /  Gold - Updated" );
-					infoLbl.setAlignmentX( 0.5f );
-					infoCenterPanel.add( infoLbl );
-				infoCenterPanel.add( new JSeparator( JSeparator.HORIZONTAL ) );
-				infoCenterPanel.add( Box.createVerticalStrut( 2 ) );
-				JPanel findPanel = new JPanel( new BorderLayout() );
-					findField = new JTextField();
-						findPanel.add( findField, BorderLayout.CENTER );
-					findBtn = new JButton( "Find Next" );
-						findPanel.add( findBtn, BorderLayout.EAST );
-					infoCenterPanel.add( findPanel );
-			infoPanel.add( infoCenterPanel, BorderLayout.SOUTH );
+		JPanel bottomPanel = new JPanel();
+			bottomPanel.setLayout( new BoxLayout( bottomPanel, BoxLayout.Y_AXIS ) );
 
+			JLabel legendLbl = new JLabel( "Gray - Exists  /  Gold - Updated" );
+				legendLbl.setAlignmentX( 0.5f );
+				bottomPanel.add( legendLbl );
+			bottomPanel.add( new JSeparator( JSeparator.HORIZONTAL ) );
+			bottomPanel.add( Box.createVerticalStrut( 2 ) );
+			JPanel findPanel = new JPanel( new GridBagLayout() );
+				gridC.gridx = 0;
+				gridC.weightx = 1.0;
+				gridC.fill = GridBagConstraints.HORIZONTAL;
+				findField = new JTextField();
+				findPanel.add( findField, gridC );
+				gridC.gridx++;
+				gridC.weightx = 0.0;
+				gridC.fill = GridBagConstraints.NONE;
+				findBtn = new JButton( "Find Next" );
+					findPanel.add( findBtn, gridC );
+				bottomPanel.add( findPanel );
 
 		reloadBtn.addActionListener( this );
 		downloadBtn.addActionListener( this );
@@ -168,8 +185,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 		});
 
 		pronoun.add( ctrlPanel, BorderLayout.NORTH );
-		pronoun.add( uhsTableScrollPane, BorderLayout.CENTER );
-		pronoun.add( infoPanel, BorderLayout.SOUTH );
+		pronoun.add( uhsTableScroll, BorderLayout.CENTER );
+		pronoun.add( bottomPanel, BorderLayout.SOUTH );
 	}
 
 
@@ -322,13 +339,13 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 		if ( s.length() == 0 ) return;
 		String findString = s.toLowerCase();
 
-		Rectangle viewRect = uhsTableScrollPane.getViewport().getViewRect();
-		int firstRow = uhsTable.getSelectedRow();
+		Rectangle viewRect = uhsTableScroll.getViewport().getViewRect();
+		int selRow = uhsTable.getSelectedRow();
 		int rowCount = uhsTableModel.getRowCount();
 		int foundRow = -1;
 
-		if ( firstRow >= 0 ) {
-			for ( int i=firstRow+1; i < rowCount; i++ ) {
+		if ( selRow >= 0 ) {
+			for ( int i=selRow+1; i < rowCount; i++ ) {
 				DownloadableUHS tmpUHS = uhsTableModel.getUHS( i );
 				if ( tmpUHS.getTitle().toLowerCase().indexOf( findString ) != -1 ) {
 					foundRow = i;
@@ -337,7 +354,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 			}
 		}
 		if ( foundRow == -1 ) {
-			for ( int i=0; i < (firstRow >= 0 ? firstRow : rowCount); i++ ) {
+			for ( int i=0; i < (selRow >= 0 ? selRow : rowCount); i++ ) {
 				DownloadableUHS tmpUHS = uhsTableModel.getUHS( i );
 				if ( tmpUHS.getTitle().toLowerCase().indexOf( findString ) != -1 ) {
 					foundRow = i;
@@ -365,63 +382,117 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 
 	public AppliablePanel getSettingsPanel() {
-		AppliablePanel result = new AppliablePanel( new BorderLayout() );
-			JPanel optionsPanel = new JPanel( new BorderLayout() );
-				JPanel optionsCenterPanel = new JPanel();
-					optionsCenterPanel.setLayout( new BoxLayout( optionsCenterPanel, BoxLayout.Y_AXIS ) );
-					optionsCenterPanel.setBorder( BorderFactory.createTitledBorder( "Proxy" ) );
-					JPanel httpPanel = new JPanel( new BorderLayout() );
-						final JCheckBox httpBox = new JCheckBox( "http", false );
-							httpPanel.add( httpBox, BorderLayout.WEST );
-						JPanel httpHostPanel = new JPanel();
-							httpHostPanel.setLayout( new BoxLayout( httpHostPanel, BoxLayout.X_AXIS ) );
-							httpHostPanel.add( Box.createHorizontalStrut( 2 ) );
-							httpHostPanel.add( new JLabel( "Host" ) );
-							final JTextField httpHostField = new JTextField( "255.255.255.255 " );
-								httpHostField.setMaximumSize( httpHostField.getPreferredSize() );
-								httpHostField.setMinimumSize( httpHostField.getPreferredSize() );
-								httpHostField.setPreferredSize( httpHostField.getPreferredSize() );
-								httpHostField.setText( "" );
-								httpHostField.setEnabled( false );
-								httpHostPanel.add( httpHostField );
-							httpHostPanel.add(new JLabel( " Port" ));
-							final JTextField httpPortField = new JTextField( "65536 " );
-								httpPortField.setMaximumSize( httpPortField.getPreferredSize() );
-								httpPortField.setMinimumSize( httpPortField.getPreferredSize() );
-								httpPortField.setPreferredSize( httpPortField.getPreferredSize() );
-								httpPortField.setText( "" );
-								httpPortField.setEnabled( false );
-								httpHostPanel.add( httpPortField );
-							httpHostPanel.add(Box.createHorizontalStrut( 2 ));
-							httpPanel.add( httpHostPanel, BorderLayout.EAST );
-							optionsCenterPanel.add( httpPanel );
-					JPanel socksPanel = new JPanel( new BorderLayout() );
-						final JCheckBox socksBox = new JCheckBox( "socks", false );
-							socksPanel.add( socksBox, BorderLayout.WEST );
-						JPanel socksHostPanel = new JPanel();
-							socksHostPanel.setLayout( new BoxLayout( socksHostPanel, BoxLayout.X_AXIS ) );
-							socksHostPanel.add( Box.createHorizontalStrut( 2 ) );
-							socksHostPanel.add( new JLabel( "Host" ) );
-							final JTextField socksHostField = new JTextField( "255.255.255.255 " );
-								socksHostField.setMaximumSize( socksHostField.getPreferredSize() );
-								socksHostField.setMinimumSize( socksHostField.getPreferredSize() );
-								socksHostField.setPreferredSize( socksHostField.getPreferredSize() );
-								socksHostField.setText( "" );
-								socksHostField.setEnabled( false );
-								socksHostPanel.add( socksHostField );
-							socksHostPanel.add( new JLabel( " Port" ) );
-							final JTextField socksPortField = new JTextField( "65536 " );
-								socksPortField.setMaximumSize( socksPortField.getPreferredSize() );
-								socksPortField.setMinimumSize( socksPortField.getPreferredSize() );
-								socksPortField.setPreferredSize( socksPortField.getPreferredSize() );
-								socksPortField.setText( "" );
-								socksPortField.setEnabled( false );
-								socksHostPanel.add( socksPortField );
-							socksHostPanel.add( Box.createHorizontalStrut( 2 ) );
-							socksPanel.add( socksHostPanel, BorderLayout.EAST );
-							optionsCenterPanel.add( socksPanel );
-					optionsPanel.add( optionsCenterPanel, BorderLayout.CENTER );
-				result.add( optionsPanel, BorderLayout.NORTH );
+		GridBagConstraints gridC = new GridBagConstraints();
+		Insets defaultInsets = new Insets( 0, 0, 0, 0 );
+		Insets labelInsets = new Insets( 0, 10, 0, 5 );
+
+		AppliablePanel result = new AppliablePanel( new GridBagLayout() );
+			gridC.gridy = 0;
+			gridC.gridx = 0;
+			gridC.gridwidth = GridBagConstraints.REMAINDER;
+			gridC.weightx = 1.0;
+			gridC.fill = GridBagConstraints.NONE;
+			gridC.anchor = GridBagConstraints.WEST;
+			gridC.insets = labelInsets;
+			JLabel proxySepLbl = new JLabel( "Proxy" );
+				proxySepLbl.setAlignmentX( Component.CENTER_ALIGNMENT );
+				result.add( proxySepLbl, gridC );
+
+			// Http proxy.
+
+			gridC.gridy++;
+			gridC.gridx = 0;
+			gridC.gridwidth = 1;
+			gridC.weightx = 0.0;
+			gridC.fill = GridBagConstraints.HORIZONTAL;
+			gridC.anchor = GridBagConstraints.WEST;
+			gridC.insets = defaultInsets;
+			final JCheckBox httpBox = new JCheckBox( "http", false );
+				result.add( httpBox, gridC );
+
+			gridC.gridx++;
+			gridC.weightx = 0.0;
+			gridC.fill = GridBagConstraints.NONE;
+			gridC.anchor = GridBagConstraints.EAST;
+			gridC.insets = labelInsets;
+			JLabel httpHostLbl = new JLabel( "Host" );
+				result.add( httpHostLbl, gridC );
+			gridC.gridx++;
+			gridC.weightx = 1.0;
+			gridC.fill = GridBagConstraints.HORIZONTAL;
+			gridC.anchor = GridBagConstraints.WEST;
+			gridC.insets = defaultInsets;
+			final JTextField httpHostField = new JTextField( "255.255.255.255 " );
+				httpHostField.setPreferredSize( httpHostField.getPreferredSize() );
+				httpHostField.setText( "" );
+				httpHostField.setEnabled( false );
+				result.add( httpHostField, gridC );
+
+			gridC.gridx++;
+			gridC.weightx = 0.0;
+			gridC.fill = GridBagConstraints.NONE;
+			gridC.anchor = GridBagConstraints.EAST;
+			gridC.insets = labelInsets;
+			JLabel httpPortLbl = new JLabel( "Port" );
+				result.add( httpPortLbl, gridC );
+			gridC.gridx++;
+			gridC.weightx = 0.1;
+			gridC.fill = GridBagConstraints.HORIZONTAL;
+			gridC.anchor = GridBagConstraints.WEST;
+			gridC.insets = defaultInsets;
+			final JTextField httpPortField = new JTextField( "65536 " );
+				httpPortField.setPreferredSize( httpPortField.getPreferredSize() );
+				httpPortField.setText( "" );
+				httpPortField.setEnabled( false );
+				result.add( httpPortField, gridC );
+
+			// Socks proxy.
+
+			gridC.gridy++;
+			gridC.gridx = 0;
+			gridC.gridwidth = 1;
+			gridC.weightx = 0.0;
+			gridC.fill = GridBagConstraints.HORIZONTAL;
+			gridC.anchor = GridBagConstraints.WEST;
+			gridC.insets = defaultInsets;
+			final JCheckBox socksBox = new JCheckBox( "socks", false );
+				result.add( socksBox, gridC );
+
+			gridC.gridx++;
+			gridC.weightx = 0.0;
+			gridC.fill = GridBagConstraints.NONE;
+			gridC.anchor = GridBagConstraints.EAST;
+			gridC.insets = labelInsets;
+			JLabel socksHostLbl = new JLabel( "Host" );
+				result.add( socksHostLbl, gridC );
+			gridC.gridx++;
+			gridC.weightx = 1.0;
+			gridC.fill = GridBagConstraints.HORIZONTAL;
+			gridC.anchor = GridBagConstraints.WEST;
+			gridC.insets = defaultInsets;
+			final JTextField socksHostField = new JTextField( "255.255.255.255 " );
+				socksHostField.setPreferredSize( socksHostField.getPreferredSize() );
+				socksHostField.setText( "" );
+				socksHostField.setEnabled( false );
+				result.add( socksHostField, gridC );
+
+			gridC.gridx++;
+			gridC.weightx = 0.0;
+			gridC.fill = GridBagConstraints.NONE;
+			gridC.anchor = GridBagConstraints.EAST;
+			gridC.insets = labelInsets;
+			JLabel socksPortLbl = new JLabel( "Port" );
+				result.add( socksPortLbl, gridC );
+			gridC.gridx++;
+			gridC.weightx = 0.1;
+			gridC.fill = GridBagConstraints.HORIZONTAL;
+			gridC.anchor = GridBagConstraints.WEST;
+			gridC.insets = defaultInsets;
+			final JTextField socksPortField = new JTextField( "65536 " );
+				socksPortField.setPreferredSize( socksPortField.getPreferredSize() );
+				socksPortField.setText( "" );
+				socksPortField.setEnabled( false );
+				result.add( socksPortField, gridC );
 
 		ActionListener settingsListener = new ActionListener() {
 			@Override
