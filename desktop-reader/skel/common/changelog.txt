@@ -6,6 +6,7 @@
  - Added an experimental Android reader.
  - Added a tar distribution for OSX/Linux with launcher scripts.
  - License changed to GPLv3.
+ - Fixed the downloader's broken find button.
  - Added CatalogParser and DownloadableUHS to the core library.
 
 ## [0.6.7]  (Unreleased)
@@ -90,7 +91,7 @@
  - The Next Hint button gets disabled correctly when revealing the final hints.
  - Each question remembers how many hints had been revealed.
  - The ## (escape chars) are interpreted to be #.
- - Diaeresis accents are handled (#a+o:#a- becomes ö).
+ - Diaeresis accents are handled (#a+o:#a-).
  - Links (now colored green) to single hints/media (containing no sub-nodes) work.
  - GPL license included and attached to source code.
 

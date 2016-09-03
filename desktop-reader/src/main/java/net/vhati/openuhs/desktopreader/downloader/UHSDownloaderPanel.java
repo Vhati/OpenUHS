@@ -330,7 +330,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 		if ( firstRow >= 0 ) {
 			for ( int i=firstRow+1; i < rowCount; i++ ) {
 				DownloadableUHS tmpUHS = uhsTableModel.getUHS( i );
-				if ( tmpUHS.getName().toLowerCase().indexOf( findString ) != -1 ) {
+				if ( tmpUHS.getTitle().toLowerCase().indexOf( findString ) != -1 ) {
 					foundRow = i;
 					break;
 				}
