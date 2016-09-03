@@ -10,8 +10,6 @@ compileJava.options.compilerArgs.addAll(["-Xlint:unchecked", "-Xlint:deprecation
 sourceCompatibility = JavaVersion.VERSION_1_6
 targetCompatibility = JavaVersion.VERSION_1_6
 
-reporting.apiDocTitle = "OpenUHS-${project.name}"
-
 
 jar {
 	baseName = "openuhs"
@@ -19,6 +17,8 @@ jar {
 }
 
 task generateJavadocs(type: Javadoc) {
+	title = "OpenUHS-Core"
+
 	source = sourceSets.main.allJava
 	options.encoding = sourceEncoding
 }
