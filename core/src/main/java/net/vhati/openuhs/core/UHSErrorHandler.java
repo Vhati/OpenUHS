@@ -14,11 +14,11 @@ public interface UHSErrorHandler {
 	 *
 	 * <p>It would be wise to synchronize on a lock object.</p>
 	 *
-	 * @param severity ERROR or INFO
-	 * @param source the responsible object, or null
+	 * @param severity  ERROR or INFO
+	 * @param source  the responsible object, or null
 	 * @param message
-	 * @param line line number, or 0 for none
-	 * @param e an exception, or null
+	 * @param line  line number, or 0 for none
+	 * @param e  an exception, or null
 	 */
 	public void log( int severity, Object source, String message, int line, Exception e );
 }

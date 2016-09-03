@@ -195,7 +195,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	 *
 	 * <p>The default handler prints to System.err.</p>
 	 *
-	 * @param eh the error handler, or null, for quiet parsing
+	 * @param eh  the error handler, or null, for quiet parsing
 	 */
 	public void setErrorHandler( UHSErrorHandler eh ) {
 		errorHandler = eh;

@@ -13,7 +13,7 @@ public class DefaultUHSErrorHandler implements UHSErrorHandler {
 	/**
 	 * Creates an error handler.
 	 *
-	 * @param out a stream to print to (e.g., System.err)
+	 * @param out  a stream to print to (e.g., System.err)
 	 */
 	public DefaultUHSErrorHandler( PrintStream out ) {
 		this( new PrintStream[] {out} );
@@ -22,7 +22,7 @@ public class DefaultUHSErrorHandler implements UHSErrorHandler {
 	/**
 	 * Creates an error handler.
 	 *
-	 * @param out multiple streams to print to (e.g., System.err)
+	 * @param out  multiple streams to print to (e.g., System.err)
 	 */
 	public DefaultUHSErrorHandler( PrintStream[] out ) {
 		outStreams = new PrintStream[out.length];

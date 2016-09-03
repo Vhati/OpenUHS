@@ -390,7 +390,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	/**
 	 * Opens a given file in the reader.
 	 *
-	 * @param uhsPath an absolute path to a UHS file.
+	 * @param uhsPath  an absolute path to a UHS file.
 	 */
 	public void openFile( String uhsPath ) {
 		Intent intent = new Intent().setClass( this, ReaderActivity.class );

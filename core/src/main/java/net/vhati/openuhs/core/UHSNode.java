@@ -67,8 +67,8 @@ public class UHSNode {
 	/**
 	 * Sets this node's content.
 	 *
-	 * @param inContent raw content (e.g., String or byte[])
-	 * @param inContentType one of: STRING, IMAGE, or AUDIO
+	 * @param inContent  raw content (e.g., String or byte[])
+	 * @param inContentType  one of: STRING, IMAGE, or AUDIO
 	 */
 	public void setContent( Object inContent, int inContentType ) {
 		if ( inContentType != STRING && inContentType != IMAGE && inContentType != AUDIO ) {
@@ -97,7 +97,7 @@ public class UHSNode {
 	 * call the rootNode's removeLink() before,
 	 * and addLink() after.</p>
 	 *
-	 * @param input a new id, or -1
+	 * @param input  a new id, or -1
 	 * @see UHSRootNode#removeLink(UHSNode)
 	 * @see UHSRootNode#addLink(UHSNode)
 	 */
@@ -114,8 +114,8 @@ public class UHSNode {
 	 * result in a negative id, the id becomes -1. This
 	 * does not affect the ids of children.</p>
 	 *
-	 * @param offset an amount to add/subtract
-	 * @param rootNode an existing root node
+	 * @param offset  an amount to add/subtract
+	 * @param rootNode  an existing root node
 	 * @see UHSRootNode#removeLink(UHSNode)
 	 * @see UHSRootNode#addLink(UHSNode)
 	 */
@@ -290,7 +290,7 @@ public class UHSNode {
 	/**
 	 * Sets the number of revealed children.
 	 *
-	 * @param n a number greater than 1 and less than or equal to the child count
+	 * @param n  a number greater than 1 and less than or equal to the child count
 	 */
 	public void setRevealedAmount( int n ) {
 		if ( this.getChildCount() < n || n < 1 ) return;
@@ -309,9 +309,9 @@ public class UHSNode {
 	/**
 	 * Recursively prints the indented contents of this node and its children.
 	 *
-	 * @param indent indention prefix
-	 * @param spacer indention padding with each level
-	 * @param outStream a stream to print to
+	 * @param indent  indention prefix
+	 * @param spacer  indention padding with each level
+	 * @param outStream  a stream to print to
 	 */
 	public void printNode( String indent, String spacer, PrintStream outStream ) {
 		int id = this.getId();

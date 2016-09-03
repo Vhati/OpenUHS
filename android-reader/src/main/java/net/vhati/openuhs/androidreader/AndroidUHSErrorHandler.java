@@ -15,7 +15,7 @@ public class AndroidUHSErrorHandler implements UHSErrorHandler {
 	/**
 	 * Creates an error handler.
 	 *
-	 * @param tag a string to identify this app in the log
+	 * @param tag  a string to identify this app in the log
 	 */
 	public AndroidUHSErrorHandler( String tag ) {
 		if ( tag != null ) this.tag = tag;

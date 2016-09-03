@@ -63,7 +63,7 @@ public class Proto4xUHSParser {
 	 *
 	 * <p>This is a convenience for logging/muting.</p>
 	 *
-	 * @param eh the error handler, or null, for quiet parsing
+	 * @param eh  the error handler, or null, for quiet parsing
 	 */
 	public void setErrorHandler( UHSErrorHandler eh ) {
 		errorHandler = eh;
@@ -76,8 +76,8 @@ public class Proto4xUHSParser {
 	 *
 	 * <p>This is likely the only method you'll need.</p>
 	 *
-	 * @param f a file to read
-	 * @param auxStyle option for 9x files AUX_NORMAL, AUX_IGNORE, or AUX_NEST
+	 * @param f  a file to read
+	 * @param auxStyle  option for 9x files AUX_NORMAL, AUX_IGNORE, or AUX_NEST
 	 * @return the root of a tree of nodes representing the hint file
 	 * @see #parse4xFormat(List, File, int)
 	 */
@@ -162,9 +162,9 @@ public class Proto4xUHSParser {
 	 *
 	 * <p>For convenience, these auxiliary nodes can be treated differently.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param workingDir the dir containing the hint file, for finding relative paths
-	 * @param auxStyle AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
+	 * @param auxStyle  AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
 	 * @return the root of a tree of nodes
 	 * @see #buildNodes(List, UHSRootNode, UHSNode, int, File)
 	 */
@@ -215,11 +215,11 @@ public class Proto4xUHSParser {
 	 * <p>This recognizes various types of hints, and runs specialized methods to decode them.
 	 * Unrecognized hints are harmlessly omitted.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int buildNodes( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -284,7 +284,7 @@ public class Proto4xUHSParser {
 	 * <ul><li><b>#h+</b> through <b>#h-</b> is a hyperlink (http or email).</li></ul>
 	 * <br />Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)
 	 *
-	 * @param currentNode the node whose content needs replacing
+	 * @param currentNode  the node whose content needs replacing
 	 */
 	public void parseTextEscapes( UHSNode currentNode ) {
 		if (currentNode.getContentType() != UHSNode.STRING) return;
@@ -407,11 +407,11 @@ public class Proto4xUHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseSubjectNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -469,11 +469,11 @@ public class Proto4xUHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseHintNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -557,11 +557,11 @@ public class Proto4xUHSParser {
 	 * are preserved (for context-sensitive escaping later).
 	 * Markup will be inserted to begin with that as the default.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseTextNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -639,11 +639,11 @@ public class Proto4xUHSParser {
 	 * are preserved (for context-sensitive escaping later).
 	 * Markup will be inserted to begin with that as the default.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseCommentNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -718,11 +718,11 @@ public class Proto4xUHSParser {
 	 * are preserved (for context-sensitive escaping later).
 	 * Markup will be inserted to begin with that as the default.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseCreditNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -792,11 +792,11 @@ public class Proto4xUHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseLinkNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -898,11 +898,11 @@ public class Proto4xUHSParser {
 	 * <li> - - Highlight the overlay in the list, then drag a region on the image.</li>
 	 * </ul></p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see net.vhati.openuhs.core.UHSHotSpotNode
 	 */
@@ -1067,11 +1067,11 @@ public class Proto4xUHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseInfoNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
@@ -1181,11 +1181,11 @@ public class Proto4xUHSParser {
 	/**
 	 * Generates a stand-in UHSNode for an unknown hunk.
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param startIndex the line number to start parsing from
-	 * @param workingDir the dir containing the hint file, for finding relative paths
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param startIndex  the line number to start parsing from
+	 * @param workingDir  the dir containing the hint file, for finding relative paths
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseUnknownNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {

@@ -63,7 +63,7 @@ public class UHSParser {
 	/**
 	 * Generates a decryption key for formats after 88a.
 	 *
-	 * @param name the name of the master subject node of the UHS document (not the filename)
+	 * @param name  the name of the master subject node of the UHS document (not the filename)
 	 * @return the key
 	 * @see #decryptNestString(CharSequence, int[])
 	 * @see #decryptTextHunk(CharSequence, int[])
@@ -85,7 +85,7 @@ public class UHSParser {
 	 *
 	 * <p>This is only necessary when initially parsing a file.</p>
 	 *
-	 * @param input ciphertext
+	 * @param input  ciphertext
 	 * @return the decrypted text
 	 */
 	public String decryptString( CharSequence input ) {
@@ -115,8 +115,8 @@ public class UHSParser {
 	 *
 	 * <p>This is only necessary when initially parsing a file.</p>
 	 *
-	 * @param input ciphertext
-	 * @param key this file's hint decryption key
+	 * @param input  ciphertext
+	 * @param key  this file's hint decryption key
 	 * @return the decrypted text
 	 */
 	public String decryptNestString( CharSequence input, int[] key ) {
@@ -141,8 +141,8 @@ public class UHSParser {
 	 *
 	 * <p>This is only necessary when initially parsing a file.</p>
 	 *
-	 * @param input ciphertext
-	 * @param key this file's hint decryption key
+	 * @param input  ciphertext
+	 * @param key  this file's hint decryption key
 	 * @return the decrypted text
 	 */
 	public String decryptTextHunk( CharSequence input, int[] key ) {
@@ -168,8 +168,8 @@ public class UHSParser {
 	 *
 	 * <p>This is likely the only method you'll need.</p>
 	 *
-	 * @param f a file to read
-	 * @param auxStyle option for 9x files: AUX_NORMAL, AUX_IGNORE, or AUX_NEST
+	 * @param f  a file to read
+	 * @param auxStyle  option for 9x files: AUX_NORMAL, AUX_IGNORE, or AUX_NEST
 	 * @return the root of a tree of nodes representing the hint file
 	 * @see #parse88Format(List, String, int)
 	 * @see #parse9xFormat(List, byte[], long, int)
@@ -338,9 +338,9 @@ public class UHSParser {
 	 * ever wrote with that in mind, so it's not worth
 	 * enforcing.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param name the UHS document's name (not the filename)
-	 * @param hintSectionEnd index of the last hint, relative to the first subject (as in the file, 1-based)
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param name  the UHS document's name (not the filename)
+	 * @param hintSectionEnd  index of the last hint, relative to the first subject (as in the file, 1-based)
 	 * @return the root of a tree of nodes
 	 */
 	public UHSRootNode parse88Format( List<String> uhsFileArray, String name, int hintSectionEnd ) {
@@ -456,10 +456,10 @@ public class UHSParser {
 	 *
 	 * <p>For convenience, these auxiliary nodes can be treated differently.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param auxStyle AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param auxStyle  AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
 	 * @return the root of a tree of nodes
 	 * @see #buildNodes(List, byte[], long, UHSRootNode, UHSNode, int[], int)
 	 * @see #calcChecksum(File)
@@ -507,13 +507,13 @@ public class UHSParser {
 	 * <p>This recognizes various types of hints, and runs specialized methods to decode them.
 	 * Unrecognized hints are harmlessly omitted.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int buildNodes( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -588,13 +588,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseSubjectNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -638,13 +638,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see #decryptNestString(CharSequence, int[])
 	 */
@@ -724,13 +724,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see #decryptString(CharSequence)
 	 */
@@ -794,13 +794,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseCommentNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -848,13 +848,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseCreditNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -903,13 +903,13 @@ public class UHSParser {
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
 	 * <p>The binary content is encrypted.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see #decryptTextHunk(CharSequence, int[])
 	 */
@@ -973,13 +973,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseLinkNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -1067,13 +1067,13 @@ public class UHSParser {
 	 * <p>Nested HyperImgs aren't expected to recurse further
 	 * with additional nested nodes.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see net.vhati.openuhs.core.UHSHotSpotNode
 	 */
@@ -1242,13 +1242,13 @@ public class UHSParser {
 	 *
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see #decryptTextHunk(CharSequence, int[])
 	 */
@@ -1299,13 +1299,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseBlankNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -1350,13 +1350,13 @@ public class UHSParser {
 	 * <li>Illustrative UHS: <i>The Bizarre Adventures of Woodruff</i> (blank version)</li>
 	 * </ul></p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseVersionNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -1413,13 +1413,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * @param uhsFileArray array of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  array of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseInfoNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -1487,13 +1487,13 @@ public class UHSParser {
 	 * <li>Illustrative UHS: <i>AGON</i> (no IDs)</li>
 	 * </ul></p>
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseIncentiveNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -1526,8 +1526,8 @@ public class UHSParser {
 	/**
 	 * Sets access restrictions on UHSNodes based on ids in an incentive UHSNode.
 	 *
-	 * @param rootNode an existing root node
-	 * @param incentiveString a space-separated string of numbers, each with 'Z' or 'A' appended
+	 * @param rootNode  an existing root node
+	 * @param incentiveString  a space-separated string of numbers, each with 'Z' or 'A' appended
 	 * @see #parseIncentiveNode(List, byte[], long, UHSRootNode, UHSNode, int[], int)
 	 */
 	public void applyRestrictions( UHSRootNode rootNode, String incentiveString ) {
@@ -1555,13 +1555,13 @@ public class UHSParser {
 	/**
 	 * Generates a stand-in UHSNode for an unknown hunk.
 	 *
-	 * @param uhsFileArray a List of all available lines in the file
-	 * @param binHunk array of raw bytes at the end of the file
-	 * @param rawOffset offset to the raw bytes from the beginning of the file
-	 * @param rootNode an existing root node
-	 * @param currentNode an existing node to add children to
-	 * @param key this file's hint decryption key
-	 * @param startIndex the line number to start parsing from
+	 * @param uhsFileArray  a List of all available lines in the file
+	 * @param binHunk  array of raw bytes at the end of the file
+	 * @param rawOffset  offset to the raw bytes from the beginning of the file
+	 * @param rootNode  an existing root node
+	 * @param currentNode  an existing node to add children to
+	 * @param key  this file's hint decryption key
+	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseUnknownNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
@@ -1590,9 +1590,9 @@ public class UHSParser {
 	 *
 	 * <p>This offset is relative to the start of the raw bytes, NOT the beginning of the file.</p>
 	 *
-	 * @param binHunk array of bytes at the end of the file (after 0x1Ah)
-	 * @param offset starting index within the array (offset + length must not exceed binHunk.length)
-	 * @param length the desired number of bytes to retrieve
+	 * @param binHunk  array of bytes at the end of the file (after 0x1Ah)
+	 * @param offset  starting index within the array (offset + length must not exceed binHunk.length)
+	 * @param length  the desired number of bytes to retrieve
 	 * @return the relevant bytes, or null if the offset or length is invalid
 	 */
 	public byte[] readBinaryHunk( byte[] binHunk, long offset, int length ) {
@@ -1723,7 +1723,7 @@ public class UHSParser {
 	 *
 	 * <p>It's a little-endian short ((un)signed?).</p>
 	 *
-	 * @param a any byte array that includes the end of a UHS file
+	 * @param a  any byte array that includes the end of a UHS file
 	 */
 	public long readChecksum( byte[] a ) {
 		if ( a.length < 2 ) return -1;

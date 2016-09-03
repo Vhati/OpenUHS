@@ -125,9 +125,9 @@ public class NodeAdapter extends BaseAdapter {
 	/**
 	 * Get a View that displays the data at the specified position in the data set.
 	 *
-	 * @param position the position of the item within the adapter's data set whose view we want
-	 * @param convertView the old view to reuse, if possible (if non-null and the right type).
-	 * @param parent the parent that this view will eventually be attached to
+	 * @param position  the position of the item within the adapter's data set whose view we want
+	 * @param convertView  the old view to reuse, if possible (if non-null and the right type).
+	 * @param parent  the parent that this view will eventually be attached to
 	 */
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {

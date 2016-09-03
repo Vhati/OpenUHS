@@ -117,9 +117,9 @@ public class Version9xStringDecorator extends StringDecorator {
 	 * <li><b>#a+</b>TM<b>#a-</b> a trademark character.</li>
 	 * </ul></p>
 	 *
-	 * @param contentChars raw content with markup
-	 * @param buf a destination buffer
-	 * @param c index in contentChars to check for markup
+	 * @param contentChars  raw content with markup
+	 * @param buf  a destination buffer
+	 * @param c  index in contentChars to check for markup
 	 * @return offset to the final consumed char
 	 */
 	public int parseSymbolMarkup( char[] contentChars, StringBuffer buf, int c ) {
@@ -172,10 +172,10 @@ public class Version9xStringDecorator extends StringDecorator {
 	 * <li><b>#w-</b> raw newlines are newlines.</li>
 	 * </ul></p>
 	 *
-	 * @param contentChars raw content with markup
-	 * @param buf a destination buffer
-	 * @param c index in contentChars to check for markup
-	 * @param breakStr a single-element wrapper array to return the current line break replacement string
+	 * @param contentChars  raw content with markup
+	 * @param buf  a destination buffer
+	 * @param c  index in contentChars to check for markup
+	 * @param breakStr  a single-element wrapper array to return the current line break replacement string
 	 * @return offset to the final consumed char
 	 * @see StringDecorator#linebreak
 	 */
@@ -208,12 +208,12 @@ public class Version9xStringDecorator extends StringDecorator {
 	 * <p>This should be called last after other parse methods have
 	 * filled the buffer.</p>
 	 *
-	 * @param contentChars raw content with markup
-	 * @param buf a destination buffer
-	 * @param c index in contentChars to check for markup
-	 * @param decorations a dictionary of Decorations to check for
-	 * @param decoStates an array to return the current decoration in-use counts
-	 * @param fragmentList a List in which to store any new DecoratedFragments
+	 * @param contentChars  raw content with markup
+	 * @param buf  a destination buffer
+	 * @param c  index in contentChars to check for markup
+	 * @param decorations  a dictionary of Decorations to check for
+	 * @param decoStates  an array to return the current decoration in-use counts
+	 * @param fragmentList  a List in which to store any new DecoratedFragments
 	 * @return offset to the final consumed char
 	 * @see #getDecorations()
 	 */

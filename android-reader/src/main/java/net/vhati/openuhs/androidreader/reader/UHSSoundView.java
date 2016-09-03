@@ -143,7 +143,7 @@ public class UHSSoundView extends LinearLayout {
 	 * Decodes WAV header info from a stream.
 	 * Afterward, the stream's position will be at the first data chunk.
 	 *
-	 * @param is a stream supporting mark()
+	 * @param is  a stream supporting mark()
 	 * @return an object describing header info
 	 */
 	public WavFormat readHeader(InputStream is) throws IOException, WavException {

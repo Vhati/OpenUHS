@@ -27,7 +27,7 @@ public class UHSHotSpotNode extends UHSNode {
 	/**
 	 * Returns the zone/position of a child.
 	 *
-	 * @param inChild a child node
+	 * @param inChild  a child node
 	 * @return a HotSpot
 	 */
 	public HotSpot getSpot( UHSNode inChild ) {
@@ -39,7 +39,7 @@ public class UHSHotSpotNode extends UHSNode {
 	/**
 	 * Gets the zone/position of a child.
 	 *
-	 * @param n index of a child node
+	 * @param n  index of a child node
 	 * @return a HotSpot
 	 */
 	public HotSpot getSpot( int n ) {
@@ -50,8 +50,8 @@ public class UHSHotSpotNode extends UHSNode {
 	/**
 	 * Sets the zone/position of a child.
 	 *
-	 * @param inChild a child node
-	 * @param spot a HotSpot
+	 * @param inChild  a child node
+	 * @param spot  a HotSpot
 	 */
 	public void setSpot( UHSNode inChild, HotSpot spot ) {
 		int index = super.indexOfChild( inChild );
@@ -63,8 +63,8 @@ public class UHSHotSpotNode extends UHSNode {
 	/**
 	 * Sets the zone/position of a child.
 	 *
-	 * @param n index of a child node
-	 * @param spot a HotSpot
+	 * @param n  index of a child node
+	 * @param spot  a HotSpot
 	 */
 	public void setSpot( int n, HotSpot spot ) {
 		if ( super.getChildCount()-1 < n ) return;
@@ -80,7 +80,7 @@ public class UHSHotSpotNode extends UHSNode {
 	/**
 	 * Overridden to make linking impossible.
 	 *
-	 * @param n ID of the node to target
+	 * @param n  ID of the node to target
 	 * @see net.vhati.openuhs.core.UHSNode#setLinkTarget(int)
 	 */
 	public void setLinkTarget( int n ) {
@@ -93,7 +93,7 @@ public class UHSHotSpotNode extends UHSNode {
 	 *
 	 * <p>This method gives the new nodes default zones/positions.</p>
 	 *
-	 * @param inChildren a List of new child UHSNodes
+	 * @param inChildren  a List of new child UHSNodes
 	 */
 	public void setChildren( List<UHSNode> inChildren ) {
 		if ( inChildren == null || inChildren.size() == 0 ) {

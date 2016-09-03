@@ -146,7 +146,7 @@ public class MinimalSoundPlayer extends JPanel {
 	/**
 	 * Jumps to a new position in the sound.
 	 *
-	 * @param newPos the desired position
+	 * @param newPos  the desired position
 	 */
 	public void seek( int newPos ) {
 		if ( newPos < 0 || newPos > duration ) return;

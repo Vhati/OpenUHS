@@ -42,9 +42,9 @@ public class UHSFetcher {
 	/**
 	 * Downloads a url and spawns a progress monitor.
 	 *
-	 * @param parentComponent a component to be the monitor's parent
-	 * @param message message describing the operation
-	 * @param address source url of the data
+	 * @param parentComponent  a component to be the monitor's parent
+	 * @param message  message describing the operation
+	 * @param address  source url of the data
 	 * @return the downloaded data
 	 */
 	public static byte[] fetchURL( final Component parentComponent, Object message, String address ) {
@@ -136,7 +136,7 @@ public class UHSFetcher {
 	 *
 	 * Downloads a catalog of available hint files.
 	 *
-	 * @param parentComponent a component to be the monitor's parent
+	 * @param parentComponent  a component to be the monitor's parent
 	 * @return an array of DownloadableUHS objects
 	 */
 	public static List<DownloadableUHS> fetchCatalog( Component parentComponent ) {
@@ -156,8 +156,8 @@ public class UHSFetcher {
 	 *
 	 * Downloads a hint file.
 	 *
-	 * @param parentComponent a component to be the monitor's parent
-	 * @param uhs hint to fetch
+	 * @param parentComponent  a component to be the monitor's parent
+	 * @param uhs  hint to fetch
 	 * @return the downloaded data
 	 */
 	public static byte[] fetchUHS( Component parentComponent, DownloadableUHS uhs ) {
@@ -229,9 +229,9 @@ public class UHSFetcher {
 	 *
 	 * <p>If the destination exists, a confirmation dialog will appear.</p>
 	 *
-	 * @param parentComponent a component to be the parent of any error popups
-	 * @param path path to a file to save
-	 * @param bytes data to save
+	 * @param parentComponent  a component to be the parent of any error popups
+	 * @param path  path to a file to save
+	 * @param bytes  data to save
 	 * @return true if successful, false otherwise
 	 */
 	public static boolean saveBytes( final Component parentComponent, String path, byte[] bytes ) {
@@ -291,7 +291,7 @@ public class UHSFetcher {
 	 *
 	 * <p>The default is "UHSWIN/5.2".</p>
 	 *
-	 * @param s the agent text
+	 * @param s  the agent text
 	 * @see #getUserAgent()
 	 */
 	public static void setUserAgent( String s ) {
@@ -314,7 +314,7 @@ public class UHSFetcher {
 	 *
 	 * <p>The default is "http://www.uhs-hints.com:80/cgi-bin/update.cgi".</p>
 	 *
-	 * @param s the url
+	 * @param s  the url
 	 * @see #getCatalogUrl()
 	 */
 	public static void setCatalogUrl( String s ) {

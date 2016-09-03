@@ -249,8 +249,8 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	/**
 	 * Displays a new UHS tree.
 	 *
-	 * @param inCurrentNode the new initial node
-	 * @param inRootNode the new root node
+	 * @param inCurrentNode  the new initial node
+	 * @param inRootNode  the new root node
 	 */
 	public void setUHSNodes( UHSNode inCurrentNode, UHSRootNode inRootNode ) {
 		reset();
@@ -264,7 +264,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	 * Displays a new node within the current tree.
 	 * <br />If the node is the same as the next/prev one, breadcrumbs will be traversed.
 	 *
-	 * @param newNode the new node
+	 * @param newNode  the new node
 	 */
 	public void setReaderNode( UHSNode newNode ) {
 		if ( newNode == null ) {return;}
@@ -368,7 +368,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	 * Displays a new node within the current tree.
 	 * <br />Nothing will happen if the ID isn't among the root node's list of link targets.
 	 *
-	 * @param id ID of the new node
+	 * @param id  ID of the new node
 	 */
 	public void setReaderNode( int id ) {
 		UHSNode tmpNode = rootNode.getLink( id );
@@ -383,7 +383,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	/**
 	 * Sets the reader's title to the specified string.
 	 *
-	 * @param s a title (null is treated as "")
+	 * @param s  a title (null is treated as "")
 	 */
 	public void setReaderTitle( String s ) {
 		readerTitle = (( s != null ) ? s : "");
@@ -426,7 +426,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	/**
 	 * Scrolls to the top/bottom of the visible hints.
 	 *
-	 * @param position either SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
+	 * @param position  either SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
 	 */
 	public void scrollTo( int position ) {
 		if ( position == SCROLL_IF_INCOMPLETE ) {

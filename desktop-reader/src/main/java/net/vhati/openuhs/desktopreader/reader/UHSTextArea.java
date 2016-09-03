@@ -44,8 +44,8 @@ public class UHSTextArea extends JTextPane {
 	/**
 	 * Constructor.
 	 *
-	 * @param n the UHSNode to display.
-	 * @param styleContext a collection of font styles to use.
+	 * @param n  the UHSNode to display.
+	 * @param styleContext  a collection of font styles to use.
 	 */
 	public UHSTextArea( UHSNode n, StyleContext styleContext ) {
 		super();

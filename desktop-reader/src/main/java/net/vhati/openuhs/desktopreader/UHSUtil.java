@@ -33,9 +33,9 @@ public class UHSUtil {
 	/**
 	 * Returns true if an array's contents appears inside another array.
 	 *
-	 * @param a haystack
-	 * @param start starting index for comparison in haystack
-	 * @param b needle
+	 * @param a  haystack
+	 * @param start  starting index for comparison in haystack
+	 * @param b  needle
 	 */
 	private static boolean arrayContains( byte[] a, int start, byte[] b ) {
 		if ( a.length < start + b.length ) return false;

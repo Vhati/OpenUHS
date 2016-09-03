@@ -221,10 +221,10 @@ public class UHSReaderMain {
 	 *
 	 * <p>Extensions are guessed.</p>
 	 *
-	 * @param currentNode a node to start extracting from
-	 * @param destDir the destination dir
-	 * @param basename prefix for extracted files
-	 * @param n a number for uniqueness, incrementing with each file
+	 * @param currentNode  a node to start extracting from
+	 * @param destDir  the destination dir
+	 * @param basename  prefix for extracted files
+	 * @param n  a number for uniqueness, incrementing with each file
 	 * @return a new value for n
 	 * @see net.vhati.openuhs.desktopreader.UHSUtil#getFileExtension(byte[])
 	 */
@@ -266,8 +266,8 @@ public class UHSReaderMain {
 	/**
 	 * Does some getopt magic.
 	 *
-	 * @param argv app args
-	 * @param optionMap a map to fill with Boolean.TRUE values
+	 * @param argv  app args
+	 * @param optionMap  a map to fill with Boolean.TRUE values
 	 */
 	private static void parseArgs( String[] argv, Map<String, Boolean> optionMap ) {
 		boolean needFileArg = false;

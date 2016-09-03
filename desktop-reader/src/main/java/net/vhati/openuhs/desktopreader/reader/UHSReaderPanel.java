@@ -273,7 +273,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	/**
 	 * Opens a UHS file.
 	 *
-	 * @param f the location of the file
+	 * @param f  the location of the file
 	 */
 	public void openFile( final File f ) {
 		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
@@ -319,8 +319,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	/**
 	 * Displays a new UHS tree.
 	 *
-	 * @param inCurrentNode the new initial node
-	 * @param inRootNode the new root node
+	 * @param inCurrentNode  the new initial node
+	 * @param inRootNode  the new root node
 	 */
 	public void setUHSNodes( UHSNode inCurrentNode, UHSRootNode inRootNode ) {
 		reset();
@@ -335,7 +335,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 * Displays a new node within the current tree.
 	 * <p>If the node is the same as the next/prev one, breadcrumbs will be traversed.</p>
 	 *
-	 * @param newNode the new node
+	 * @param newNode  the new node
 	 */
 	@Override
 	public void setReaderNode( UHSNode newNode ) {
@@ -428,7 +428,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 *
 	 * <p>Nothing will happen if the ID isn't among the root node's list of link targets.</p>
 	 *
-	 * @param id the id of the new node
+	 * @param id  the id of the new node
 	 */
 	@Override
 	public void setReaderNode( int id ) {
@@ -444,7 +444,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	/**
 	 * Sets the reader's title to the specified string.
 	 *
-	 * @param s a title (null is treated as "")
+	 * @param s  a title (null is treated as "")
 	 */
 	@Override
 	public void setReaderTitle( String s ) {
@@ -474,10 +474,10 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 * Luckily real UHS files aren't structured that way.
 	 * Link targets don't count as children.</p>
 	 *
-	 * @param resultsNode an existing temporary node to add results to
-	 * @param prefix phrase to prepend to result titles (use "")
-	 * @param depth recursion level reminder (use 0)
-	 * @param input the phrase to search for
+	 * @param resultsNode  an existing temporary node to add results to
+	 * @param prefix  phrase to prepend to result titles (use "")
+	 * @param depth  recursion level reminder (use 0)
+	 * @param input  the phrase to search for
 	 */
 	public void searchNode( UHSNode resultsNode, String prefix, int depth, UHSNode currentNode, String input ) {
 		if ( input == null || input.length() == 0 ) return;
@@ -539,7 +539,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 *
 	 * <p>The threading and yielding is a workaround for JScrollPane goofiness when the content grows.</p>
 	 *
-	 * @param position one of: SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
+	 * @param position  one of: SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
 	 * @see SwingUtilities#invokeLater(Runnable)
 	 * @see Thread#yield()
 	 */

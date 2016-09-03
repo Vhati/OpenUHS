@@ -85,7 +85,7 @@ public class CatalogParser {
 	 *
 	 * <p>The default handler prints to System.err.</p>
 	 *
-	 * @param eh the error handler, or null, for quiet parsing
+	 * @param eh  the error handler, or null, for quiet parsing
 	 */
 	public void setErrorHandler( UHSErrorHandler eh ) {
 		errorHandler = eh;
@@ -96,7 +96,7 @@ public class CatalogParser {
 	 *
 	 * Parses the catalog of available hint files.
 	 *
-	 * @param catalogString the xml-like string downloaded from the server
+	 * @param catalogString  the xml-like string downloaded from the server
 	 * @return a List of DownloadableUHS objects
 	 */
 	public List<DownloadableUHS> parseCatalog( String catalogString ) {

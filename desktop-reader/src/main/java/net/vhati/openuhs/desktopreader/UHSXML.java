@@ -30,7 +30,7 @@ public class UHSXML {
 	 *
 	 * <p>The default handler prints to System.err.</p>
 	 *
-	 * @param eh the error handler, or null, for quiet parsing
+	 * @param eh  the error handler, or null, for quiet parsing
 	 */
 	public static void setErrorHandler( UHSErrorHandler eh ) {
 		errorHandler = eh;
@@ -40,9 +40,9 @@ public class UHSXML {
 	/**
 	 * Exports a node and its children to xml.
 	 *
-	 * @param currentNode a node to start exporting from
-	 * @param basename prefix for referenced binary files
-	 * @param out a stream to print to (e.g., System.out)
+	 * @param currentNode  a node to start exporting from
+	 * @param basename  prefix for referenced binary files
+	 * @param out  a stream to print to (e.g., System.out)
 	 */
 	public static void exportTree( UHSNode currentNode, String basename, OutputStream out ) throws IOException {
 		Element rootElement = new Element( "uhs" );
@@ -61,9 +61,9 @@ public class UHSXML {
 	 *
 	 * <p>Extensions are guessed.</p>
 	 *
-	 * @param currentNode a node to start extracting from
-	 * @param basename prefix for referenced binary files
-	 * @param n a number for uniqueness, incrementing with each file
+	 * @param currentNode  a node to start extracting from
+	 * @param basename  prefix for referenced binary files
+	 * @param n  a number for uniqueness, incrementing with each file
 	 * @return a new value for n
 	 * @see net.vhati.openuhs.desktopreader.UHSUtil#getFileExtension(byte[])
 	 */

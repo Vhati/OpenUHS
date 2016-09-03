@@ -22,7 +22,7 @@ public class UHSRootNode extends UHSNode {
 	/**
 	 * Makes a node available to target by link nodes.
 	 *
-	 * @param newLink the node to add
+	 * @param newLink  the node to add
 	 */
 	public void addLink( UHSNode newLink ) {
 		linkMap.put( newLink.getId()+"", newLink );
@@ -31,7 +31,7 @@ public class UHSRootNode extends UHSNode {
 	/**
 	 * Makes a node unavailable to target by link nodes.
 	 *
-	 * @param id ID of the node to remove
+	 * @param id  ID of the node to remove
 	 */
 	public void removeLinkById( int id ) {
 		if ( !linkMap.containsKey( id+"" ) ) return;
@@ -41,7 +41,7 @@ public class UHSRootNode extends UHSNode {
 	/**
 	 * Makes a node unavailable to target by link nodes.
 	 *
-	 * @param doomedLink the node to remove
+	 * @param doomedLink  the node to remove
 	 */
 	public void removeLink( UHSNode doomedLink ) {
 		if ( !linkMap.containsKey( doomedLink.getId()+"") ) return;
@@ -61,7 +61,7 @@ public class UHSRootNode extends UHSNode {
 	 * <p>The node itself will always be returned,
 	 * without any temporary group wrapping it.</p>
 	 *
-	 * @param id ID of the node to get
+	 * @param id  ID of the node to get
 	 * @return the node, or null if not found
 	 */
 	public UHSNode getNodeByLinkId( int id ) {
@@ -80,7 +80,7 @@ public class UHSRootNode extends UHSNode {
 	 * the target's content will not be treated as
 	 * a title.</p>
 	 *
-	 * @param id ID of the node to get
+	 * @param id  ID of the node to get
 	 * @return the node, or null if not found
 	 */
 	public UHSNode getLink( int id ) {

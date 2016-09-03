@@ -13,7 +13,7 @@ public interface Nerfable {
 	/*
 	 * Either nerf or restore user interaction.
 	 *
-	 * @param b the nerfed state
+	 * @param b  the nerfed state
 	 */
 	public void setNerfed( boolean b );
 }

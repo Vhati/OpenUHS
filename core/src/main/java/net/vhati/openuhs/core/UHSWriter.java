@@ -38,7 +38,7 @@ public class UHSWriter {
 	/**
 	 * Generates an encryption key for formats after 88a.
 	 *
-	 * @param name the name of the master subject node of the UHS document (not the filename)
+	 * @param name  the name of the master subject node of the UHS document (not the filename)
 	 * @return the key
 	 * @see #encryptNestString(CharSequence, int[])
 	 * @see #encryptTextHunk(CharSequence, int[])
@@ -61,7 +61,7 @@ public class UHSWriter {
 	 *
 	 * <p>This is only necessary when saving a file.</p>
 	 *
-	 * @param input plaintext
+	 * @param input  plaintext
 	 * @return the encrypted text
 	 */
 	public String encryptString( CharSequence input ) {
@@ -91,8 +91,8 @@ public class UHSWriter {
 	 *
 	 * <p>This is only necessary when saving a file.</p>
 	 *
-	 * @param input plaintext
-	 * @param key this file's hint decryption key
+	 * @param input  plaintext
+	 * @param key  this file's hint decryption key
 	 * @return the encrypted text
 	 */
 	public String encryptNestString( CharSequence input, int[] key ) {
@@ -117,8 +117,8 @@ public class UHSWriter {
 	 *
 	 * <p>This is only necessary when saving a file.</p>
 	 *
-	 * @param input plaintext
-	 * @param key this file's hint decryption key
+	 * @param input  plaintext
+	 * @param key  this file's hint decryption key
 	 * @return the encrypted text
 	 */
 	public String encryptTextHunk( CharSequence input, int[] key ) {
@@ -157,7 +157,7 @@ public class UHSWriter {
 	 * <p>Markup within text will be stripped.</p>
 	 * <p>Version and Blank nodes will be omitted.</p>
 	 *
-	 * @param rootNode an existing root node
+	 * @param rootNode  an existing root node
 	 */
 	public boolean isValid88Format( UHSRootNode rootNode ) {
 		boolean hasCredit = false;
@@ -215,7 +215,7 @@ public class UHSWriter {
 	 *
 	 * <p>Newlines and "^break^" are replaced by " ".</p>
 	 *
-	 * @param rootNode an existing root node
+	 * @param rootNode  an existing root node
 	 * @see #isValid88Format(UHSRootNode)
 	 */
 	public void write88Format( UHSRootNode rootNode, OutputStream os ) throws IOException, CharacterCodingException, UnsupportedEncodingException {
@@ -294,7 +294,7 @@ public class UHSWriter {
 	/**
 	 * Writes the tree of a UHSRootnode in 9x format.
 	 *
-	 * @param rootNode an existing root node
+	 * @param rootNode  an existing root node
 	 */
 	public void write9xFormat( UHSRootNode rootNode, OutputStream os ) throws IOException, CharacterCodingException, UnsupportedEncodingException {
 		UHS9xInfo info = new UHS9xInfo();
@@ -707,8 +707,8 @@ public class UHSWriter {
 	 * <li>Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)</li>
 	 * </ul></p>
 	 *
-	 * @param currentNode the node to get content from
-	 * @param plain false to add markup, true to replace with ascii equivalent characters
+	 * @param currentNode  the node to get content from
+	 * @param plain  false to add markup, true to replace with ascii equivalent characters
 	 * @return an escaped string, or null if the content wasn't text
 	 */
 	public String escapeText( UHSNode currentNode, boolean plain ) {
