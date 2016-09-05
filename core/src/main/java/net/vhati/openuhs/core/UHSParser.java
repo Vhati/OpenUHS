@@ -14,6 +14,7 @@ import net.vhati.openuhs.core.CRC16;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.core.UHSBatchNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSRootNode;
@@ -629,7 +630,9 @@ public class UHSParser {
 	}
 
 	/**
-	 * Generates a nested hint UHSNode and its contents.
+	 * Generates an irregularly revealed UHSNode and its contents.
+	 *
+	 * <p>UHSBatchNode was written to handle children that reveal in batches.</p>
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -646,15 +649,17 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * <p>A hyphen divider indicates the next hint is just encrypted text.</p>
+	 * <p>A hyphen divider indicates the next batch, beginning with encrypted
+	 * hint text. The encrypted text may span multiple lines.</p>
 	 *
-	 * <p>An equals divider indicates a nested node of any type (as if this were a Subject node),
-	 * immediately followed by encrypted text.</p>
+	 * <p>An equals divider indicates a nested node of any type (as if this were
+	 * a Subject node), immediately followed by more encrypted hint text.</p>
 	 *
-	 * <p>TODO: The official reader displays "partial hint", "embedded hunk",
-	 * and "rest of hint" together as if they were one - with a line break between each.</p>
+	 * <p>The official reader reveals "partial hint", "embedded hunk", and
+	 * "rest of hint" together as if they were one - each on a new line but
+	 * displayed within a shared border.</p>
 	 *
-	 * <p>The hints wrapping an embedded hunk are optional.
+	 * <p>The hints surrounding an embedded hunk are optional.
 	 * That is: a 'standalone' embedded hunk is preceeded by a hyphen and an equals sign.
 	 * It is immediately followed by the hyphen indicating the next sepatate hint.</p>
 	 *
@@ -676,6 +681,7 @@ public class UHSParser {
 	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see #decryptNestString(CharSequence, int[])
+	 * @see net.vhati.openuhs.core.UHSBatchNode
 	 */
 	public int parseNestHintNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
 		String breakChar = "^break^";
@@ -685,7 +691,7 @@ public class UHSParser {
 		index++;
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
-		UHSNode hintNode = new UHSNode( "NestHint" );
+		UHSBatchNode hintNode = new UHSBatchNode( "NestHint" );
 			hintNode.setContent( getLoggedString( uhsFileArray, index ), UHSNode.STRING );
 			hintNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			hintNode.setId( startIndex );
@@ -694,30 +700,44 @@ public class UHSParser {
 		index++;
 		innerCount--;
 
+		boolean firstInBatch = true;
 		StringBuffer tmpContent = new StringBuffer();
 		UHSNode newNode = new UHSNode( "HintData" );
 
 		for ( int j=0; j < innerCount; j++ ) {
 			tmp = getLoggedString( uhsFileArray, index+j );
 			if ( tmp.equals( "-" ) ) {
-				// A hint, add last content
+				// A hint, add pending content
 				if ( tmpContent.length() > 0 ) {
 					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
 					newNode.setStringContentDecorator( new Version9xHintDecorator() );
 					hintNode.addChild( newNode );
+					hintNode.setAddon( newNode, !firstInBatch );
+
 					newNode = new UHSNode( "HintData" );
 					tmpContent.delete( 0, tmpContent.length() );
 				}
+				firstInBatch = true;
 			}
 			else if ( tmp.equals( "=" ) ) {
-				// Nested hunk, add last content
+				// Nested hunk, add pending content
 				if ( tmpContent.length() > 0 ) {
 					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
 					newNode.setStringContentDecorator( new Version9xHintDecorator() );
 					hintNode.addChild( newNode );
+					hintNode.setAddon( newNode, !firstInBatch );
+					firstInBatch = false;  // There was content ahead of the equals sign.
 				}
 
+				int childrenBefore = hintNode.getChildCount();
+
 				j += buildNodes( uhsFileArray, binHunk, rawOffset, rootNode, hintNode, key, index+j+1 );
+
+				if ( hintNode.getChildCount() == childrenBefore+1 ) {
+					UHSNode thatNode = hintNode.getChild( hintNode.getChildCount()-1 );
+					hintNode.setAddon( thatNode, !firstInBatch );
+					firstInBatch = false;  // Added a node just now.
+				}
 
 				if ( tmpContent.length() > 0 ) {
 					newNode = new UHSNode( "HintData" );
@@ -725,6 +745,7 @@ public class UHSParser {
 				}
 			}
 			else {
+				// Accumulate hint content.
 				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 				tmpContent.append( decryptNestString( getLoggedString( uhsFileArray, index+j ), key ) );
 			}
@@ -733,6 +754,8 @@ public class UHSParser {
 				newNode.setContent( tmpContent.toString(), UHSNode.STRING );
 				newNode.setStringContentDecorator( new Version9xHintDecorator() );
 				hintNode.addChild( newNode );
+				hintNode.setAddon( newNode, !firstInBatch );
+				firstInBatch = false;
 			}
 		}
 
@@ -1230,7 +1253,7 @@ public class UHSParser {
 					int childrenBefore = hotspotNode.getChildCount();
 					j--;  // Back up to the hunk type line
 					j += buildNodes( uhsFileArray, binHunk, rawOffset, rootNode, hotspotNode, key, index+j );
-					if (hotspotNode.getChildCount() == childrenBefore+1) {
+					if ( hotspotNode.getChildCount() == childrenBefore+1 ) {
 						UHSNode newNode = hotspotNode.getChild( hotspotNode.getChildCount()-1 );
 						newNode.shiftId( -1, rootNode );
 						// It might be weird to recurse HyperImg id shifts.

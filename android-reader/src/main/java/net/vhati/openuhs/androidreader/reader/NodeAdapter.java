@@ -58,16 +58,16 @@ public class NodeAdapter extends BaseAdapter {
 	/**
 	 * Reveals the next child hint.
 	 *
-	 * @return the child's index or -1 if no more to see
+	 * Note: Remember to call notifyDataSetChanged() on this adapter afterward.
+	 *
+	 * @return the new 1-based revealed amount, or -1 if there was no more to see
 	 */
 	public int showNext() {
-		int revealedAmt = node.getRevealedAmount();
+		if ( isComplete() ) return -1;
+		node.setRevealedAmount( node.getRevealedAmount()+1 );
+		int currentRevealedAmount = node.getRevealedAmount();  // Let the node decide how much more was revealed.
 
-		if (revealedAmt != -1 && revealedAmt < node.getChildCount()) {
-			node.setRevealedAmount(revealedAmt + 1);
-			return node.getRevealedAmount()-1;
-		}
-		return -1;
+		return currentRevealedAmount;
 	}
 
 
@@ -77,8 +77,11 @@ public class NodeAdapter extends BaseAdapter {
 	 * @return true if all children are revealed, false otherwise
 	 */
 	public boolean isComplete() {
-		if (node.getChildCount() == node.getRevealedAmount()) return true;
-		else return false;
+		if ( node.getRevealedAmount() == node.getChildCount() ) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 

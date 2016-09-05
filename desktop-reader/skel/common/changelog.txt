@@ -7,7 +7,9 @@
  - Added a tar distribution for OSX/Linux with launcher scripts.
  - License changed to GPLv3.
  - Fixed the downloader's broken find button.
+ - Fixed NestHints not revealing in batches, as the official reader does.
  - Added CatalogParser and DownloadableUHS to the core library.
+ - Added UHSBatchNode to the core library, for NestHint chunks.
 
 ## [0.6.7]  (Unreleased)
  - Moved printNode() from the parser to become a method in UHSNode objects.

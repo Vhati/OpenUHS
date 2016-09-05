@@ -1,5 +1,6 @@
 package net.vhati.openuhs.desktopreader.reader;
 
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
@@ -248,19 +249,27 @@ public class NodePanel extends JScrollablePanel {
 	/**
 	 * Reveals the next child hint.
 	 *
-	 * @return the child's index or -1 if no more to see
+	 * @return the new 1-based revealed amount, or -1 if there was no more to see
 	 */
 	public int showNext() {
-		for ( int i=0; i < pronoun.getComponentCount(); i++ ) {
-			if ( ((JComponent)pronoun.getComponent( i )).isVisible() == false ) {
-				((JComponent)pronoun.getComponent( i )).setVisible( true );
-				node.setRevealedAmount( node.getRevealedAmount()+1 );
-				pronoun.revalidate();
-				pronoun.repaint();
-				return i;
+		if ( isComplete() ) return -1;
+		node.setRevealedAmount( node.getRevealedAmount()+1 );
+		int currentRevealedAmount = node.getRevealedAmount();  // Let the node decide how much more was revealed.
+
+		boolean guiChanged = false;
+		for ( int i=0; i < this.getComponentCount(); i++ ) {
+			boolean reveal = ( i < currentRevealedAmount );
+			Component c = this.getComponent( i );
+			if ( c.isVisible() != reveal ) {
+				c.setVisible( reveal );
+				guiChanged = true;
 			}
 		}
-		return -1;
+		if ( guiChanged ) {
+			pronoun.revalidate();
+			pronoun.repaint();
+		}
+		return currentRevealedAmount;
 	}
 
 
@@ -270,7 +279,10 @@ public class NodePanel extends JScrollablePanel {
 	 * @return true if all children are revealed, false otherwise
 	 */
 	public boolean isComplete() {
-		if ( node.getChildCount() == node.getRevealedAmount() ) return true;
-		else return false;
+		if ( node.getRevealedAmount() == node.getChildCount() ) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 }

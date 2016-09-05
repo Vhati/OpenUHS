@@ -408,16 +408,17 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	public boolean showNext() {
 		if ( nodeAdapter == null ) return false;
 
-		int revealedIndex = nodeAdapter.showNext();
+		int revealed = nodeAdapter.showNext();
 		nodeAdapter.notifyDataSetChanged();
 
-		if ( revealedIndex == -1 ) {
+		if ( revealed == -1 ) {
 			showNextBtn.setEnabled( false );
 			return false;
-		} else {
+		}
+		else {
 			int hintCount = currentNode.getChildCount();
-			if ( (revealedIndex+1) == hintCount ) showNextBtn.setEnabled( false );
-			shownHintsCountLbl.setText( String.format( "%d/%d", (revealedIndex+1), hintCount ) );
+			if ( revealed == hintCount ) showNextBtn.setEnabled( false );
+			shownHintsCountLbl.setText( String.format( "%d/%d", revealed, hintCount ) );
 			return true;
 		}
 	}

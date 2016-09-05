@@ -530,14 +530,15 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	public boolean showNext() {
 		if ( currentNodePanel == null ) return false;
 
-		int revealedIndex = currentNodePanel.showNext();
-		if ( revealedIndex == -1 ) {
+		int revealed = currentNodePanel.showNext();
+		if ( revealed == -1 ) {
 			showNextBtn.setEnabled( false );
 			return false;
-		} else {
+		}
+		else {
 			int hintCount = currentNodePanel.getNode().getChildCount();
-			if ( (revealedIndex+1) == hintCount ) showNextBtn.setEnabled( false );
-			showLbl.setText( (revealedIndex+1) +"/"+ hintCount);
+			if ( revealed == hintCount ) showNextBtn.setEnabled( false );
+			showLbl.setText( revealed +"/"+ hintCount);
 			return true;
 		}
 	}
