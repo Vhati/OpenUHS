@@ -3,6 +3,7 @@ package net.vhati.openuhs.desktopreader.downloader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector;
@@ -13,7 +14,7 @@ import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
 
 
 public class DownloadableUHSTableModel extends AbstractTableModel {
-	private DownloadableUHSComparator comparator = new DownloadableUHSComparator();
+	private Comparator<DownloadableUHS> comparator = new DownloadableUHSComparator();
 	private DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
 
 	List<DownloadableUHS> dataVector = new Vector<DownloadableUHS>();
@@ -117,7 +118,7 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 		this.fireTableDataChanged();
 	}
 
-	public void sort( DownloadableUHSComparator c ) {
+	public void sort( Comparator<DownloadableUHS> c ) {
 		comparator = c;
 		sort();
 	}

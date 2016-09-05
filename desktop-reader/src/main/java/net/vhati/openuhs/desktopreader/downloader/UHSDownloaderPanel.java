@@ -17,6 +17,7 @@ import java.awt.event.MouseListener;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -182,7 +183,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 				else if ( "Name".equals( uhsTableModel.getColumnName( col ) ) ) {
 					sortBy = DownloadableUHSComparator.SORT_NAME;
 				}
-				DownloadableUHSComparator c = new DownloadableUHSComparator( sortBy );
+				Comparator<DownloadableUHS> c = new DownloadableUHSComparator( sortBy );
 				if ( reverse ) c = Collections.reverseOrder( c );
 				uhsTableModel.sort( c );
 			}
