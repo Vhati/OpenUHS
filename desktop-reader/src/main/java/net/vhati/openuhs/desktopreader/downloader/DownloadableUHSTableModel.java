@@ -3,23 +3,19 @@ package net.vhati.openuhs.desktopreader.downloader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import javax.swing.table.AbstractTableModel;
 
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
 
 
 public class DownloadableUHSTableModel extends AbstractTableModel {
-	public static final int SORT_TITLE = 0;
-	public static final int SORT_DATE = 1;
-	public static final int SORT_FULLSIZE = 2;
-	public static final int SORT_NAME = 3;
-
-	private int sortOrder = SORT_TITLE;
+	private DownloadableUHSComparator comparator = new DownloadableUHSComparator();
 	private DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
+
 	List<DownloadableUHS> dataVector = new Vector<DownloadableUHS>();
 	List<String> colVector = new Vector<String>();
 
@@ -117,33 +113,12 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 
 
 	public void sort() {
-		Collections.sort(dataVector, new Comparator<DownloadableUHS>() {
-			@Override
-			public int compare( DownloadableUHS a, DownloadableUHS b ) {
-				if ( a != null && b != null ) {
-					if ( sortOrder == SORT_TITLE ) return a.getTitle().compareTo( b.getTitle() );
-					if ( sortOrder == SORT_DATE ) return a.getDate().compareTo( b.getDate() ) * -1;
-					if ( sortOrder == SORT_FULLSIZE ) {
-						if ( a.getFullSize().matches( "^[0-9]+$" ) && b.getFullSize().matches( "^[0-9]+$" ) ) {
-							if ( a.getFullSize().length() == b.getFullSize().length() ) {
-								return a.getFullSize().compareTo( b.getFullSize() );
-							}
-							else {
-								return (( a.getFullSize().length() > b.getFullSize().length() ) ? 1 : -1);
-							}
-						}
-						return a.getFullSize().compareTo( b.getFullSize() );
-					}
-					if ( sortOrder == SORT_NAME ) return a.getName().compareTo( b.getName() );
-				}
-				return 1;
-			}
-		});
+		Collections.sort( dataVector, comparator );
 		this.fireTableDataChanged();
 	}
 
-	public void sort( int n ) {
-		sortOrder = n;
+	public void sort( DownloadableUHSComparator c ) {
+		comparator = c;
 		sort();
 	}
 }

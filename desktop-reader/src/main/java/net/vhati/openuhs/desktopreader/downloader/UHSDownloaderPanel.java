@@ -16,6 +16,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -41,6 +42,7 @@ import javax.swing.event.ListSelectionListener;
 import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
 import net.vhati.openuhs.desktopreader.AppliablePanel;
 import net.vhati.openuhs.desktopreader.Nerfable;
 import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
@@ -165,12 +167,24 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 				int index = uhsTable.getColumnModel().getColumnIndexAtX( e.getX() );
 				int col = uhsTable.convertColumnIndexToModel( index );
 
-				int order = DownloadableUHSTableModel.SORT_TITLE;
-				if ( uhsTableModel.getColumnName(col).equals( "Title" ) ) order = DownloadableUHSTableModel.SORT_TITLE;
-				else if ( uhsTableModel.getColumnName(col).equals( "Date" ) ) order = DownloadableUHSTableModel.SORT_DATE;
-				else if ( uhsTableModel.getColumnName(col).equals( "FullSize" ) ) order = DownloadableUHSTableModel.SORT_FULLSIZE;
-				else if ( uhsTableModel.getColumnName(col).equals( "Name" ) ) order = DownloadableUHSTableModel.SORT_NAME;
-				uhsTableModel.sort( order );
+				int sortBy = DownloadableUHSComparator.SORT_TITLE;
+				boolean reverse = false;
+				if ( "Title".equals( uhsTableModel.getColumnName( col ) ) ) {
+					sortBy = DownloadableUHSComparator.SORT_TITLE;
+				}
+				else if ( "Date".equals( uhsTableModel.getColumnName( col ) ) ) {
+					sortBy = DownloadableUHSComparator.SORT_DATE;
+					reverse = true;
+				}
+				else if ( "FullSize".equals( uhsTableModel.getColumnName( col ) ) ) {
+					sortBy = DownloadableUHSComparator.SORT_FULLSIZE;
+				}
+				else if ( "Name".equals( uhsTableModel.getColumnName( col ) ) ) {
+					sortBy = DownloadableUHSComparator.SORT_NAME;
+				}
+				DownloadableUHSComparator c = new DownloadableUHSComparator( sortBy );
+				if ( reverse ) c = Collections.reverseOrder( c );
+				uhsTableModel.sort( c );
 			}
 		});
 
