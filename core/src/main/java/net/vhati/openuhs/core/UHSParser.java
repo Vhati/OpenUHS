@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,16 +64,20 @@ public class UHSParser {
 	/**
 	 * Generates a decryption key for formats after 88a.
 	 *
-	 * @param name  the name of the master subject node of the UHS document (not the filename)
+	 * @param title  the name of the master subject node of the UHS document (not the filename)
 	 * @return the key
 	 * @see #decryptNestString(CharSequence, int[])
 	 * @see #decryptTextHunk(CharSequence, int[])
 	 */
-	public int[] generateKey( CharSequence name ) {
-		int[] key = new int[name.length()];
+	public int[] generate9xKey( CharSequence title ) {
+		if ( title == null || !Charset.forName( "US-ASCII" ).newEncoder().canEncode( title ) ) {
+			throw new IllegalArgumentException( "Version 9x requires an ASCII title for its encryption key" );
+		}
+
+		int[] key = new int[title.length()];
 		int[] k = {'k', 'e', 'y'};
-		for ( int i=0; i < name.length(); i++ ) {
-			key[i] = (int)name.charAt( i ) + ( k[i%3] ^ (i + 40) );
+		for ( int i=0; i < title.length(); i++ ) {
+			key[i] = (int)title.charAt( i ) + ( k[i%3] ^ (i + 40) );
 			while ( key[i] > 127 ) {
 				key[i] -= 96;
 			}
@@ -222,7 +227,7 @@ public class UHSParser {
 			while ( (tmpByte = (byte)raf.read()) != -1 && tmpByte != 0x1a ) {
 				raf.getChannel().position( raf.getChannel().position()-1 );
 				logLine++;
-				tmp = raf.readLine();               // RandomAccessFile reads as ASCII
+				tmp = raf.readLine();                 // RandomAccessFile sort of reads as ASCII/UTF-8?
 				tmp = tmp.replaceAll( "\\x00", "" );  // A couple malformed 88a's have nulls at the end
 				uhsFileArray.add( tmp );
 			}
@@ -423,7 +428,10 @@ public class UHSParser {
 	 *
 	 * <p>Versions 91a, 95a, and 96a have been seen in the wild.
 	 * These UHS files are prepended with an 88a section containing an "upgrade your reader" notice.
-	 * Below, uhsFileArray begins after "** END OF 88A FORMAT **".</p>
+	 * Additionally, they exploit the 88a format to create an uninterpreted gap, with an
+	 * unencrypted message for anyone opening them in text editors.</p>
+	 *
+	 * <p>As shown below, uhsFileArray (and the 1-based line count) begins after "** END OF 88A FORMAT **".</p>
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -442,7 +450,7 @@ public class UHSParser {
 	 * content
 	 * 0x1Ah character
 	 * {binary hunk}
-	 * {2-byte CRC16 of everything prior}
+	 * {2-byte CRC16 of the entire file's bytes, excluding these two}
 	 * }
 	 * </pre></blockquote>
 	 *
@@ -473,7 +481,7 @@ public class UHSParser {
 				rootNode.setContent( "root", UHSNode.STRING );
 
 			String name = getLoggedString( uhsFileArray, 2 ); // This is the title of the master subject node
-			int[] key = generateKey( name );
+			int[] key = generate9xKey( name );
 
 			int index = 1;
 			index += buildNodes( uhsFileArray, binHunk, rawOffset, rootNode, rootNode, key, index );
@@ -638,6 +646,27 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
+	 * <p>A hyphen divider indicates the next hint is just encrypted text.</p>
+	 *
+	 * <p>An equals divider indicates a nested node of any type (as if this were a Subject node),
+	 * immediately followed by encrypted text.</p>
+	 *
+	 * <p>TODO: The official reader displays "partial hint", "embedded hunk",
+	 * and "rest of hint" together as if they were one - with a line break between each.</p>
+	 *
+	 * <p>The hints wrapping an embedded hunk are optional.
+	 * That is: a 'standalone' embedded hunk is preceeded by a hyphen and an equals sign.
+	 * It is immediately followed by the hyphen indicating the next sepatate hint.</p>
+	 *
+	 * <p>Multiple embedded hunks can appear in a row, each preceeded by an equals.</p>
+	 *
+	 * <p>TODO: See if multiple embedded hunks can alternate with intervening text,
+	 * not just appearing in clumps.</p>
+	 *
+	 * <p><ul>
+	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 1, What should I do with all the stuff outside my window?</li>
+	 * </ul></p>
+	 *
 	 * @param uhsFileArray  a List of all available lines in the file
 	 * @param binHunk  array of raw bytes at the end of the file
 	 * @param rawOffset  offset to the raw bytes from the beginning of the file
@@ -763,7 +792,8 @@ public class UHSParser {
 					newNode = new UHSNode( "HintData" );
 					tmpContent.delete( 0, tmpContent.length() );
 				}
-			} else {
+			}
+			else {
 				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 
 				tmp = getLoggedString( uhsFileArray, index+j );
@@ -948,7 +978,7 @@ public class UHSParser {
 			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read referenced raw bytes", logHeader+logLine+1, null );
 			tmp = "";
 		}
-		String[] lines = tmp.split( "(\r\n)|\r|\n" );
+		String[] lines = tmp.split( "(\r\n)|\r|\n", -1 );
 		for ( int i=0; i < lines.length; i++ ) {
 			if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 			tmpContent.append( decryptTextHunk( lines[i], key ) );
@@ -1056,6 +1086,7 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
+	 * <p>The "--not-a-gap--" lines are inserted here for visual clarity.</p>
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
 	 * <p>A gifa has the same structure, but might not officially contain regions.</p>
 	 * <p>The main image gets an id, which may be referenced by an Incentive node.</p>
@@ -1106,7 +1137,7 @@ public class UHSParser {
 		index++;
 		innerCount--;
 
-		int mainImgIndex = index;  // Yeah, the number triplet gets an id
+		int mainImgIndex = index;  // Yeah, the number triplet gets an id. Weird.
 		tokens = (getLoggedString( uhsFileArray, index )).split( " " );
 		index++;
 		innerCount--;
@@ -1184,13 +1215,13 @@ public class UHSParser {
 						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read referenced raw bytes", logHeader+logLine+1, null );
 					}
 					UHSNode overlayNode = new UHSNode( "Overlay" );
-						overlayNode.setContent( tmpBytes, UHSNode.IMAGE );
+						overlayNode.setContent( tmpBytes, UHSNode.IMAGE );  // TODO: Threw away the title.
 						overlayNode.setId( nestedIndex );
 						hotspotNode.addChild( overlayNode );
 						rootNode.addLink( overlayNode );
 						hotspotNode.setSpot( overlayNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY ) );
 
-					// Reader's NodePanel would need to look two children deep
+					// With a title, reader's NodePanel would need to look two children deep.
 					//UHSNode newNode = new UHSNode( "OverlayData" );
 					//  newNode.setContent( tmpBytes, UHSNode.IMAGE );
 					//  overlayNode.addChild( newNode );
@@ -1202,7 +1233,7 @@ public class UHSParser {
 					if (hotspotNode.getChildCount() == childrenBefore+1) {
 						UHSNode newNode = hotspotNode.getChild( hotspotNode.getChildCount()-1 );
 						newNode.shiftId( -1, rootNode );
-						// It might be weird to recurse HyperImg id shifts
+						// It might be weird to recurse HyperImg id shifts.
 						if ( tmp.endsWith( "hyperpng" ) && newNode.getChildCount() != 1 ) {
 							if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Nested HyperImage has an unexpected child count", logHeader+logLine+1, null );
 						}
