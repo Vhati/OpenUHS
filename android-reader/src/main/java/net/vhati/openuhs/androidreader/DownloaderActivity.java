@@ -2,6 +2,7 @@ package net.vhati.openuhs.androidreader;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -44,6 +45,7 @@ import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchRes
 import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.downloader.CatalogParser;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
 
 
 public class DownloaderActivity extends AppCompatActivity implements UHSFetchObserver {
@@ -54,6 +56,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	private File hintsDir = null;
 
 	private AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler( "OpenUHS" );
+	private DownloadableUHSComparator catalogComparator = new DownloadableUHSComparator();
 	private CatalogParser catalogParser = null;
 	private StringFetchTask catalogFetchTask = null;
 	private UHSFetchTask uhsFetchTask = null;
@@ -325,6 +328,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 			List<DownloadableUHS> catalog = catalogParser.parseCatalog( fetchResult.content );
 			if ( catalog.size() > 0 ) {
+				Collections.sort( catalog, catalogComparator );
 				colorizeCatalog( catalog );
 				catalogListView.setAdapter(new DownloadableUHSArrayAdapter( DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog ));
 			}
