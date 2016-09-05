@@ -19,38 +19,38 @@ public class NodeAdapter extends BaseAdapter {
 	private UHSNode node = null;
 
 
-	public NodeAdapter(Context context, UHSNode node, boolean showAll) {
+	public NodeAdapter( Context context, UHSNode node, boolean showAll ) {
 		super();
 		this.context = context;
-		setNode(node, showAll);
+		setNode( node, showAll );
 	}
 
 
-	public void setNode(UHSNode node, boolean showAll) {
+	public void setNode( UHSNode node, boolean showAll ) {
 		this.node = node;
 
 		boolean allgroup = true;
-		if (node instanceof UHSHotSpotNode) {
+		if ( node instanceof UHSHotSpotNode ) {
 			// TODO: ...
 		}
 		else {
-			for (int i=0; i < node.getChildCount(); i++) {
+			for ( int i=0; i < node.getChildCount(); i++ ) {
 				UHSNode tmpNode = node.getChild(i);
 				int contentType = node.getChild(i).getContentType();
 
-				if (contentType == UHSNode.STRING) {
-					if (tmpNode.isGroup() || tmpNode.isLink()) {
+				if ( contentType == UHSNode.STRING ) {
+					if ( tmpNode.isGroup() || tmpNode.isLink() ) {
 						// Nothing to do on Android.
 					}
-					else if (tmpNode.getType().equals("Blank") == false) {
+					else if ( "Blank".equals( tmpNode.getType() ) == false ) {
 						allgroup = false;
 					}
 				}
 			}
 		}
 
-		if (allgroup || showAll) {
-			node.setRevealedAmount(node.getChildCount());
+		if ( allgroup || showAll ) {
+			node.setRevealedAmount( node.getChildCount() );
 		}
 	}
 
@@ -58,7 +58,7 @@ public class NodeAdapter extends BaseAdapter {
 	/**
 	 * Reveals the next child hint.
 	 *
-	 * Note: Remember to call notifyDataSetChanged() on this adapter afterward.
+	 * <p>Note: Remember to call notifyDataSetChanged() on this adapter afterward.</p>
 	 *
 	 * @return the new 1-based revealed amount, or -1 if there was no more to see
 	 */
@@ -88,16 +88,16 @@ public class NodeAdapter extends BaseAdapter {
 	@Override
 	public int getCount() {
 		int revealedAmt = node.getRevealedAmount();
-		return (revealedAmt != -1 ? revealedAmt : 0);
+		return (( revealedAmt != -1 ) ? revealedAmt : 0);
 	}
 
 	@Override
-	public Object getItem(int position) {
-		return node.getChild(position);
+	public Object getItem( int position ) {
+		return node.getChild( position );
 	}
 
 	@Override
-	public long getItemId(int position) {
+	public long getItemId( int position ) {
 		return position;
 	}
 
@@ -115,12 +115,12 @@ public class NodeAdapter extends BaseAdapter {
 	 * @return a number from 0 through getViewTypeCount()-1
 	 */
 	@Override
-	public int getItemViewType(int position) {
-		int childContentType = node.getChild(position).getContentType();
+	public int getItemViewType( int position ) {
+		int childContentType = node.getChild( position ).getContentType();
 
-		if (childContentType == UHSNode.STRING) return 1;
-		if (childContentType == UHSNode.IMAGE) return 2;
-		if (childContentType == UHSNode.AUDIO) return 3;
+		if ( childContentType == UHSNode.STRING ) return 1;
+		if ( childContentType == UHSNode.IMAGE ) return 2;
+		if ( childContentType == UHSNode.AUDIO ) return 3;
 
 		return 0;
 	}
@@ -133,40 +133,40 @@ public class NodeAdapter extends BaseAdapter {
 	 * @param parent  the parent that this view will eventually be attached to
 	 */
 	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
+	public View getView( int position, View convertView, ViewGroup parent ) {
 		View childView;
-		final LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		final LayoutInflater inflater = (LayoutInflater)context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
 
-		int childContentType = node.getChild(position).getContentType();
-		if (childContentType == UHSNode.STRING) {
-			if (convertView instanceof UHSTextView) {
+		int childContentType = node.getChild( position ).getContentType();
+		if ( childContentType == UHSNode.STRING ) {
+			if ( convertView instanceof UHSTextView ) {
 				childView = convertView;
 			} else {
-				childView = new UHSTextView(context);
+				childView = new UHSTextView( context );
 			}
-			((UHSTextView)childView).setNode(node.getChild(position));
+			((UHSTextView)childView).setNode( node.getChild( position ) );
 		}
-		else if (childContentType == UHSNode.IMAGE) {
-			if (convertView instanceof UHSImageView) {
+		else if ( childContentType == UHSNode.IMAGE ) {
+			if ( convertView instanceof UHSImageView ) {
 				childView = convertView;
 			} else {
-				childView = new UHSImageView(context);
+				childView = new UHSImageView( context );
 			}
-			((UHSImageView)childView).setNode(node.getChild(position));
+			((UHSImageView)childView).setNode( node.getChild( position ) );
 		}
-		else if (childContentType == UHSNode.AUDIO) {
-			if (convertView instanceof UHSSoundView) {
+		else if ( childContentType == UHSNode.AUDIO ) {
+			if ( convertView instanceof UHSSoundView ) {
 				childView = convertView;
 			} else {
-				childView = new UHSSoundView(context);
+				childView = new UHSSoundView( context );
 			}
-			((UHSSoundView)childView).setNode(node.getChild(position));
+			((UHSSoundView)childView).setNode( node.getChild( position ) );
 		}
 		else {
-			if (convertView instanceof UHSUnknownView) {
+			if ( convertView instanceof UHSUnknownView ) {
 				childView = convertView;
 			} else {
-				childView = new UHSUnknownView(context);
+				childView = new UHSUnknownView( context );
 			}
 		}
 

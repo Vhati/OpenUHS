@@ -41,22 +41,22 @@ public class UHSSoundView extends LinearLayout {
 	private boolean writeWorkerDone = true;  // Tells this the thread's stopped.
 
 
-	public UHSSoundView(Context context) {
-		super(context);
+	public UHSSoundView( Context context ) {
+		super( context );
 		this.context = context;
 
-		this.setOrientation(LinearLayout.VERTICAL);
-		setClickable(false);
-		setFocusable(false);
+		this.setOrientation( LinearLayout.VERTICAL );
+		setClickable( false );
+		setFocusable( false );
 
-		this.inflate(context, R.layout.uhs_sound_view, this);
-		playBtn = (Button)findViewById(R.id.playBtn);
-		errorLabel = (TextView)this.findViewById(R.id.errorText);
+		this.inflate( context, R.layout.uhs_sound_view, this );
+		playBtn = (Button)findViewById( R.id.playBtn );
+		errorLabel = (TextView)this.findViewById( R.id.errorText );
 
 		playBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
-			public void onClick(View v) {
-				android.util.Log.i("OpenUHS", "@!@ Sound play button clicked.");
+			public void onClick( View v ) {
+				android.util.Log.i( "OpenUHS", "@!@ Sound play button clicked." );
 				play();
 			}
 		});
@@ -64,17 +64,17 @@ public class UHSSoundView extends LinearLayout {
 
 
 
-	public void setNode(UHSNode node) {
+	public void setNode( UHSNode node ) {
 		synchronized (trackLock) {
-			if (track != null) track.release();
+			if ( track != null ) track.release();
 			track = null;
 			keepAlive = false;
 		}
 
 		this.node = node;
 
-		if (node.getContentType() != UHSNode.AUDIO) {
-			errorLabel.setText("^NON-AUDIO CONTENT^");
+		if ( node.getContentType() != UHSNode.AUDIO ) {
+			errorLabel.setText( "^NON-AUDIO CONTENT^" );
 		}
 		else {
 			decodeBytes();
@@ -84,40 +84,46 @@ public class UHSSoundView extends LinearLayout {
 
 	private void decodeBytes() {
 		byte[] soundBytes = (byte[])node.getContent();
-		InputStream is = new ByteArrayInputStream(soundBytes);
+		InputStream is = new ByteArrayInputStream( soundBytes );
 
 		try {
-			fmt = readHeader(is);
+			fmt = readHeader( is );
 
 			int trackChannelCfg = 0;
-			if (fmt.headerChannels == 1) {
+			if ( fmt.headerChannels == 1 ) {
 				trackChannelCfg = AudioFormat.CHANNEL_OUT_MONO;
-			} else if (fmt.headerChannels == 2) {
+			}
+			else if ( fmt.headerChannels == 2 ) {
 				trackChannelCfg = AudioFormat.CHANNEL_OUT_STEREO;
-			} else {
-				throw new WavException("Unsupported sound channels: "+ fmt.headerChannels +".");
+			}
+			else {
+				throw new WavException( "Unsupported sound channels: "+ fmt.headerChannels +"." );
 			}
 
-			if (fmt.headerEncoding != 1 /* Linear PCM*/)
-				throw new WavException("Unsupported sound encoding: "+ fmt.headerEncoding +".");
-			if (fmt.headerBits != 16)
-				throw new WavException("Unsupported sound bitness: "+ fmt.headerBits +".");
+			if ( fmt.headerEncoding != 1 /* Linear PCM*/ ) {
+				throw new WavException( "Unsupported sound encoding: "+ fmt.headerEncoding +"." );
+			}
+			if ( fmt.headerBits != 16 ) {
+				throw new WavException( "Unsupported sound bitness: "+ fmt.headerBits +"." );
+			}
 			int trackEncoding = AudioFormat.ENCODING_PCM_16BIT;
 
 			// This is a common range. Dunno how to ask Android for what it likes.
-			if (fmt.headerRate < 11025 || fmt.headerRate > 48000)
+			if ( fmt.headerRate < 11025 || fmt.headerRate > 48000 ) {
 				throw new WavException("Unsupported sound rate: "+ fmt.headerRate +".");
+			}
 			int trackRate = fmt.headerRate;
 
-			errorLabel.setText("This sound is playable.");
+			errorLabel.setText( "This sound is playable." );
 
 			int trackBufferSize = soundBytes.length;
-			if (trackMode == AudioTrack.MODE_STREAM) {
-				trackBufferSize = AudioTrack.getMinBufferSize(trackRate, trackChannelCfg, trackEncoding);
-				if (trackBufferSize == AudioTrack.ERROR) {
-					throw new WavException("getMinBufferSize() returned ERROR");
-				} else if (trackBufferSize == AudioTrack.ERROR_BAD_VALUE) {
-					throw new WavException("getMinBufferSize() returned BAD_VALUE");
+			if ( trackMode == AudioTrack.MODE_STREAM ) {
+				trackBufferSize = AudioTrack.getMinBufferSize( trackRate, trackChannelCfg, trackEncoding );
+				if ( trackBufferSize == AudioTrack.ERROR ) {
+					throw new WavException( "getMinBufferSize() returned ERROR" );
+				}
+				else if ( trackBufferSize == AudioTrack.ERROR_BAD_VALUE ) {
+					throw new WavException( "getMinBufferSize() returned BAD_VALUE" );
 				}
 			}
 
@@ -127,67 +133,67 @@ public class UHSSoundView extends LinearLayout {
 			trackInfo.rate = trackRate;
 			trackInfo.bufferSize = trackBufferSize;
 		}
-		catch (Exception e) {
-			errorLabel.setText(e.toString());
+		catch ( Exception e ) {
+			errorLabel.setText( e.toString() );
 		}
 		finally {
-			if (is != null) {
-				try {is.close();}
-				catch (Exception e) {}
-			}
+			try {if ( is != null ) is.close();} catch ( Exception e ) {}
 		}
 	}
 
 
 	/**
 	 * Decodes WAV header info from a stream.
-	 * Afterward, the stream's position will be at the first data chunk.
+	 *
+	 * <p>Afterward, the stream's position will be at the first data chunk.</p>
 	 *
 	 * @param is  a stream supporting mark()
 	 * @return an object describing header info
 	 */
-	public WavFormat readHeader(InputStream is) throws IOException, WavException {
+	public WavFormat readHeader( InputStream is ) throws IOException, WavException {
 		ByteOrder origOrder = null;
 
 		byte[] magic = new byte[4];
-		is.mark(magic.length);  // Setup backtracking.
-		is.read(magic, 0, magic.length);
+		is.mark( magic.length );  // Setup backtracking.
+		is.read( magic, 0, magic.length );
 		is.reset();  // Unread.
-		if (magic[0] == 0x52 && magic[1] == 0x49 && magic[2] == 0x46 && magic[3] == 0x46) {
+		if ( magic[0] == 0x52 && magic[1] == 0x49 && magic[2] == 0x46 && magic[3] == 0x46 ) {
 			origOrder = ByteOrder.LITTLE_ENDIAN;  // RIFF
-		} else {
+		}
+		else {
 			// RIFX, rare byte-swapped counterpart.
 			//origOrder = ByteOrder.BIG_ENDIAN;
 			// Dunno how to translate the data chubk later. *shrug*
-			throw new WavException("Error: Sound bytes didn't begin with RIFF.");
+			throw new WavException( "Error: Sound bytes didn't begin with RIFF." );
 		}
 
-		ByteBuffer soundBuf = ByteBuffer.allocate(WAV_HEADER_SIZE);
-		soundBuf.order(origOrder);
-		is.read(soundBuf.array(), soundBuf.arrayOffset(), soundBuf.capacity());
+		ByteBuffer soundBuf = ByteBuffer.allocate( WAV_HEADER_SIZE );
+		soundBuf.order( origOrder );
+		is.read( soundBuf.array(), soundBuf.arrayOffset(), soundBuf.capacity() );
 		soundBuf.rewind();
 
-		soundBuf.order(ByteOrder.LITTLE_ENDIAN);
-		soundBuf.position(20);
+		soundBuf.order( ByteOrder.LITTLE_ENDIAN );
+		soundBuf.position( 20 );
 		int headerEncoding = soundBuf.getShort();
 		int headerChannels = soundBuf.getShort();
 		int headerRate = soundBuf.getInt();
 
-		soundBuf.position(soundBuf.position() + 6);
+		soundBuf.position( soundBuf.position() + 6 );
 		int headerBits = soundBuf.getShort();
 
-		while (soundBuf.getInt() != 0x61746164) { // "data" marker.
+		while ( soundBuf.getInt() != 0x61746164 ) { // "data" marker.
 			// Non-data chunk. Size follows, so read that and skip the chunk.
 			int chunkSize = soundBuf.getInt();
-			is.skip(chunkSize);
+			is.skip( chunkSize );
 
 			soundBuf.rewind();
-			is.read(soundBuf.array(), soundBuf.arrayOffset(), 8);
+			is.read( soundBuf.array(), soundBuf.arrayOffset(), 8 );
 			soundBuf.rewind();
 		}  // In the data chunk now.
 		int dataSize = soundBuf.getInt();
-		if (dataSize <= 0)
-			throw new WavException("Unsupported sound data chunk size: "+ dataSize +".");
+		if ( dataSize <= 0 ) {
+			throw new WavException( "Unsupported sound data chunk size: "+ dataSize +"." );
+		}
 
 		WavFormat result = new WavFormat();
 		result.headerEncoding = headerEncoding;
@@ -204,31 +210,32 @@ public class UHSSoundView extends LinearLayout {
 	/**
 	 * Plays the node's sound.
 	 *
-	 * An AudioTrack is created, which will release() when it's done playing.
+	 * <p>An AudioTrack is created, which will release() when it's done playing.</p>
 	 */
 	public void play() {
-		synchronized(trackLock) {
-			android.util.Log.i("OpenUHS", "@!@ Sound play(): existing track ("+ (track != null) +"), workerDone ("+ writeWorkerDone +").");
-			if (track != null || !writeWorkerDone) return;
+		synchronized ( trackLock ) {
+			android.util.Log.i( "OpenUHS", "@!@ Sound play(): existing track ("+ (track != null) +"), workerDone ("+ writeWorkerDone +")." );
+			if ( track != null || !writeWorkerDone ) return;
 
 			keepAlive = true;
 			writeWorkerDone = false;
 			Exception err = null;
 			try {
-				track = new AudioTrack(AudioManager.STREAM_MUSIC, trackInfo.rate, trackInfo.channelCfg, trackInfo.encoding, trackInfo.bufferSize, trackMode);
+				track = new AudioTrack( AudioManager.STREAM_MUSIC, trackInfo.rate, trackInfo.channelCfg, trackInfo.encoding, trackInfo.bufferSize, trackMode );
 
-				track.setNotificationMarkerPosition(fmt.getTotalFrames()-1);
+				track.setNotificationMarkerPosition( fmt.getTotalFrames()-1 );
 				track.setPlaybackPositionUpdateListener(new OnPlaybackPositionUpdateListener() {
 					@Override
-					public void onPeriodicNotification(AudioTrack track) {
+					public void onPeriodicNotification( AudioTrack track ) {
 					}
 					@Override
-					public void onMarkerReached(AudioTrack track) {
-						synchronized(trackLock) {
-							android.util.Log.i("OpenUHS", "@!@ Sound track finished playing.");
+					public void onMarkerReached( AudioTrack track ) {
+						synchronized ( trackLock ) {
+							android.util.Log.i( "OpenUHS", "@!@ Sound track finished playing." );
 							track.release();
-							if (track == UHSSoundView.this.track)
+							if ( track == UHSSoundView.this.track ) {
 								UHSSoundView.this.track = null;
+							}
 							keepAlive = false;
 						}
 					}
@@ -239,19 +246,23 @@ public class UHSSoundView extends LinearLayout {
 				// But you'd need to know when to release() if not when stopping.
 				// And MODE_STATIC has a memory leak issue, so avoid it altogether.
 
-				if (trackMode == AudioTrack.MODE_STREAM) {  // Write after play.
-					android.util.Log.i("OpenUHS", "@!@ Playing sound track.");
+				if ( trackMode == AudioTrack.MODE_STREAM ) {  // Write after play.
+					android.util.Log.i( "OpenUHS", "@!@ Playing sound track." );
 					track.play();
 				}
 			}
-			catch (IllegalArgumentException e) {err = e;}
-			catch (IllegalStateException e) {err = e;}
+			catch ( IllegalArgumentException e ) {
+				err = e;
+			}
+			catch ( IllegalStateException e ) {
+				err = e;
+			}
 			finally {
-				if (err != null) {
+				if ( err != null ) {
 					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-					errorHandler.log(UHSErrorHandler.ERROR, UHSSoundView.this, "Could not play sound.", 0, err);
-					errorLabel.setText(err.toString());
-					if (track != null) track.release();
+					errorHandler.log( UHSErrorHandler.ERROR, UHSSoundView.this, "Could not play sound.", 0, err );
+					errorLabel.setText( err.toString() );
+					if ( track != null ) track.release();
 					track = null;
 					keepAlive = false;
 					writeWorkerDone = true;
@@ -266,50 +277,52 @@ public class UHSSoundView extends LinearLayout {
 		Runnable r = new Runnable() {
 			public void run() {
 				try {
-					InputStream is = new ByteArrayInputStream(soundBytes);
-					is.skip(bytesToSkip);
+					InputStream is = new ByteArrayInputStream( soundBytes );
+					is.skip( bytesToSkip );
 
 					byte[] tmpBytes = new byte[512];
 					int n = 0;
 					int bytesLeft = bytesToWrite;
-					while (keepAlive && bytesLeft > 0 && (n = is.read(tmpBytes)) != -1) {
-						n = Math.min(n, bytesLeft);
-						for (int bytesWritten=0; keepAlive && bytesWritten < n;) {
-							int tmpInt = track.write(tmpBytes, bytesWritten, n-bytesWritten);
+					while ( keepAlive && bytesLeft > 0 && (n=is.read( tmpBytes )) != -1 ) {
+						n = Math.min( n, bytesLeft );
+						for ( int bytesWritten=0; keepAlive && bytesWritten < n; ) {
+							int tmpInt = track.write( tmpBytes, bytesWritten, n-bytesWritten );
 
-							if (tmpInt == AudioTrack.ERROR_INVALID_OPERATION)
-								throw new IOException("track.write() returned INVALID_OPERATION");
-							else if (tmpInt == AudioTrack.ERROR_BAD_VALUE)
-								throw new IOException("track.write() returned BAD_VALUE");
+							if ( tmpInt == AudioTrack.ERROR_INVALID_OPERATION ) {
+								throw new IOException( "track.write() returned INVALID_OPERATION" );
+							}
+							else if ( tmpInt == AudioTrack.ERROR_BAD_VALUE ) {
+								throw new IOException( "track.write() returned BAD_VALUE" );
+							}
 							bytesWritten += tmpInt;
 						}
 						bytesLeft -= n;
 					}
-					android.util.Log.i("OpenUHS", "@!@ Sound bytes left unwritten ("+ bytesLeft +"/"+ bytesToWrite +").");
+					android.util.Log.i( "OpenUHS", "@!@ Sound bytes left unwritten ("+ bytesLeft +"/"+ bytesToWrite +")." );
 
 					// With MODE_STATIC, post a runnable to the UI thread to play() after writing.
 				}
-				catch (final IOException e) {
+				catch ( final IOException e ) {
 					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-					errorHandler.log(UHSErrorHandler.ERROR, UHSSoundView.this, "Could not play sound.", 0, e);
+					errorHandler.log( UHSErrorHandler.ERROR, UHSSoundView.this, "Could not play sound.", 0, e );
 
 					UHSSoundView.this.post(new Runnable() {
 						@Override
 						public void run() {
-							errorLabel.setText(e.toString());
+							errorLabel.setText( e.toString() );
 						}
 					});
 				}
 				finally {
 					writeWorkerDone = true;
-					android.util.Log.i("OpenUHS", "@!@ Sound worker thread ended.");
+					android.util.Log.i( "OpenUHS", "@!@ Sound worker thread ended." );
 				}
 			}
 		};
-		android.util.Log.i("OpenUHS", "@!@ Sound worker thread started.");
-		Thread t = new Thread(r);
-		t.setPriority(Thread.MIN_PRIORITY);
-		t.setDaemon(true);
+		android.util.Log.i( "OpenUHS", "@!@ Sound worker thread started." );
+		Thread t = new Thread( r );
+		t.setPriority( Thread.MIN_PRIORITY );
+		t.setDaemon( true );
 		t.start();
 	}
 
@@ -342,8 +355,8 @@ public class UHSSoundView extends LinearLayout {
 
 
 	public static class WavException extends Exception {
-		public WavException(String s) {
-			super(s);
+		public WavException( String s ) {
+			super( s );
 		}
 	}
 }

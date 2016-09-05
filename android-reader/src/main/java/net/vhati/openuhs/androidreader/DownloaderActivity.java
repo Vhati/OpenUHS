@@ -344,7 +344,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	/**
 	 * Updates state flags on all catalog entries.
 	 *
-	 * Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.
+	 * <p>Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.</p>
 	 */
 	public void colorizeCatalog( List<DownloadableUHS> catalog ) {
 
@@ -369,7 +369,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	/**
 	 * Updates state flags on a catalog entry.
 	 *
-	 * Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.
+	 * <p>Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.</p>
 	 */
 	public void colorizeCatalogRow( DownloadableUHS tmpUHS ) {
 		tmpUHS.resetState();

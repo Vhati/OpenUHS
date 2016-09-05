@@ -23,49 +23,49 @@ public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {
 	private int resLblId = -1;
 
 
-	public DownloadableUHSArrayAdapter(Context context, int resource, int imageViewResourceId, int textViewResourceId, List<DownloadableUHS> objects) {
-		super(context, resource, textViewResourceId, objects);
+	public DownloadableUHSArrayAdapter( Context context, int resource, int imageViewResourceId, int textViewResourceId, List<DownloadableUHS> objects ) {
+		super( context, resource, textViewResourceId, objects );
 		resXmlId = resource;
 		resImgId = imageViewResourceId;
 		resLblId = textViewResourceId;
 	}
 
 
-	public void setRemoteColor(int c) {
+	public void setRemoteColor( int c ) {
 		remoteColor = c;
 	}
 
-	public void setLocalColor(int c) {
+	public void setLocalColor( int c ) {
 		localColor = c;
 	}
 
-	public void setNewerColor(int c) {
+	public void setNewerColor( int c ) {
 		newerColor = c;
 	}
 
 
 	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
-		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View row = inflater.inflate(resXmlId, parent, false);
-		DownloadableUHS rowUHS = getItem(position);
+	public View getView( int position, View convertView, ViewGroup parent ) {
+		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService( Context.LAYOUT_INFLATER_SERVICE );
+		View row = inflater.inflate( resXmlId, parent, false );
+		DownloadableUHS rowUHS = getItem( position );
 
-		TextView label = (TextView)row.findViewById(resLblId);
-		ImageView icon = (ImageView)row.findViewById(resImgId);
+		TextView label = (TextView)row.findViewById( resLblId );
+		ImageView icon = (ImageView)row.findViewById( resImgId );
 
-		label.setText(rowUHS.getTitle());
+		label.setText( rowUHS.getTitle() );
 
 		//if (position%2 == 0) icon.setImageResource(android.R.drawable.checkbox_on_background);
 
-		icon.setImageResource(android.R.drawable.checkbox_off_background);
-		if (rowUHS.isNewer()) {
-			icon.setBackgroundColor(newerColor);
+		icon.setImageResource( android.R.drawable.checkbox_off_background );
+		if ( rowUHS.isNewer() ) {
+			icon.setBackgroundColor( newerColor );
 		}
-		else if (rowUHS.isLocal()) {
-			icon.setBackgroundColor(localColor);
+		else if ( rowUHS.isLocal() ) {
+			icon.setBackgroundColor( localColor );
 		}
 		else {
-			icon.setBackgroundColor(remoteColor);
+			icon.setBackgroundColor( remoteColor );
 		}
 
 		return row;

@@ -26,61 +26,63 @@ public class UHSTextView extends LinearLayout {
 	private TextView contentLabel;
 
 
-	public UHSTextView(Context context) {
-		super(context);
+	public UHSTextView( Context context ) {
+		super( context );
 
-		this.setOrientation(LinearLayout.VERTICAL);
-		this.setClickable(false);
-		this.setFocusable(false);
+		this.setOrientation( LinearLayout.VERTICAL );
+		this.setClickable( false );
+		this.setFocusable( false );
 
-		//LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		//View view = inflater.inflate(R.layout.uhs_text_view, null);
+		//LayoutInflater inflater = (LayoutInflater)context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
+		//View view = inflater.inflate( R.layout.uhs_text_view, null );
 
-		this.inflate(context, R.layout.uhs_text_view, this);
-		contentLabel = (TextView)this.findViewById(R.id.contentText);
+		this.inflate( context, R.layout.uhs_text_view, this );
+		contentLabel = (TextView)this.findViewById( R.id.contentText );
 		textColorDefault = contentLabel.getTextColors().getDefaultColor();
 	}
 
 
-	public void setNode(UHSNode node) {
-		if (node.getContentType() != UHSNode.STRING) {
-			contentLabel.setText("^NON-STRING CONTENT^");
+	public void setNode( UHSNode node ) {
+		if ( node.getContentType() != UHSNode.STRING ) {
+			contentLabel.setText( "^NON-STRING CONTENT^" );
 		}
 		else {
-			if (node.getStringContentDecorator() != null) {
+			if ( node.getStringContentDecorator() != null ) {
 				SpannableStringBuilder buf = new SpannableStringBuilder();
 				DecoratedFragment[] fragments = node.getDecoratedStringContent();
-				for (int i=0; i < fragments.length; i++) {
+				for ( int i=0; i < fragments.length; i++ ) {
 					Object styleObj = null;
-					for (int a=0; a < fragments[i].attributes.length; a++) {
-						if (fragments[i].attributes[a].equals("Monospaced")) {
-							styleObj = new TypefaceSpan("monospace");
+					for ( int a=0; a < fragments[i].attributes.length; a++ ) {
+						if ( "Monospaced".equals( fragments[i].attributes[a] ) ) {
+							styleObj = new TypefaceSpan( "monospace" );
 							break;
 						}
-						else if (fragments[i].attributes[a].equals("Hyperlink")) {
-							styleObj = new ForegroundColorSpan(textColorHyperlink);
+						else if ( "Hyperlink".equals( fragments[i].attributes[a] ) ) {
+							styleObj = new ForegroundColorSpan( textColorHyperlink );
 							break;
 						}
 					}
 
-					buf.append(fragments[i].fragment);
-					if (styleObj != null) {
-						buf.setSpan(styleObj, buf.length()-fragments[i].fragment.length(), buf.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+					buf.append( fragments[i].fragment );
+					if ( styleObj != null ) {
+						buf.setSpan( styleObj, buf.length()-fragments[i].fragment.length(), buf.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE );
 					}
 				}
-				contentLabel.setText(buf);
+				contentLabel.setText( buf );
 			}
 			else {
-				contentLabel.setText((String)node.getContent());
+				contentLabel.setText( (String)node.getContent() );
 			}
 		}
 
-		if (node.isGroup()) {
-			contentLabel.setTextColor(textColorGroup);
-		} else if (node.isLink()) {
-			contentLabel.setTextColor(textColorLink);
-		} else {
-			contentLabel.setTextColor(textColorDefault);
+		if ( node.isGroup() ) {
+			contentLabel.setTextColor( textColorGroup );
+		}
+		else if (node.isLink()) {
+			contentLabel.setTextColor( textColorLink );
+		}
+		else {
+			contentLabel.setTextColor( textColorDefault );
 		}
 	}
 }

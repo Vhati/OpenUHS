@@ -72,6 +72,7 @@ public class UHSHotSpotNode extends UHSNode {
 	}
 
 
+	@Override
 	public Object getContent() {
 		return super.getContent();
 	}
@@ -83,6 +84,7 @@ public class UHSHotSpotNode extends UHSNode {
 	 * @param n  ID of the node to target
 	 * @see net.vhati.openuhs.core.UHSNode#setLinkTarget(int)
 	 */
+	@Override
 	public void setLinkTarget( int n ) {
 		return;
 	}
@@ -95,6 +97,7 @@ public class UHSHotSpotNode extends UHSNode {
 	 *
 	 * @param inChildren  a List of new child UHSNodes
 	 */
+	@Override
 	public void setChildren( List<UHSNode> inChildren ) {
 		if ( inChildren == null || inChildren.size() == 0 ) {
 			this.removeAllChildren();
@@ -109,11 +112,13 @@ public class UHSHotSpotNode extends UHSNode {
 	}
 
 
+	@Override
 	public void addChild( UHSNode inChild ) {
 		super.addChild( inChild );
 		spots.add( new HotSpot() );
 	}
 
+	@Override
 	public void removeChild( UHSNode inChild ) {
 		int index = super.indexOfChild( inChild );
 		if ( index == -1 ) return;
@@ -121,7 +126,7 @@ public class UHSHotSpotNode extends UHSNode {
 		spots.remove( index );
 	}
 
-
+	@Override
 	public void removeAllChildren() {
 		super.removeAllChildren();
 		spots.clear();

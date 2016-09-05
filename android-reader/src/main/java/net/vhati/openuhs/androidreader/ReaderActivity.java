@@ -262,7 +262,8 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 
 	/**
 	 * Displays a new node within the current tree.
-	 * <br />If the node is the same as the next/prev one, breadcrumbs will be traversed.
+	 *
+	 * <p>If the node is the same as the next/prev one, breadcrumbs will be traversed.</p>
 	 *
 	 * @param newNode  the new node
 	 */
@@ -366,7 +367,8 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 
 	/**
 	 * Displays a new node within the current tree.
-	 * <br />Nothing will happen if the ID isn't among the root node's list of link targets.
+	 *
+	 * <p>Nothing will happen if the ID isn't among the root node's list of link targets.</p>
 	 *
 	 * @param id  ID of the new node
 	 */

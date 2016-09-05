@@ -17,7 +17,7 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 	// It returns the third generic [result] to onPostExecute().
 
 	private StringFetchObserver delegate = null;
-	private String userAgent = System.getProperty("http.agent");
+	private String userAgent = System.getProperty( "http.agent" );
 	private String encoding = "utf-8";
 
 
@@ -25,11 +25,11 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 	}
 
 
-	public void setObserver(StringFetchObserver delegate) {
+	public void setObserver( StringFetchObserver delegate ) {
 		this.delegate = delegate;
 	}
 
-	public void setUserAgent(String s) {
+	public void setUserAgent( String s ) {
 		this.userAgent = s;
 	}
 
@@ -37,7 +37,7 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 		return userAgent;
 	}
 
-	public void setEncoding(String s) {
+	public void setEncoding( String s ) {
 		this.encoding = s;
 	}
 
@@ -48,21 +48,21 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 
 	// This runs in a background thread, unlike the other methods here.
 	@Override
-	protected StringFetchResult doInBackground(String... urlStrings) {
+	protected StringFetchResult doInBackground( String... urlStrings ) {
 		HttpURLConnection con = null;
 		InputStream downloadStream = null;
 		BufferedReader r = null;
 		StringBuilder contentString = null;
 
 		String urlString = urlStrings[0];
-		StringFetchResult fetchResult = new StringFetchResult(urlString);
+		StringFetchResult fetchResult = new StringFetchResult( urlString );
 
 		try {
-			con = (HttpURLConnection)(new URL(urlString).openConnection());
-			con.setRequestProperty("User-Agent", userAgent);
+			con = (HttpURLConnection)(new URL( urlString ).openConnection());
+			con.setRequestProperty( "User-Agent", userAgent );
 			con.connect();
 
-			if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
+			if ( con.getResponseCode() != HttpURLConnection.HTTP_OK ) {
 				fetchResult.status = StringFetchResult.STATUS_ERROR;
 				fetchResult.message = "Server returned HTTP "+ con.getResponseCode() +" "+ con.getResponseMessage();
 				return fetchResult;
@@ -72,37 +72,37 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 			int contentLength = con.getContentLength();
 
 			downloadStream = con.getInputStream();
-			r = new BufferedReader(new InputStreamReader(downloadStream, encoding));
+			r = new BufferedReader( new InputStreamReader( downloadStream, encoding ) );
 
 			contentString = new StringBuilder();
 			char data[] = new char[1024];
 			long total = 0;
 			int count;
-			while ((count=r.read(data, 0, data.length)) != -1) {
-				if (isCancelled()) {
+			while ( (count=r.read( data, 0, data.length )) != -1 ) {
+				if ( isCancelled() ) {
 					r.close();
 
 					fetchResult.status = StringFetchResult.STATUS_CANCELLED;
 					return fetchResult;
 				}
 				total += count;
-				if (contentLength > 0) {
-					this.publishProgress((int)(total * 100 / contentLength));
+				if ( contentLength > 0 ) {
+					this.publishProgress( (int)(total * 100 / contentLength) );
 				}
-				contentString.append(data, 0, count);
+				contentString.append( data, 0, count );
 			}
 
 			r.close();
 		}
-		catch (Exception e) {
+		catch ( Exception e ) {
 			fetchResult.status = StringFetchResult.STATUS_ERROR;
 			fetchResult.message = toString();
 			return fetchResult;
 		}
 		finally {
-			try {if (r != null) r.close();} catch (IOException e) {}
-			try {if (downloadStream != null) downloadStream.close();} catch (IOException e) {}
-			if (con != null) con.disconnect();
+			try {if ( r != null ) r.close();} catch ( IOException e ) {}
+			try {if ( downloadStream != null ) downloadStream.close();} catch ( IOException e ) {}
+			if ( con != null ) con.disconnect();
 		}
 
 		fetchResult.status = StringFetchResult.STATUS_COMPLETED;
@@ -113,18 +113,18 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 	@Override
 	protected void onPreExecute() {
 		super.onPreExecute();
-		if (delegate != null) delegate.stringFetchStarted();
+		if ( delegate != null ) delegate.stringFetchStarted();
 	}
 
 	@Override
-	protected void onProgressUpdate(Integer... progress) {
-		super.onProgressUpdate(progress);
-		if (delegate != null) delegate.stringFetchUpdate(progress[0].intValue());
+	protected void onProgressUpdate( Integer... progress ) {
+		super.onProgressUpdate( progress );
+		if ( delegate != null ) delegate.stringFetchUpdate( progress[0].intValue() );
 	}
 
 	@Override
-	protected void onPostExecute(StringFetchResult fetchResult) {
-		if (delegate != null) delegate.stringFetchEnded(fetchResult);
+	protected void onPostExecute( StringFetchResult fetchResult ) {
+		if ( delegate != null ) delegate.stringFetchEnded( fetchResult );
 	}
 
 
@@ -140,7 +140,7 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 		public String message = null;
 		public String content = null;
 
-		public StringFetchResult(String urlString) {
+		public StringFetchResult( String urlString ) {
 			this.urlString = urlString;
 		}
 	}
@@ -148,7 +148,7 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 
 	public static interface StringFetchObserver {
 		public void stringFetchStarted();
-		public void stringFetchUpdate(int progress);
-		public void stringFetchEnded(StringFetchResult fetchResult);
+		public void stringFetchUpdate( int progress );
+		public void stringFetchEnded( StringFetchResult fetchResult );
 	}
 }
