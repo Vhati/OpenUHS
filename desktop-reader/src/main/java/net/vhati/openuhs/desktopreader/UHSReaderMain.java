@@ -139,16 +139,13 @@ public class UHSReaderMain {
 				if ( optionMap.get( OPTION_SAVE_9X ) == Boolean.TRUE ) {
 					UHSWriter uhsWriter = new UHSWriter();
 					String basename = (new File( fileArg )).getName().replaceAll( "[.][^.]*$", "" );
-					FileOutputStream fos = null;
+					File outFile = new File( "./"+ basename +".uhs" );
+
 					try {
-						fos = new FileOutputStream( "./"+ basename +".uhs" );
-						uhsWriter.write9xFormat( rootNode, fos );
+						uhsWriter.write9xFormat( rootNode, outFile );
 					}
 					catch ( IOException e ) {
 						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Could not write 9x file", 0, e );
-					}
-					finally {
-						try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
 					}
 				}
 				System.exit( 0 );
