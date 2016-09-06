@@ -14,6 +14,7 @@ import java.util.zip.ZipEntry;
 
 import android.os.AsyncTask;
 
+import net.vhati.openuhs.androidreader.downloader.FetchUnitException;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
@@ -59,6 +60,7 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 		DownloadableUHS duh = duhs[0];
 		String urlString = duh.getUrl();
 		UHSFetchResult fetchResult = new UHSFetchResult( duh );
+		Exception ex = null;
 
 		try {
 			con = (HttpURLConnection)(new URL( urlString ).openConnection());
@@ -66,9 +68,7 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 			con.connect();
 
 			if ( con.getResponseCode() != HttpURLConnection.HTTP_OK ) {
-				fetchResult.status = UHSFetchResult.STATUS_ERROR;
-				fetchResult.message = "Server returned HTTP "+ con.getResponseCode() +" "+ con.getResponseMessage();
-				return fetchResult;
+				throw new FetchUnitException( "Server returned HTTP "+ con.getResponseCode() +" "+ con.getResponseMessage() );
 			}
 
 			// Get the zip file's length, if the server reports it. (possibly -1).
@@ -110,12 +110,11 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 				}
 			}
 			unzipStream.close();
+
+			fetchResult.status = UHSFetchResult.STATUS_COMPLETED;
 		}
 		catch ( Exception e ) {
-			fetchResult.status = UHSFetchResult.STATUS_ERROR;
-			fetchResult.message = e.toString();
-			fetchResult.errorCause = e;
-			return fetchResult;
+			ex = e;
 		}
 		finally {
 			try {if ( unzipStream != null ) unzipStream.close();} catch ( IOException e ) {}
@@ -123,8 +122,11 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 			try {if ( os != null ) os.close();} catch ( IOException e ) {}
 			if ( con != null ) con.disconnect();
 		}
+		if ( ex != null ) {
+			fetchResult.status = UHSFetchResult.STATUS_ERROR;
+			fetchResult.errorCause = ex;
+		}
 
-		fetchResult.status = UHSFetchResult.STATUS_COMPLETED;
 		return fetchResult;
 	}
 
@@ -155,7 +157,6 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 
 		public DownloadableUHS duh;
 		public int status = STATUS_DOWNLOADING;
-		public String message = null;
 		public Throwable errorCause = null;
 		public File file = null;
 

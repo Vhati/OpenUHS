@@ -74,6 +74,10 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		toolbar = (Toolbar)findViewById( R.id.downloaderToolbar );
 		this.setSupportActionBar( toolbar );
 
+		// TODO: Alert if external storage isn't available.
+		// if ( !Environment.MEDIA_MOUNTED.equals( Environment.getExternalStorageState() )
+		//   // Not mounted and R/W!
+
 		externalDir = this.getExternalFilesDir( null );
 		hintsDir = new File( externalDir, "hints" );
 
@@ -293,7 +297,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		}
 		else {
 			if ( fetchResult.status != UHSFetchResult.STATUS_CANCELLED ) {
-				String message = (( fetchResult.message != null ) ? fetchResult.message : "Unknown error");
+				String message = (( fetchResult.errorCause != null ) ? fetchResult.errorCause.toString() : "Unknown error");
 				Toast.makeText( this, String.format( "Download failed: %s", message ), Toast.LENGTH_LONG ).show();
 			}
 			if ( fetchResult.file != null && fetchResult.file.exists() ) {
@@ -338,7 +342,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		}
 		else {
 			if ( fetchResult.status != StringFetchResult.STATUS_CANCELLED ) {
-				String message = (( fetchResult.message != null ) ? fetchResult.message : "Unknown error");
+				String message = (( fetchResult.errorCause != null ) ? fetchResult.errorCause.toString() : "Unknown error");
 				Toast.makeText( this, String.format( "Download failed: %s", message ), Toast.LENGTH_LONG ).show();
 			}
 		}

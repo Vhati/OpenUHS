@@ -9,6 +9,8 @@ import java.net.URL;
 
 import android.os.AsyncTask;
 
+import net.vhati.openuhs.androidreader.downloader.FetchUnitException;
+
 
 public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.StringFetchResult> {
 
@@ -56,6 +58,7 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 
 		String urlString = urlStrings[0];
 		StringFetchResult fetchResult = new StringFetchResult( urlString );
+		Exception ex = null;
 
 		try {
 			con = (HttpURLConnection)(new URL( urlString ).openConnection());
@@ -63,9 +66,7 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 			con.connect();
 
 			if ( con.getResponseCode() != HttpURLConnection.HTTP_OK ) {
-				fetchResult.status = StringFetchResult.STATUS_ERROR;
-				fetchResult.message = "Server returned HTTP "+ con.getResponseCode() +" "+ con.getResponseMessage();
-				return fetchResult;
+				throw new FetchUnitException( "Server returned HTTP "+ con.getResponseCode() +" "+ con.getResponseMessage() );
 			}
 
 			// Get the file's length, if the server reports it. (possibly -1).
@@ -93,21 +94,23 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 			}
 
 			r.close();
+
+			fetchResult.status = StringFetchResult.STATUS_COMPLETED;
+			fetchResult.content = contentString.toString();
 		}
 		catch ( Exception e ) {
-			fetchResult.status = StringFetchResult.STATUS_ERROR;
-			fetchResult.message = e.toString();
-			fetchResult.errorCause = e;
-			return fetchResult;
+			ex = e;
 		}
 		finally {
 			try {if ( r != null ) r.close();} catch ( IOException e ) {}
 			try {if ( downloadStream != null ) downloadStream.close();} catch ( IOException e ) {}
 			if ( con != null ) con.disconnect();
 		}
+		if ( ex != null ) {
+			fetchResult.status = StringFetchResult.STATUS_ERROR;
+			fetchResult.errorCause = ex;
+		}
 
-		fetchResult.status = StringFetchResult.STATUS_COMPLETED;
-		fetchResult.content = contentString.toString();
 		return fetchResult;
 	}
 
@@ -138,7 +141,6 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 
 		public String urlString;
 		public int status = STATUS_DOWNLOADING;
-		public String message = null;
 		public Throwable errorCause = null;
 		public String content = null;
 
