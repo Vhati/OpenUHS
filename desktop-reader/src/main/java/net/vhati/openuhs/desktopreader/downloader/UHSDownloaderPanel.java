@@ -271,10 +271,10 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	private void cancelFetching() {
 		if ( catalogFetchTask != null && !catalogFetchTask.isDone() ) {
-			catalogFetchTask.cancel( true );
+			catalogFetchTask.abortTask();
 		}
 		if ( uhsFetchTask != null && !uhsFetchTask.isDone() ) {
-			uhsFetchTask.cancel( true );
+			uhsFetchTask.abortTask();
 		}
 	}
 
@@ -356,14 +356,17 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 				if ( UHSFetchTask.PROP_UNIT_NAME.equals( e.getPropertyName() ) ) {
 					unitName = (String)e.getNewValue();
 					updateMonitor();
+					if ( progressDlg.isCanceled() ) uhsFetchTask.abortTask();
 				}
 				if ( UHSFetchTask.PROP_UNIT_PROGRESS.equals( e.getPropertyName() ) ) {
 					unitProgress = ((Integer)e.getNewValue()).intValue();
 					updateMonitor();
+					if ( progressDlg.isCanceled() ) uhsFetchTask.abortTask();
 				}
 				else if ( "progress".equals( e.getPropertyName() ) ) {
 					fetchProgress = ((Integer)e.getNewValue()).intValue();
 					updateMonitor();
+					if ( progressDlg.isCanceled() ) uhsFetchTask.abortTask();
 				}
 				else if ( "state".equals( e.getPropertyName() ) ) {
 					if ( SwingWorker.StateValue.STARTED.equals( e.getNewValue() ) ) {
@@ -371,8 +374,6 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 						progressDlg = new ProgressMonitor( getAncestorComponent(), "Fetching...", "", 0, 100 );
 						progressDlg.setProgress( 0 );
-
-						if ( progressDlg.isCanceled() ) uhsFetchTask.cancel( true );
 					}
 					else if ( SwingWorker.StateValue.DONE.equals( e.getNewValue() ) ) {
 						try {
@@ -434,7 +435,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 						progressDlg = new ProgressMonitor( getAncestorComponent(), "Fetching...", "", 0, 100 );
 						progressDlg.setProgress( 0 );
 
-						if ( progressDlg.isCanceled() ) catalogFetchTask.cancel( true );
+						if ( progressDlg.isCanceled() ) catalogFetchTask.abortTask();
 					}
 					else if ( SwingWorker.StateValue.DONE.equals( e.getNewValue() ) ) {
 						try {

@@ -8,6 +8,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import javax.swing.SwingWorker;
 
+import net.vhati.openuhs.desktopreader.downloader.FetchUnitException;
+
 
 /**
  * A background task that downloads text, then returns it, decoded as a String.
@@ -25,6 +27,7 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 	// First generic is the result, returned by doInBackground().
 	// Second generic is for returning intermediate results while running. (Unused)
 
+	private volatile boolean aborting = false;
 	private String userAgent = System.getProperty( "http.agent" );
 	private String encoding = "utf-8";
 
@@ -53,6 +56,19 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 	}
 
 
+	/**
+	 * Signals that the task should end gracefully.
+	 *
+	 * <p>SwingWorker's cancel() will cause get() to throw a CancellationException.
+	 * Use this method instead.</p>
+	 *
+	 * <p>This method is thread-safe.</p>
+	 */
+	public void abortTask() {
+		aborting = true;
+	}
+
+
 	@Override
 	public StringFetchResult doInBackground() {
 		HttpURLConnection con = null;
@@ -61,6 +77,7 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 		StringBuilder contentString = null;
 
 		StringFetchResult fetchResult = new StringFetchResult( urlString );
+		Exception ex = null;
 
 		try {
 			con = (HttpURLConnection)(new URL( urlString ).openConnection());
@@ -68,9 +85,7 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 			con.connect();
 
 			if ( con.getResponseCode() != HttpURLConnection.HTTP_OK ) {
-				fetchResult.status = StringFetchResult.STATUS_ERROR;
-				fetchResult.message = "Server returned HTTP "+ con.getResponseCode() +" "+ con.getResponseMessage();
-				return fetchResult;
+				throw new FetchUnitException( "Server returned HTTP "+ con.getResponseCode() +" "+ con.getResponseMessage() );
 			}
 
 			// Get the file's length, if the server reports it. (possibly -1).
@@ -84,7 +99,7 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 			long total = 0;
 			int count;
 			while ( (count=r.read( data, 0, data.length )) != -1 ) {
-				if ( this.isCancelled() ) {
+				if ( this.isCancelled() || aborting ) {
 					r.close();
 
 					fetchResult.status = StringFetchResult.STATUS_CANCELLED;
@@ -98,21 +113,26 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 			}
 
 			r.close();
+
+			fetchResult.status = StringFetchResult.STATUS_COMPLETED;
+			fetchResult.content = contentString.toString();
 		}
-		catch ( Exception e ) {
-			fetchResult.status = StringFetchResult.STATUS_ERROR;
-			fetchResult.message = e.toString();
-			fetchResult.errorCause = e;
-			return fetchResult;
+		catch ( IOException e ) {
+			ex = e;
+		}
+		catch ( FetchUnitException e ) {
+			ex = e;
 		}
 		finally {
 			try {if ( r != null ) r.close();} catch ( IOException e ) {}
 			try {if ( downloadStream != null ) downloadStream.close();} catch ( IOException e ) {}
 			if ( con != null ) con.disconnect();
 		}
+		if ( ex != null ) {
+			fetchResult.status = StringFetchResult.STATUS_ERROR;
+			fetchResult.errorCause = ex;
+		}
 
-		fetchResult.status = StringFetchResult.STATUS_COMPLETED;
-		fetchResult.content = contentString.toString();
 		return fetchResult;
 	}
 
@@ -131,7 +151,6 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 
 		public String urlString;
 		public int status = STATUS_DOWNLOADING;
-		public String message = null;
 		public Throwable errorCause = null;
 		public String content = null;
 

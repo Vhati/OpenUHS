@@ -40,6 +40,7 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 	public static final String PROP_UNIT_NAME = "unitName";
 	public static final String PROP_UNIT_PROGRESS = "unitProgress";
 
+	private volatile boolean aborting = false;
 	private String userAgent = System.getProperty( "http.agent" );
 
 	private File destDir;
@@ -61,6 +62,19 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 	}
 
 
+	/**
+	 * Signals that the task should end gracefully.
+	 *
+	 * <p>SwingWorker's cancel() will cause get() to throw a CancellationException.
+	 * Use this method instead.</p>
+	 *
+	 * <p>This method is thread-safe.</p>
+	 */
+	public void abortTask() {
+		aborting = true;
+	}
+
+
 	@Override
 	protected List<UHSFetchResult> doInBackground() {
 		List<UHSFetchResult> fetchResults = new ArrayList<UHSFetchResult>( duhs.length );
@@ -68,6 +82,8 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 		int unitProgress = 0;
 
 		for ( int unitIndex=0; unitIndex < duhs.length; unitIndex++ ) {
+			if ( isCancelled() || aborting ) break;
+
 			DownloadableUHS duh = duhs[unitIndex];
 
 			String unitNameOld = unitName;
@@ -121,7 +137,7 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 					long total = 0;
 					int count;
 					while ( (count=unzipStream.read(data)) != -1 ) {
-						if ( isCancelled() ) {
+						if ( this.isCancelled() || aborting ) {
 							unzipStream.close();
 							if ( uhsFile.exists() ) uhsFile.delete();
 
