@@ -89,7 +89,8 @@ public class UHSReaderMain {
 					System.out.println( "Error: Unreadable file or parsing error" );
 				}
 				System.exit( 1 );
-			} else {
+			}
+			else {
 				if ( optionMap.get( OPTION_TEST ) == Boolean.TRUE )
 					System.out.println( "Test: Parsing succeeded" );
 				if ( optionMap.get( OPTION_HINT_TITLE ) == Boolean.TRUE ) {
@@ -152,18 +153,19 @@ public class UHSReaderMain {
 			}
 		}
 
-
-		FileOutputStream logOS = null;
+		// Fork logging to a file.
+		PrintStream logFileStream = null;
 		try {
-			logOS = new FileOutputStream( "./log.txt" );
-			errorHandler = new DefaultUHSErrorHandler( new PrintStream[] {new PrintStream( logOS, true ), System.err} );
+			logFileStream = new PrintStream( new File( "./log.txt" ), "UTF-8" );
+			errorHandler = new DefaultUHSErrorHandler( System.err, logFileStream );
+			UHSErrorHandlerManager.setErrorHandler( errorHandler );
 		}
 		catch ( IOException e ) {
 			e.printStackTrace();
+
+			if ( logFileStream != null ) logFileStream.close();
 		}
-		finally {
-			try {if ( logOS != null ) logOS.close();} catch ( IOException e ) {}
-		}
+
 		if ( errorHandler != null ) errorHandler.logWelcomeMessage();
 
 		try {

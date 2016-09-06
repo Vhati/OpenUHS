@@ -46,8 +46,8 @@ import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.UHSErrorHandlerManager;
 import net.vhati.openuhs.core.downloader.CatalogParser;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
@@ -62,9 +62,9 @@ import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
 public class UHSDownloaderPanel extends JPanel implements ActionListener {
-	private UHSErrorHandler errorHandler = null;
 
 	private UHSDownloaderPanel pronoun = this;
+
 	private DownloadableUHSTableModel uhsTableModel = new DownloadableUHSTableModel( new String[] {"Title","Date","FullSize","Name"} );
 	private JTable uhsTable = null;
 	private JScrollPane uhsTableScroll = null;
@@ -79,7 +79,6 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	private File hintsDir = new File( "." );
 
-	private CatalogParser catalogParser = null;
 	private StringFetchTask catalogFetchTask = null;
 	private UHSFetchTask uhsFetchTask = null;
 
@@ -87,9 +86,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	public UHSDownloaderPanel() {
 		super( new BorderLayout() );
 
-		catalogParser = new CatalogParser();
-
-		setErrorHandler( new DefaultUHSErrorHandler( System.err ) );
+		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 
 		GridBagConstraints gridC = new GridBagConstraints();
 
@@ -238,21 +235,6 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 
 	/**
-	 * Sets the error handler to notify of exceptions.
-	 *
-	 * <p>This is a convenience for logging/muting.</p>
-	 *
-	 * <p>The default handler prints to System.err.</p>
-	 *
-	 * @param eh  the error handler, or null, for quiet parsing
-	 */
-	public void setErrorHandler( UHSErrorHandler eh ) {
-		errorHandler = eh;
-		catalogParser.setErrorHandler( eh );
-	}
-
-
-	/**
 	 * Sets the dir in which to look for UHS files.
 	 *
 	 * The default path is "."
@@ -392,6 +374,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 							}
 						}
 						catch ( Exception ex ) {
+							UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
+
 							// InterruptedException, while get() was blocking.
 							// java.util.concurrent.ExecutionException, if SwingWorker threw something.
 							if ( errorHandler != null ) {
@@ -443,6 +427,9 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 							if ( fetchResult.status == StringFetchResult.STATUS_COMPLETED ) {
 
+								CatalogParser catalogParser = new CatalogParser();
+								catalogParser.setErrorHandler( UHSErrorHandlerManager.getErrorHandler() );
+
 								List<DownloadableUHS> catalog = catalogParser.parseCatalog( fetchResult.content );
 								if ( catalog.size() > 0 ) {
 									uhsTableModel.clear();
@@ -464,6 +451,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 							}
 						}
 						catch ( Exception ex ) {
+							UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
+
 							// InterruptedException, while get() was blocking.
 							// java.util.concurrent.ExecutionException, if SwingWorker threw something.
 							if ( errorHandler != null ) {
