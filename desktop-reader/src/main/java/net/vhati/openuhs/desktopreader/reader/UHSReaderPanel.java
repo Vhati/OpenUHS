@@ -299,13 +299,21 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		Thread parseWorker = new Thread() {
 			public void run() {
 				UHSRootNode rootNode = null;
-				if ( f.getName().matches( "(?i).*[.]uhs$" ) ) {
-					UHSParser uhsParser = new UHSParser();
-					rootNode = uhsParser.parseFile( f, UHSParser.AUX_NEST );
+				try {
+					if ( f.getName().matches( "(?i).*[.]uhs$" ) ) {
+						UHSParser uhsParser = new UHSParser();
+						rootNode = uhsParser.parseFile( f, UHSParser.AUX_NEST );
+					}
+					else if ( f.getName().matches( "(?i).*[.]puhs" ) ) {
+						Proto4xUHSParser protoParser = new Proto4xUHSParser();
+						rootNode = protoParser.parseFile( f, Proto4xUHSParser.AUX_NEST );
+					}
 				}
-				else if ( f.getName().matches( "(?i).*[.]puhs" ) ) {
-					Proto4xUHSParser protoParser = new Proto4xUHSParser();
-					rootNode = protoParser.parseFile( f, Proto4xUHSParser.AUX_NEST );
+				catch ( Exception e ) {
+					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
+					if ( errorHandler != null ) {
+						errorHandler.log( UHSErrorHandler.ERROR, this, "Unreadable file or parsing error", 0, e );
+					}
 				}
 
 				final UHSRootNode finalRootNode = rootNode;

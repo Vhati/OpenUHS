@@ -17,6 +17,7 @@ import net.vhati.openuhs.core.UHSErrorHandlerManager;
 import net.vhati.openuhs.core.UHSBatchNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.UHSParseException;
 import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.markup.Version9xCommentDecorator;
 import net.vhati.openuhs.core.markup.Version9xCreditDecorator;
@@ -42,23 +43,25 @@ public class UHSParser {
 	/** Move version 9x auxiliary nodes to within the master subject node and make that the new root */
 	public static final int AUX_NEST = 2;
 
-	private static boolean force88a = false;
+
+	private boolean force88a = false;
 
 	private int logHeader = 0;
 	private int logLine = -1;
 
 
-	/**
-	 * Toggles parsing 9x files as an 88a reader.
-	 * Old readers attempting to read a 9x file will see a
-	 * deprecation notice.
-	 */
-	public static void setForce88a( boolean b ) {
-		force88a = b;
+	public UHSParser() {
 	}
 
 
-	public UHSParser() {
+	/**
+	 * Toggles parsing 9x files as an 88a reader.
+	 *
+	 * <p>Old readers attempting to read a 9x file will see a
+	 * deprecation notice.</p>
+	 */
+	public void setForce88a( boolean b ) {
+		force88a = b;
 	}
 
 
@@ -180,8 +183,10 @@ public class UHSParser {
 	 * @see #parse88Format(List, String, int)
 	 * @see #parse9xFormat(List, byte[], long, int)
 	 */
-	public UHSRootNode parseFile( File f, int auxStyle ) {
-		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) return null;
+	public UHSRootNode parseFile( File f, int auxStyle ) throws IOException, UHSParseException {
+		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
+			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
+		};
 		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 		logHeader = 0; logLine = -1;
 
@@ -204,9 +209,9 @@ public class UHSParser {
 
 			logHeader++;  // For risky IO operations, increment beforehand
 			tmp = raf.readLine();
-			if (!tmp.equals( "UHS" )) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Not a UHS file!", logHeader, null );
-				return null;
+			if ( !tmp.equals( "UHS" ) ) {
+				UHSParseException pe = new UHSParseException( "Not a UHS file! (First bytes were not 'UHS')" );
+				throw pe;
 			}
 
 			logHeader++;
@@ -243,17 +248,9 @@ public class UHSParser {
 				rawOffset = -1;
 			}
 		}
-		catch ( FileNotFoundException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "No file", logHeader+logLine+1, e );
-			return null;
-		}
-		catch ( IOException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read file", logHeader+logLine+1, e );
-			return null;
-		}
 		catch ( NumberFormatException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse header", logHeader+logLine+1, e );
-			return null;
+			UHSParseException pe = new UHSParseException( String.format( "Could not parse header (last parsed line: %d)", (logHeader+logLine+1) ), e );
+			throw pe;
 		}
 		finally {
 			try {if ( raf != null ) raf.close();} catch ( IOException e ) {}
@@ -349,9 +346,7 @@ public class UHSParser {
 	 * @param hintSectionEnd  index of the last hint, relative to the first subject (as in the file, 1-based)
 	 * @return the root of a tree of nodes
 	 */
-	public UHSRootNode parse88Format( List<String> uhsFileArray, String name, int hintSectionEnd ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-
+	public UHSRootNode parse88Format( List<String> uhsFileArray, String name, int hintSectionEnd ) throws UHSParseException {
 		try {
 			UHSRootNode rootNode = new UHSRootNode();
 				rootNode.setContent( name, UHSNode.STRING );
@@ -418,8 +413,8 @@ public class UHSParser {
 			return rootNode;
 		}
 		catch ( NumberFormatException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse nodes", logHeader+logLine+1, e );
-			return null;
+			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", (logHeader+logLine+1) ), e );
+			throw pe;
 		}
 	}
 
@@ -473,8 +468,10 @@ public class UHSParser {
 	 * @see #buildNodes(List, byte[], long, UHSRootNode, UHSNode, int[], int)
 	 * @see #calcChecksum(File)
 	 */
-	public UHSRootNode parse9xFormat( List<String> uhsFileArray, byte[] binHunk, long rawOffset, int auxStyle ) {
-		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) return null;
+	public UHSRootNode parse9xFormat( List<String> uhsFileArray, byte[] binHunk, long rawOffset, int auxStyle ) throws UHSParseException {
+		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
+			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
+		}
 		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 
 		try {
@@ -504,8 +501,8 @@ public class UHSParser {
 			return rootNode;
 		}
 		catch ( NumberFormatException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse nodes", logHeader+logLine+1, e );
-			return null;
+			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", (logHeader+logLine+1) ), e );
+			throw pe;
 		}
 	}
 
@@ -996,7 +993,8 @@ public class UHSParser {
 		if ( rawOffset != -1 ) tmpBytes = readBinaryHunk( binHunk, offset, length );
 		if ( tmpBytes != null ) {
 			tmp = new String( tmpBytes );
-		} else {
+		}
+		else {
 			// This error would be at index-1, if not for getLoggedString()'s counter
 			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read referenced raw bytes", logHeader+logLine+1, null );
 			tmp = "";
@@ -1672,8 +1670,7 @@ public class UHSParser {
 	 * <p>It's a CRC16 of the entire file (read as unsigned bytes),
 	 * minus the last two bytes.</p>
 	 */
-	public long calcChecksum( File f ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
+	public long calcChecksum( File f ) throws IOException {
 		long result = -1;
 
 		CRC16 crc = new CRC16();
@@ -1716,7 +1713,7 @@ public class UHSParser {
 			if ( result >= 0x8000 ) result = (result + 0x0100) & 0xFFFF;
 		}
 		catch ( IOException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Couldn't calculate checksum", 0, null );
+			throw new IOException( "Could not calculate checksum", e );
 		}
 		finally {
 			try {if ( raf != null ) raf.close();} catch ( IOException e ) {}
@@ -1728,8 +1725,7 @@ public class UHSParser {
 	/**
 	 * Reads the security checksum stored in a UHS file.
 	 */
-	private long readChecksum( File f ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
+	private long readChecksum( File f ) throws IOException {
 		int result = -1;
 
 		RandomAccessFile raf = null;
@@ -1760,7 +1756,7 @@ public class UHSParser {
 			}
 		}
 		catch ( IOException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, String.format("Couldn't read stored checksum from: ", f.getAbsolutePath()), 0, null );
+			throw new IOException( String.format("Couldn't read stored checksum from: ", f.getAbsolutePath()) );
 		}
 		finally {
 			try {if ( raf != null ) raf.close();} catch ( IOException e ) {}

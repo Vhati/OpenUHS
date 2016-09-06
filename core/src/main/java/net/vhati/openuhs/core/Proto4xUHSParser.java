@@ -16,6 +16,7 @@ import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandlerManager;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
+import net.vhati.openuhs.core.UHSParseException;
 import net.vhati.openuhs.core.UHSRootNode;
 
 
@@ -81,42 +82,33 @@ public class Proto4xUHSParser {
 	 * @return the root of a tree of nodes representing the hint file
 	 * @see #parse4xFormat(List, File, int)
 	 */
-	public UHSRootNode parseFile( File f, int auxStyle ) {
-		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) return null;
+	public UHSRootNode parseFile( File f, int auxStyle ) throws IOException, UHSParseException {
+		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
+			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
+		};
 		logLine = -1;
 
 		List<String> uhsFileArray = new ArrayList<String>();
 
-		try {
-			RandomAccessFile inFile = new RandomAccessFile( f, "r" );
+		RandomAccessFile inFile = new RandomAccessFile( f, "r" );
 
+		logLine++;
+		String tmp = inFile.readLine();
+		if (!tmp.equals( "proto_UHS" )) {
+			UHSParseException pe = new UHSParseException( "Not a UHS file! (First bytes were not 'proto_UHS')" );
+			throw pe;
+		}
+		uhsFileArray.add( tmp );
+
+		byte tmpByte = -1;
+		while ( (tmpByte = (byte)inFile.read()) != -1 ) {
+			inFile.getChannel().position( inFile.getChannel().position()-1 );
 			logLine++;
-			String tmp = inFile.readLine();
-			if (!tmp.equals( "proto_UHS" )) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Not a Proto4xUHS file!", logLine+1, null );
-				return null;
-			}
+			tmp = inFile.readLine();
 			uhsFileArray.add( tmp );
-
-			byte tmpByte = -1;
-			while ( (tmpByte = (byte)inFile.read()) != -1 ) {
-				inFile.getChannel().position( inFile.getChannel().position()-1 );
-				logLine++;
-				tmp = inFile.readLine();
-				uhsFileArray.add( tmp );
-			}
-
-			inFile.close();
-		}
-		catch ( FileNotFoundException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "No file", logLine+1, e );
-			return null;
-		}
-		catch ( IOException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read file", logLine+1, e );
-			return null;
 		}
 
+		inFile.close();
 
 		UHSRootNode rootNode = parse4xFormat(uhsFileArray, f.getParentFile(), auxStyle);
 		return rootNode;
@@ -168,8 +160,10 @@ public class Proto4xUHSParser {
 	 * @return the root of a tree of nodes
 	 * @see #buildNodes(List, UHSRootNode, UHSNode, int, File)
 	 */
-	public UHSRootNode parse4xFormat( List<String> uhsFileArray, File workingDir, int auxStyle ) {
-		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) return null;
+	public UHSRootNode parse4xFormat( List<String> uhsFileArray, File workingDir, int auxStyle ) throws UHSParseException {
+		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST )  {
+			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
+		};
 
 		try {
 			UHSRootNode rootNode = new UHSRootNode();
@@ -199,12 +193,12 @@ public class Proto4xUHSParser {
 			return rootNode;
 		}
 		catch ( NumberFormatException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse nodes", logLine+1, e );
-			return null;
+			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", logLine+1 ), e );
+			throw pe;
 		}
 		catch ( ArrayIndexOutOfBoundsException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse nodes", logLine+1, e );
-			return null;
+			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", logLine+1 ), e );
+			throw pe;
 		}
 	}
 

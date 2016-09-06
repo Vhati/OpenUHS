@@ -63,8 +63,6 @@ public class UHSReaderMain {
 
 		UHSErrorHandlerManager.setErrorHandler( errorHandler );
 
-		if ( optionMap.get( OPTION_OPEN_88A ) == Boolean.TRUE ) UHSParser.setForce88a( true );
-
 		if ( optionMap.get( OPTION_CLI ) == Boolean.TRUE ) {
 			if (optionMap.get( OPTION_TEST ) == Boolean.TRUE) {
 				errorHandler = null;
@@ -73,26 +71,34 @@ public class UHSReaderMain {
 
       
 			UHSRootNode rootNode = null;
-			if ( fileArg.matches( "(?i).*[.]uhs$" ) ) {
-				UHSParser uhsParser = new UHSParser();
-				rootNode = uhsParser.parseFile( new File( fileArg ), UHSParser.AUX_NEST );
+			try {
+				if ( fileArg.matches( "(?i).*[.]uhs$" ) ) {
+					UHSParser uhsParser = new UHSParser();
+
+					if ( optionMap.get( OPTION_OPEN_88A ) == Boolean.TRUE ) {
+						uhsParser.setForce88a( true );
+					}
+					rootNode = uhsParser.parseFile( new File( fileArg ), UHSParser.AUX_NEST );
+				}
+				else if ( fileArg.matches( "(?i).*[.]puhs" ) ) {
+					Proto4xUHSParser protoParser = new Proto4xUHSParser();
+					rootNode = protoParser.parseFile( new File( fileArg ), Proto4xUHSParser.AUX_NEST );
+				}
 			}
-			else if ( fileArg.matches( "(?i).*[.]puhs" ) ) {
-				Proto4xUHSParser protoParser = new Proto4xUHSParser();
-				rootNode = protoParser.parseFile( new File( fileArg ), Proto4xUHSParser.AUX_NEST );
+			catch ( Exception e ) {
+				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Parsing failed", 0, e );
 			}
 
 			if ( rootNode == null ) {
 				if ( optionMap.get( OPTION_TEST ) == Boolean.TRUE ) {
 					System.out.println( "Test: Parsing failed" );
-				} else {
-					System.out.println( "Error: Unreadable file or parsing error" );
 				}
 				System.exit( 1 );
 			}
 			else {
-				if ( optionMap.get( OPTION_TEST ) == Boolean.TRUE )
+				if ( optionMap.get( OPTION_TEST ) == Boolean.TRUE ) {
 					System.out.println( "Test: Parsing succeeded" );
+				}
 				if ( optionMap.get( OPTION_HINT_TITLE ) == Boolean.TRUE ) {
 					String hintTitle = rootNode.getUHSTitle();
 					System.out.println( String.format( "Title: %s", ((hintTitle != null) ? hintTitle : "Unknown") ) );
