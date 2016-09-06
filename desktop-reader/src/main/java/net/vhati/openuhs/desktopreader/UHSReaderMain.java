@@ -74,6 +74,7 @@ public class UHSReaderMain {
 			try {
 				if ( fileArg.matches( "(?i).*[.]uhs$" ) ) {
 					UHSParser uhsParser = new UHSParser();
+					uhsParser.setErrorHandler( errorHandler );
 
 					if ( optionMap.get( OPTION_OPEN_88A ) == Boolean.TRUE ) {
 						uhsParser.setForce88a( true );
@@ -82,6 +83,8 @@ public class UHSReaderMain {
 				}
 				else if ( fileArg.matches( "(?i).*[.]puhs" ) ) {
 					Proto4xUHSParser protoParser = new Proto4xUHSParser();
+					protoParser.setErrorHandler( errorHandler );
+
 					rootNode = protoParser.parseFile( new File( fileArg ), Proto4xUHSParser.AUX_NEST );
 				}
 			}

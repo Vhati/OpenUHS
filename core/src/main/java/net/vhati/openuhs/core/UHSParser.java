@@ -11,9 +11,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.vhati.openuhs.core.CRC16;
+import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
 import net.vhati.openuhs.core.UHSBatchNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
@@ -43,7 +43,7 @@ public class UHSParser {
 	/** Move version 9x auxiliary nodes to within the master subject node and make that the new root */
 	public static final int AUX_NEST = 2;
 
-
+	private UHSErrorHandler errorHandler = new DefaultUHSErrorHandler( System.err );
 	private boolean force88a = false;
 
 	private int logHeader = 0;
@@ -51,6 +51,18 @@ public class UHSParser {
 
 
 	public UHSParser() {
+	}
+
+
+	/**
+	 * Sets a handler to notify of non-fatal errors.
+	 *
+	 * <p>This is a convenience for logging/muting.</p>
+	 *
+	 * @param eh  a new error handler, or null
+	 */
+	public void setErrorHandler( UHSErrorHandler eh ) {
+		errorHandler = eh;
 	}
 
 
@@ -187,7 +199,6 @@ public class UHSParser {
 		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
 			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
 		};
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 		logHeader = 0; logLine = -1;
 
 		String tmp = "";
@@ -472,7 +483,6 @@ public class UHSParser {
 		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
 			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
 		}
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 
 		try {
 			UHSRootNode rootNode = new UHSRootNode();
@@ -964,7 +974,6 @@ public class UHSParser {
 	 * @see #decryptTextHunk(CharSequence, int[])
 	 */
 	public int parseTextNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 		String breakChar = "^break^";
 
 		int index = startIndex;
@@ -1130,7 +1139,6 @@ public class UHSParser {
 	 * @see net.vhati.openuhs.core.UHSHotSpotNode
 	 */
 	public int parseHyperImgNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 		int index = startIndex;
 		String[] tokens = null;
 		long offset = 0;
@@ -1305,7 +1313,6 @@ public class UHSParser {
 	 * @see #decryptTextHunk(CharSequence, int[])
 	 */
 	public int parseSoundNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 		int index = startIndex;
 		String tmp = getLoggedString( uhsFileArray, index );
 		index++;
@@ -1583,8 +1590,6 @@ public class UHSParser {
 	 * @see #parseIncentiveNode(List, byte[], long, UHSRootNode, UHSNode, int[], int)
 	 */
 	public void applyRestrictions( UHSRootNode rootNode, String incentiveString ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-
 		String[] tokens = incentiveString.split( " " );
 		for ( int i=0; i < tokens.length; i++ ) {
 			if ( tokens[i].matches( "[0-9]+[AZ]" ) ) {
@@ -1617,8 +1622,6 @@ public class UHSParser {
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseUnknownNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-
 		int index = startIndex;
 		String tmp = getLoggedString( uhsFileArray, index );
 		index++;

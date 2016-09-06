@@ -9,7 +9,12 @@ import net.vhati.openuhs.core.UHSErrorHandler;
  * A simple logger that prints to Android's log.
  */
 public class AndroidUHSErrorHandler implements UHSErrorHandler {
-	String tag = "";
+	private String tag = "";
+	private String prefixFormat = "%-9s";
+	private String indentPrefix = String.format( prefixFormat, "" );
+	private String problemPrefix = String.format( prefixFormat, "Problem:" );
+	private String causePrefix = String.format( prefixFormat, "Cause:" );
+	private String extraIndent = "  ";
 
 
 	/**
@@ -23,52 +28,57 @@ public class AndroidUHSErrorHandler implements UHSErrorHandler {
 
 
 	public void log( int severity, Object source, String message, int line, Exception e ) {
-		String indent = "  ";
-
 		StringBuffer result = new StringBuffer();
+
+		if ( message != null ) message = message.replaceAll( "\r?\n", "\n" );
 
 		if ( line > 0 ) {
 			if ( message != null && message.length() > 0 ) {
-				message = message +" (line "+ line +")";
+				message = String.format( "%s (line %d)", message, line );
 			} else {
-				message = "Something happened on line "+ line;
+				message = String.format( "Something happened on line %d", line );
 			}
 		}
 
 		if ( message != null && message.length() > 0 ) {
-			String[] chunks = message.split( "\n" );
-			result.append( chunks[0] );
-			for ( int i=1; i < chunks.length; i++ ) {
-				result.append( "\n         " ).append( chunks[i] );
+			String[] chunks = message.split( "\n", -1 );
+			boolean first = true;
+			for ( String chunk : chunks ) {
+				result.append( (( first ) ? "" : "\n"+ indentPrefix) ).append( chunk );
+				first = false;
 			}
 		}
 
 		if ( e != null ) {
-			result.append( (( result.length() ) > 0 ? "\n" : "") ).append( "Problem: " ).append( e.toString() );
+			result.append( (( result.length() ) > 0 ? "\n" : "") ).append( problemPrefix ).append( e.toString() );
 
 			StackTraceElement[] tmpStack = e.getStackTrace();
-			for ( int i=0; i < tmpStack.length; i++ ) {
-				result.append( "\n         " ).append( indent ).append( tmpStack[i].toString() );
+			for ( StackTraceElement element : tmpStack ) {
+				result.append( "\n"+ indentPrefix ).append( extraIndent ).append( element.toString() );
 			}
 
 			Throwable cause = e.getCause();
 			while ( cause != null ) {
-				result.append( "\nCause:   " ).append( cause.toString() );
+				result.append( "\n"+ causePrefix ).append( cause.toString() );
 
 				tmpStack = cause.getStackTrace();
-				for ( int i=0; i < tmpStack.length; i++ ) {
-					result.append( "\n         " ).append( indent ).append( tmpStack[i].toString() );
+				for ( StackTraceElement element : tmpStack ) {
+					result.append( "\n"+ indentPrefix ).append( extraIndent ).append( element.toString() );
 				}
 
 				cause = cause.getCause();
 			}
 		}
 
-		if ( severity == UHSErrorHandler.ERROR )
-			Log.e(tag, result.toString());
-		else if ( severity == UHSErrorHandler.INFO )
-			Log.i(tag, result.toString());
-		else
-			Log.w(tag, result.toString());
+		String resultString = result.toString().replaceAll( "\n", System.getProperty( "line.separator" ) );
+		if ( severity == UHSErrorHandler.ERROR ) {
+			Log.e( tag, resultString );
+		}
+		else if ( severity == UHSErrorHandler.INFO ) {
+			Log.i( tag, resultString );
+		}
+		else {
+			Log.w( tag, resultString );
+		}
 	}
 }

@@ -28,6 +28,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
 import net.vhati.openuhs.androidreader.R;
+import net.vhati.openuhs.androidreader.AndroidUHSErrorHandler;
 import net.vhati.openuhs.androidreader.reader.NodeAdapter;
 import net.vhati.openuhs.androidreader.reader.UHSHotSpotView;
 import net.vhati.openuhs.core.UHSHotSpotNode;
@@ -43,6 +44,8 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	public static final int SCROLL_TO_TOP = 0;
 	public static final int SCROLL_TO_BOTTOM = 1;
 	public static final int SCROLL_IF_INCOMPLETE = 2;
+
+	private AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler( "OpenUHS" );
 
 	private Toolbar toolbar = null;
 
@@ -147,6 +150,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 			try {
 				File uhsFile = new File( uhsPath );
 				UHSParser uhsParser = new UHSParser();
+				uhsParser.setErrorHandler( errorHandler );
 				inRootNode = uhsParser.parseFile( uhsFile, UHSParser.AUX_NEST );
 			}
 			catch ( Exception e ) {
