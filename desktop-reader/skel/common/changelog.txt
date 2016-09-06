@@ -45,7 +45,7 @@
  - Parsed children of Comment nodes (CommentData), Credit nodes (CreditData), HyperImg nodes (Hyperpng/Hypergif/Overlay/Link) and Version nodes (VersionData) no longer copy their parent's id.
  - Minor javadoc improvements.
 
-## [0.6.4]  (YANKED)
+## [0.6.4]  (2011-01-05, YANKED)
  - Added commandline switches (run with -h or --help to see them).
  - Added an option to test a UHS file's validity without showing the GUI.
  - Lowercase ash character was added (#a+ae#a-). Only "Fallout: New Vegas" has one.
