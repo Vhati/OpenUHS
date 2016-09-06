@@ -87,9 +87,9 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	public UHSDownloaderPanel() {
 		super( new BorderLayout() );
 
-		setErrorHandler( new DefaultUHSErrorHandler( System.err ) );
-
 		catalogParser = new CatalogParser();
+
+		setErrorHandler( new DefaultUHSErrorHandler( System.err ) );
 
 		GridBagConstraints gridC = new GridBagConstraints();
 
