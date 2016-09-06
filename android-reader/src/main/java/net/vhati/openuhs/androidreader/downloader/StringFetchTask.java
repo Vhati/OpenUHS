@@ -96,7 +96,8 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 		}
 		catch ( Exception e ) {
 			fetchResult.status = StringFetchResult.STATUS_ERROR;
-			fetchResult.message = toString();
+			fetchResult.message = e.toString();
+			fetchResult.errorCause = e;
 			return fetchResult;
 		}
 		finally {
@@ -138,6 +139,7 @@ public class StringFetchTask extends AsyncTask<String, Integer, StringFetchTask.
 		public String urlString;
 		public int status = STATUS_DOWNLOADING;
 		public String message = null;
+		public Throwable errorCause = null;
 		public String content = null;
 
 		public StringFetchResult( String urlString ) {

@@ -12,7 +12,6 @@ import java.net.URL;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipEntry;
 
-import android.content.Context;
 import android.os.AsyncTask;
 
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
@@ -57,9 +56,9 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 		OutputStream os = null;
 		File uhsFile = null;
 
-		DownloadableUHS tmpUHS = duhs[0];
-		String urlString = tmpUHS.getUrl();
-		UHSFetchResult fetchResult = new UHSFetchResult( tmpUHS );
+		DownloadableUHS duh = duhs[0];
+		String urlString = duh.getUrl();
+		UHSFetchResult fetchResult = new UHSFetchResult( duh );
 
 		try {
 			con = (HttpURLConnection)(new URL( urlString ).openConnection());
@@ -86,9 +85,9 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 				// Get the uncompressed uhs file's length. (possibly -1)
 				long uhsLength = ze.getSize();
 
-				// Presumably ze.getName().equals(tmpUHS.getName()).
+				// Presumably ze.getName().equals( duh.getName() ).
 
-				uhsFile = new File( destDir, tmpUHS.getName() );
+				uhsFile = new File( destDir, duh.getName() );
 				fetchResult.file = uhsFile;
 				os = new FileOutputStream( uhsFile );
 
@@ -114,7 +113,8 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 		}
 		catch ( Exception e ) {
 			fetchResult.status = UHSFetchResult.STATUS_ERROR;
-			fetchResult.message = toString();
+			fetchResult.message = e.toString();
+			fetchResult.errorCause = e;
 			return fetchResult;
 		}
 		finally {
@@ -156,6 +156,7 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 		public DownloadableUHS duh;
 		public int status = STATUS_DOWNLOADING;
 		public String message = null;
+		public Throwable errorCause = null;
 		public File file = null;
 
 		public UHSFetchResult( DownloadableUHS duh ) {
