@@ -14,7 +14,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,6 +33,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -37,16 +41,22 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.ProgressMonitor;
+import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.UHSErrorHandler;
+import net.vhati.openuhs.core.downloader.CatalogParser;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
 import net.vhati.openuhs.desktopreader.AppliablePanel;
 import net.vhati.openuhs.desktopreader.Nerfable;
 import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
+import net.vhati.openuhs.desktopreader.downloader.StringFetchTask;
+import net.vhati.openuhs.desktopreader.downloader.StringFetchTask.StringFetchResult;
+import net.vhati.openuhs.desktopreader.downloader.UHSFetchTask.UHSFetchResult;
 import net.vhati.openuhs.desktopreader.downloader.UHSTableCellRenderer;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
@@ -69,11 +79,17 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	private File hintsDir = new File( "." );
 
+	private CatalogParser catalogParser = null;
+	private StringFetchTask catalogFetchTask = null;
+	private UHSFetchTask uhsFetchTask = null;
+
 
 	public UHSDownloaderPanel() {
 		super( new BorderLayout() );
 
 		setErrorHandler( new DefaultUHSErrorHandler( System.err ) );
+
+		catalogParser = new CatalogParser();
 
 		GridBagConstraints gridC = new GridBagConstraints();
 
@@ -209,10 +225,11 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	public void actionPerformed( ActionEvent e ) {
 		Object source = e.getSource();
 		if ( source == reloadBtn ) {
-			reloadTable();
+			fetchCatalog();
 		}
 		else if ( source == downloadBtn ) {
-			downloadHints();
+			List<DownloadableUHS> wantedDuhs = getWantedDownloads();
+			fetchUHS( wantedDuhs );
 		}
 		else if ( source == findBtn ) {
 			find( findField.getText() );
@@ -231,6 +248,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	 */
 	public void setErrorHandler( UHSErrorHandler eh ) {
 		errorHandler = eh;
+		catalogParser.setErrorHandler( eh );
 	}
 
 
@@ -251,35 +269,217 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	}
 
 
-	private void reloadTable() {
-		ancestorSetNerfed( true );
-		final Component parentComponent = getAncestorComponent();
+	private void cancelFetching() {
+		if ( catalogFetchTask != null && !catalogFetchTask.isDone() ) {
+			catalogFetchTask.cancel( true );
+		}
+		if ( uhsFetchTask != null && !uhsFetchTask.isDone() ) {
+			uhsFetchTask.cancel( true );
+		}
+	}
 
-		uhsTableModel.clear();
+	/**
+	 * Returns selected catalog entries, prompting to delete if local files exist.
+	 *
+	 * @return a List of entries, after pruning any local ones the user did not wish to delete
+	 */
+	private List<DownloadableUHS> getWantedDownloads() {
+		int[] rows = uhsTable.getSelectedRows();
 
-		Thread reloadWorker = new Thread() {
+		List<DownloadableUHS> wantedDuhs = new ArrayList<DownloadableUHS>(rows.length);
+		List<DownloadableUHS> existingDuhs = new ArrayList<DownloadableUHS>(rows.length);
+
+		String[] hintNames = hintsDir.list();
+		Arrays.sort( hintNames );
+
+		for ( int i=0; i < rows.length; i++ ) {
+			DownloadableUHS duh = uhsTableModel.getUHS( rows[i] );
+			if ( duh.getName().length() == 0 ) continue;
+
+			if ( Arrays.binarySearch( hintNames, duh.getName()) >= 0 ) {
+				existingDuhs.add( duh );
+			}
+			wantedDuhs.add( duh );
+		}
+		if ( !existingDuhs.isEmpty() ) {
+			String message;
+			if ( existingDuhs.size() == 1 ) {
+				message = String.format( "That file exists (\"%s\"), overwrite?", existingDuhs.get( 0 ).getName() );
+			}
+			else {
+				message = String.format( "Some of these files exist (%d), overwrite?", existingDuhs.size() );
+			}
+
+			int choice = JOptionPane.showConfirmDialog( getAncestorComponent(), message, "Overwrite?", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+			if ( choice == JOptionPane.YES_OPTION ) {
+				for ( DownloadableUHS duh : existingDuhs ) {
+					File uhsFile = new File( hintsDir, duh.getName() );
+					uhsFile.delete();
+				}
+				existingDuhs.clear();
+			}
+			else if ( choice == JOptionPane.NO_OPTION ) {
+				wantedDuhs.removeAll( existingDuhs );
+			}
+			else {
+				wantedDuhs.clear();
+			}
+		}
+
+		return wantedDuhs;
+	}
+
+	private void fetchUHS( List<DownloadableUHS> duhs ) {
+		cancelFetching();
+		if ( duhs.isEmpty() ) return;
+
+		uhsFetchTask = new UHSFetchTask( hintsDir, duhs.toArray( new DownloadableUHS[duhs.size()] ) );
+		uhsFetchTask.setUserAgent( CatalogParser.DEFAULT_USER_AGENT );
+
+		final boolean single = ( duhs.size() == 1 );
+		uhsFetchTask.addPropertyChangeListener(new PropertyChangeListener() {
+			private ProgressMonitor progressDlg = null;
+			private String unitName = "";
+			private int unitProgress = 0;
+			private int fetchProgress = 0;
+
+			private void updateMonitor() {
+					progressDlg.setNote( (( !single ) ? String.format( "%02d%%: ", fetchProgress) : "") + unitName );
+					progressDlg.setProgress( ((fetchProgress < 100 ) ? Math.min( unitProgress, 99 ) : 100) );
+
+					// The ProgressMonitor will disappear if its progress reaches 100.
+					// So individual units are capped to 99.
+			}
+
 			@Override
-			public void run() {
-				final List<DownloadableUHS> catalog = UHSFetcher.fetchCatalog( parentComponent );
+			public void propertyChange( PropertyChangeEvent e ) {
+				if ( UHSFetchTask.PROP_UNIT_NAME.equals( e.getPropertyName() ) ) {
+					unitName = (String)e.getNewValue();
+					updateMonitor();
+				}
+				if ( UHSFetchTask.PROP_UNIT_PROGRESS.equals( e.getPropertyName() ) ) {
+					unitProgress = ((Integer)e.getNewValue()).intValue();
+					updateMonitor();
+				}
+				else if ( "progress".equals( e.getPropertyName() ) ) {
+					fetchProgress = ((Integer)e.getNewValue()).intValue();
+					updateMonitor();
+				}
+				else if ( "state".equals( e.getPropertyName() ) ) {
+					if ( SwingWorker.StateValue.STARTED.equals( e.getNewValue() ) ) {
+						ancestorSetNerfed( true );
 
-				// Back to the event thread...
-				Runnable r = new Runnable() {
-					@Override
-					public void run() {
-						for ( int i=0; i < catalog.size(); i++ ) {
-							uhsTableModel.addUHS( catalog.get(i) );
+						progressDlg = new ProgressMonitor( getAncestorComponent(), "Fetching...", "", 0, 100 );
+						progressDlg.setProgress( 0 );
+
+						if ( progressDlg.isCanceled() ) uhsFetchTask.cancel( true );
+					}
+					else if ( SwingWorker.StateValue.DONE.equals( e.getNewValue() ) ) {
+						try {
+							List<UHSFetchResult> fetchResults = uhsFetchTask.get();  // get() blocks!
+
+							for ( UHSFetchResult fetchResult : fetchResults ) {
+								if ( fetchResult.status != UHSFetchResult.STATUS_COMPLETED ) {
+
+									if ( fetchResult.status != UHSFetchResult.STATUS_CANCELLED ) {
+										// TODO: ...
+									}
+									if ( fetchResult.file != null && fetchResult.file.exists() ) {
+										fetchResult.file.delete();
+									}
+								}
+							}
 						}
-						uhsTableModel.sort();
+						catch ( Exception ex ) {
+							// InterruptedException, while get() was blocking.
+							// java.util.concurrent.ExecutionException, if SwingWorker threw something.
+							if ( errorHandler != null ) {
+								errorHandler.log( UHSErrorHandler.ERROR, pronoun, "Could not fetch hint files", 0, ex );
+							}
+						}
+
 						colorizeTable();
+						if ( progressDlg != null ) progressDlg.close();
 						ancestorSetNerfed( false );
 					}
-				};
-				EventQueue.invokeLater( r );
+				}
 			}
-		};
+		});
 
-		reloadWorker.start();
+		uhsFetchTask.execute();
 	}
+
+	private void fetchCatalog() {
+		cancelFetching();
+
+		catalogFetchTask = new StringFetchTask( CatalogParser.DEFAULT_CATALOG_URL );
+		catalogFetchTask.setUserAgent( CatalogParser.DEFAULT_USER_AGENT );
+		catalogFetchTask.setEncoding( CatalogParser.DEFAULT_CATALOG_ENCODING );
+
+		catalogFetchTask.addPropertyChangeListener(new PropertyChangeListener() {
+			private ProgressMonitor progressDlg = null;
+
+			@Override
+			public void propertyChange( PropertyChangeEvent e ) {
+				if ( "progress".equals( e.getPropertyName() ) ) {
+					int progress = ((Integer)e.getNewValue()).intValue();
+
+					progressDlg.setProgress( progress );
+					progressDlg.setNote( String.format( "Catalog %d%%", progress ) );
+				}
+				else if ( "state".equals( e.getPropertyName() ) ) {
+					if ( SwingWorker.StateValue.STARTED.equals( e.getNewValue() ) ) {
+						ancestorSetNerfed( true );
+
+						progressDlg = new ProgressMonitor( getAncestorComponent(), "Fetching...", "", 0, 100 );
+						progressDlg.setProgress( 0 );
+
+						if ( progressDlg.isCanceled() ) catalogFetchTask.cancel( true );
+					}
+					else if ( SwingWorker.StateValue.DONE.equals( e.getNewValue() ) ) {
+						try {
+							StringFetchResult fetchResult = catalogFetchTask.get();  // get() blocks!
+
+							if ( fetchResult.status == StringFetchResult.STATUS_COMPLETED ) {
+
+								List<DownloadableUHS> catalog = catalogParser.parseCatalog( fetchResult.content );
+								if ( catalog.size() > 0 ) {
+									uhsTableModel.clear();
+
+									for ( DownloadableUHS duh : catalog ) {
+										uhsTableModel.addUHS( duh );
+									}
+									uhsTableModel.sort();
+									colorizeTable();
+								}
+								else {
+									// TODO: ...
+								}
+							}
+							else {
+								if ( fetchResult.status != StringFetchResult.STATUS_CANCELLED ) {
+									// TODO: ...
+								}
+							}
+						}
+						catch ( Exception ex ) {
+							// InterruptedException, while get() was blocking.
+							// java.util.concurrent.ExecutionException, if SwingWorker threw something.
+							if ( errorHandler != null ) {
+								errorHandler.log( UHSErrorHandler.ERROR, pronoun, "Could not fetch/parse catalog", 0, ex );
+							}
+						}
+
+						if ( progressDlg != null ) progressDlg.close();
+						ancestorSetNerfed( false );
+					}
+				}
+			}
+		});
+
+		catalogFetchTask.execute();
+	}
+
 
 	private void colorizeTable() {
 		uhsTable.clearSelection();
@@ -291,7 +491,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 			DownloadableUHS tmpUHS = uhsTableModel.getUHS( i );
 			tmpUHS.resetState();
 
-			if (Arrays.binarySearch( hintNames, tmpUHS.getName()) >= 0 ) {
+			if ( Arrays.binarySearch( hintNames, tmpUHS.getName()) >= 0 ) {
 				tmpUHS.setLocal( true );
 				File uhsFile = new File( hintsDir, tmpUHS.getName() );
 				Date localDate = new Date( uhsFile.lastModified() );
@@ -302,51 +502,6 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 			}
 		}
 		uhsTable.repaint();
-	}
-
-
-	private void downloadHints() {
-		if ( uhsTableModel.getRowCount() == 0 || uhsTable.getSelectedRowCount() == 0 ) {
-			// There's a JTable bug that misreports selection as 1 when empty
-			return;
-		}
-		ancestorSetNerfed( true );
-		final Component parentComponent = getAncestorComponent();
-
-		int[] rows = uhsTable.getSelectedRows();
-		final DownloadableUHS[] wants = new DownloadableUHS[rows.length];
-		for ( int i=0; i < rows.length; i++ ) {
-			wants[i] = uhsTableModel.getUHS( rows[i] );
-		}
-
-		Thread downloadWorker = new Thread() {
-			@Override
-			public void run() {
-				for ( int i=0; i < wants.length; i++ ) {
-					DownloadableUHS tmpUHS = wants[i];
-					byte[] bytes = UHSFetcher.fetchUHS( parentComponent, tmpUHS );
-					if ( bytes != null ) {
-						boolean success = UHSFetcher.saveBytes( parentComponent, new File( hintsDir, tmpUHS.getName() ).getAbsolutePath(), bytes );
-						if ( errorHandler != null ) {
-							if ( success ) errorHandler.log( UHSErrorHandler.INFO, pronoun, "Saved "+ tmpUHS.getName(), 0, null );
-							else errorHandler.log( UHSErrorHandler.ERROR, pronoun, "Could not save "+ tmpUHS.getName(), 0, null );
-						}
-					}
-				}
-
-				// Back to the event thread...
-				Runnable r = new Runnable() {
-					@Override
-					public void run() {
-						colorizeTable();
-						ancestorSetNerfed( false );
-					}
-				};
-				EventQueue.invokeLater( r );
-			}
-		};
-
-		downloadWorker.start();
 	}
 
 

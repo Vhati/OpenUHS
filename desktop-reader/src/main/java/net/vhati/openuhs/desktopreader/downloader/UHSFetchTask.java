@@ -1,0 +1,192 @@
+package net.vhati.openuhs.desktopreader.downloader;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipEntry;
+import javax.swing.SwingWorker;
+
+import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.desktopreader.downloader.FetchUnitException;
+
+
+/**
+ * A background task that downloads a hint file, while unzipping it.
+ *
+ * <p>Progress can be monitored with a PropertyChangeListener.</p>
+ *
+ * <p>Available properties:
+ * <ul>
+ * <li>state: One of the SwingWorker.StateValue constants.</li>
+ * <li>progress: Overall progress, from 0 to 100.</li>
+ * <li>PROP_UNIT_NAME: the name of an individual download currently in progress.</li>
+ * <li>PROP_UNIT_PROGRESS: progress for an individual download.</li>
+ * </ul></p>
+ */
+public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>, Object> {
+
+	// First generic is the result, returned by doInBackground().
+	// Second generic is for returning intermediate results while running. (Unused)
+
+	public static final String PROP_UNIT_NAME = "unitName";
+	public static final String PROP_UNIT_PROGRESS = "unitProgress";
+
+	private String userAgent = System.getProperty( "http.agent" );
+
+	private File destDir;
+	private DownloadableUHS[] duhs;
+
+
+	public UHSFetchTask( File destDir, DownloadableUHS... duhs ) {
+		this.destDir = destDir;
+		this.duhs = duhs;
+	}
+
+
+	public void setUserAgent( String s ) {
+		this.userAgent = s;
+	}
+
+	public String getUserAgent() {
+		return userAgent;
+	}
+
+
+	@Override
+	protected List<UHSFetchResult> doInBackground() {
+		List<UHSFetchResult> fetchResults = new ArrayList<UHSFetchResult>( duhs.length );
+		String unitName = null;
+		int unitProgress = 0;
+
+		for ( int unitIndex=0; unitIndex < duhs.length; unitIndex++ ) {
+			DownloadableUHS duh = duhs[unitIndex];
+
+			String unitNameOld = unitName;
+			unitName = duh.getName();
+			this.getPropertyChangeSupport().firePropertyChange( PROP_UNIT_NAME, unitNameOld, unitName );
+
+			int unitProgressOld = unitProgress;
+			unitProgress = 0;
+			this.getPropertyChangeSupport().firePropertyChange( PROP_UNIT_PROGRESS, unitProgressOld, unitProgress );
+
+			HttpURLConnection con = null;
+			InputStream downloadStream = null;
+			ZipInputStream unzipStream = null;
+			OutputStream os = null;
+			File uhsFile = null;
+
+			String urlString = duh.getUrl();
+			UHSFetchResult fetchResult = new UHSFetchResult( duh );
+			Exception ex = null;
+
+			try {
+				con = (HttpURLConnection)(new URL( urlString ).openConnection());
+				con.setRequestProperty( "User-Agent", userAgent );
+				con.connect();
+
+				if ( con.getResponseCode() != HttpURLConnection.HTTP_OK ) {
+					throw new FetchUnitException( String.format( "Server returned HTTP %s %s", con.getResponseCode(), con.getResponseMessage() ) );
+				}
+
+				// Get the zip file's length, if the server reports it. (possibly -1).
+				//int zipLength = con.getContentLength();
+
+				downloadStream = con.getInputStream();
+				unzipStream = new ZipInputStream( new BufferedInputStream( downloadStream ) );
+
+				//No need for a while loop; only one file.
+				//  Each pass reads the zip stream /as if/ it were one entry.
+				//  Contrary to the doc, zip errors can occur if there is no next entry
+				ZipEntry ze;
+				if ( (ze = unzipStream.getNextEntry()) != null ) {
+					// Get the uncompressed uhs file's length. (possibly -1)
+					long uhsLength = ze.getSize();
+
+					// Presumably ze.getName().equals( duh.getName() ).
+
+					uhsFile = new File( destDir, duh.getName() );
+					fetchResult.file = uhsFile;
+					os = new FileOutputStream( uhsFile );
+
+					byte data[] = new byte[4096];
+					long total = 0;
+					int count;
+					while ( (count=unzipStream.read(data)) != -1 ) {
+						if ( isCancelled() ) {
+							unzipStream.close();
+							if ( uhsFile.exists() ) uhsFile.delete();
+
+							fetchResult.status = UHSFetchResult.STATUS_CANCELLED;
+							fetchResults.add( fetchResult );
+							return fetchResults;
+						}
+						total += count;
+						if ( uhsLength > 0 ) {
+							unitProgressOld = unitProgress;
+							unitProgress = (int)(total * 100 / uhsLength);
+							this.getPropertyChangeSupport().firePropertyChange( PROP_UNIT_PROGRESS, unitProgressOld, unitProgress );
+						}
+						os.write( data, 0, count );
+					}
+				}
+				unzipStream.close();
+
+				fetchResult.status = UHSFetchResult.STATUS_COMPLETED;
+				fetchResults.add( fetchResult );
+			}
+			catch ( IOException e ) {
+				ex = e;
+			}
+			catch ( FetchUnitException e ) {
+				ex = e;
+			}
+			finally {
+				try {if ( unzipStream != null ) unzipStream.close();} catch ( IOException e ) {}
+				try {if ( downloadStream != null ) downloadStream.close();} catch ( IOException e ) {}
+				try {if ( os != null ) os.close();} catch ( IOException e ) {}
+				if ( con != null ) con.disconnect();
+			}
+			if ( ex != null ) {
+				fetchResult.status = UHSFetchResult.STATUS_ERROR;
+				fetchResult.errorCause = ex;
+				fetchResults.add( fetchResult );
+			}
+
+			this.setProgress( ((unitIndex+1) * 100 / duhs.length) );
+		}
+
+		return fetchResults;
+	}
+
+	@Override
+	protected void done() {
+		// Could trugger callbacks here, or let the listener react to a status change.
+	}
+
+
+
+	public static class UHSFetchResult {
+		public static final int STATUS_DOWNLOADING = 0;
+		public static final int STATUS_COMPLETED = 1;
+		public static final int STATUS_CANCELLED = 2;
+		public static final int STATUS_ERROR = 3;
+
+		public DownloadableUHS duh;
+		public int status = STATUS_DOWNLOADING;
+		public Throwable errorCause = null;
+		public File file = null;
+
+		public UHSFetchResult( DownloadableUHS duh ) {
+			this.duh = duh;
+		}
+	}
+}
