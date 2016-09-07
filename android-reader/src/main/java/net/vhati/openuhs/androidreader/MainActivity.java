@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.support.v4.content.IntentCompat;
 
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
 
 
 public class MainActivity extends TabActivity {
@@ -33,9 +32,6 @@ public class MainActivity extends TabActivity {
 		TabHost tabHost = getTabHost();  // The activity TabHost
 		TabHost.TabSpec spec;            // Resusable TabSpec for each tab
 		Intent intent;                   // Reusable Intent for each tab
-
-		AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler( "OpenUHS" );
-		UHSErrorHandlerManager.setErrorHandler( errorHandler );
 
 		// Create an Intent to launch an Activity for the tab (to be reused)
 		// Initialize a TabSpec for each tab and add it to the TabHost

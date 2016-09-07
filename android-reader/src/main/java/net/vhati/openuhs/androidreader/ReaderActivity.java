@@ -7,7 +7,6 @@ import java.util.List;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -27,8 +26,11 @@ import android.support.v4.content.IntentCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.androidreader.AndroidUHSErrorHandler;
+import net.vhati.openuhs.androidreader.AndroidUHSConstants;
 import net.vhati.openuhs.androidreader.reader.NodeAdapter;
 import net.vhati.openuhs.androidreader.reader.UHSHotSpotView;
 import net.vhati.openuhs.core.UHSHotSpotNode;
@@ -45,7 +47,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	public static final int SCROLL_TO_BOTTOM = 1;
 	public static final int SCROLL_IF_INCOMPLETE = 2;
 
-	private AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler( "OpenUHS" );
+	private final Logger logger = LoggerFactory.getLogger( AndroidUHSConstants.LOG_TAG );
 
 	private Toolbar toolbar = null;
 
@@ -149,11 +151,15 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 			UHSRootNode inRootNode = null;
 			try {
 				File uhsFile = new File( uhsPath );
+				logger.info( "Reader opened \"{}\"", uhsFile.getName() );
+
 				UHSParser uhsParser = new UHSParser();
 				inRootNode = uhsParser.parseFile( uhsFile, UHSParser.AUX_NEST );
 			}
 			catch ( Exception e ) {
-				// TODO: Report the error properly.
+				logger.error( "Parsing failed", e );
+				// TODO: Show a GUI alert, and exit gracefully.
+
 				TextView tv = new TextView( this );
 				tv.setText( e.toString() );
 				this.setContentView( tv );
@@ -164,14 +170,6 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 				setUHSNodes( inRootNode, inRootNode );
 			}
 		}
-
-		/*
-		UHSParser uhsParser = new UHSParser();
-		String tmp = uhsParser.decryptString( "4w{ Bw d srJ zH JDr yJptIy" );
-		TextView tv = new TextView( this );
-		tv.setText( tmp );
-		this.setContentView( tv );
-		*/
 	}
 
 
@@ -380,7 +378,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 		if ( tmpNode != null ) {
 			setReaderNode( tmpNode );
 		} else {
-			Toast.makeText( this, "Could not find link target: "+ id, Toast.LENGTH_SHORT ).show();
+			Toast.makeText( this, String.format( "Could not find link target: %d", id ), Toast.LENGTH_SHORT ).show();
 		}
 	}
 
@@ -436,8 +434,11 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	 */
 	public void scrollTo( int position ) {
 		if ( position == SCROLL_IF_INCOMPLETE ) {
-			if ( nodeAdapter.isComplete() ) position = SCROLL_TO_TOP;
-			else position = SCROLL_TO_BOTTOM;
+			if ( nodeAdapter.isComplete() ) {
+				position = SCROLL_TO_TOP;
+			} else {
+				position = SCROLL_TO_BOTTOM;
+			}
 		}
 		if ( position == SCROLL_TO_TOP ) {
 			listView.smoothScrollToPosition( 0 );

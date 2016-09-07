@@ -17,13 +17,18 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import net.vhati.openuhs.androidreader.AndroidUHSConstants;
 import net.vhati.openuhs.core.UHSNode;
 
 
 public class UHSSoundView extends LinearLayout {
+
+	private final Logger logger = LoggerFactory.getLogger( AndroidUHSConstants.LOG_TAG );
+
 	private static final int WAV_HEADER_SIZE = 44;
 	private static final int trackMode = AudioTrack.MODE_STREAM;
 
@@ -56,7 +61,7 @@ public class UHSSoundView extends LinearLayout {
 		playBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick( View v ) {
-				android.util.Log.i( "OpenUHS", "@!@ Sound play button clicked." );
+				//logger.info( "Sound play button clicked" );
 				play();
 			}
 		});
@@ -214,12 +219,12 @@ public class UHSSoundView extends LinearLayout {
 	 */
 	public void play() {
 		synchronized ( trackLock ) {
-			android.util.Log.i( "OpenUHS", "@!@ Sound play(): existing track ("+ (track != null) +"), workerDone ("+ writeWorkerDone +")." );
+			logger.info( "Sound play(): trackExists ({}), workerDone ({})", (track != null), writeWorkerDone );
 			if ( track != null || !writeWorkerDone ) return;
 
 			keepAlive = true;
 			writeWorkerDone = false;
-			Exception err = null;
+			Exception ex = null;
 			try {
 				track = new AudioTrack( AudioManager.STREAM_MUSIC, trackInfo.rate, trackInfo.channelCfg, trackInfo.encoding, trackInfo.bufferSize, trackMode );
 
@@ -231,7 +236,7 @@ public class UHSSoundView extends LinearLayout {
 					@Override
 					public void onMarkerReached( AudioTrack track ) {
 						synchronized ( trackLock ) {
-							android.util.Log.i( "OpenUHS", "@!@ Sound track finished playing." );
+							logger.info( "Sound track finished playing" );
 							track.release();
 							if ( track == UHSSoundView.this.track ) {
 								UHSSoundView.this.track = null;
@@ -247,21 +252,21 @@ public class UHSSoundView extends LinearLayout {
 				// And MODE_STATIC has a memory leak issue, so avoid it altogether.
 
 				if ( trackMode == AudioTrack.MODE_STREAM ) {  // Write after play.
-					android.util.Log.i( "OpenUHS", "@!@ Playing sound track." );
+					logger.info( "Playing sound track" );
 					track.play();
 				}
 			}
 			catch ( IllegalArgumentException e ) {
-				err = e;
+				ex = e;
 			}
 			catch ( IllegalStateException e ) {
-				err = e;
+				ex = e;
 			}
 			finally {
-				if ( err != null ) {
-					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-					errorHandler.log( UHSErrorHandler.ERROR, UHSSoundView.this, "Could not play sound.", 0, err );
-					errorLabel.setText( err.toString() );
+				if ( ex != null ) {
+					logger.error( "Could not play sound.", ex );
+					errorLabel.setText( ex.toString() );
+
 					if ( track != null ) track.release();
 					track = null;
 					keepAlive = false;
@@ -276,6 +281,7 @@ public class UHSSoundView extends LinearLayout {
 		final byte[] soundBytes = (byte[])node.getContent();   // Not an immutable copy. *shrug*
 		Runnable r = new Runnable() {
 			public void run() {
+				logger.info( "Sound worker thread started" );
 				try {
 					InputStream is = new ByteArrayInputStream( soundBytes );
 					is.skip( bytesToSkip );
@@ -298,13 +304,12 @@ public class UHSSoundView extends LinearLayout {
 						}
 						bytesLeft -= n;
 					}
-					android.util.Log.i( "OpenUHS", "@!@ Sound bytes left unwritten ("+ bytesLeft +"/"+ bytesToWrite +")." );
+					logger.info( "Sound bytes left unwritten ({}/{})", bytesLeft, bytesToWrite );
 
 					// With MODE_STATIC, post a runnable to the UI thread to play() after writing.
 				}
 				catch ( final IOException e ) {
-					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-					errorHandler.log( UHSErrorHandler.ERROR, UHSSoundView.this, "Could not play sound.", 0, e );
+					logger.error( "Could not play sound.", e );
 
 					UHSSoundView.this.post(new Runnable() {
 						@Override
@@ -315,11 +320,10 @@ public class UHSSoundView extends LinearLayout {
 				}
 				finally {
 					writeWorkerDone = true;
-					android.util.Log.i( "OpenUHS", "@!@ Sound worker thread ended." );
+					logger.info( "Sound worker thread ended" );
 				}
 			}
 		};
-		android.util.Log.i( "OpenUHS", "@!@ Sound worker thread started." );
 		Thread t = new Thread( r );
 		t.setPriority( Thread.MIN_PRIORITY );
 		t.setDaemon( true );

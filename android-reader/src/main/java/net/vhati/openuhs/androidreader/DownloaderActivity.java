@@ -14,7 +14,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.AsyncTask.Status;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Environment;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
@@ -33,8 +33,11 @@ import android.support.v4.content.IntentCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.androidreader.R;
-import net.vhati.openuhs.androidreader.AndroidUHSErrorHandler;
+import net.vhati.openuhs.androidreader.AndroidUHSConstants;
 import net.vhati.openuhs.androidreader.downloader.DownloadableUHSArrayAdapter;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchObserver;
@@ -42,20 +45,21 @@ import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchResult;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchObserver;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchResult;
-import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.downloader.CatalogParser;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
 
 
 public class DownloaderActivity extends AppCompatActivity implements UHSFetchObserver {
+
+	private final Logger logger = LoggerFactory.getLogger( AndroidUHSConstants.LOG_TAG );
+
 	private Toolbar toolbar = null;
 	private ListView catalogListView = null;
 
 	private File externalDir = null;
 	private File hintsDir = null;
 
-	private AndroidUHSErrorHandler errorHandler = new AndroidUHSErrorHandler( "OpenUHS" );
 	private DownloadableUHSComparator catalogComparator = new DownloadableUHSComparator();
 	private CatalogParser catalogParser = null;
 	private StringFetchTask catalogFetchTask = null;
@@ -74,18 +78,20 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		toolbar = (Toolbar)findViewById( R.id.downloaderToolbar );
 		this.setSupportActionBar( toolbar );
 
-		// TODO: Alert if external storage isn't available.
-		// if ( !Environment.MEDIA_MOUNTED.equals( Environment.getExternalStorageState() )
-		//   // Not mounted and R/W!
+
+		if ( !Environment.MEDIA_MOUNTED.equals( Environment.getExternalStorageState() ) ) {
+			logger.error( "External storage is not mounted and writable" );
+			// TODO: Show a GUI alert for the the user, and exit gracefully!
+		}
 
 		externalDir = this.getExternalFilesDir( null );
 		hintsDir = new File( externalDir, "hints" );
 
 		if ( !hintsDir.exists() ) {
 			if ( hintsDir.mkdir() ) {
-				errorHandler.log( UHSErrorHandler.INFO, this, String.format( "Created 'hints/' dir: %s", hintsDir.getAbsolutePath() ), 0, null );
+				logger.info( "Created \"hints/\" dir: {}", hintsDir.getAbsolutePath() );
 			} else {
-				errorHandler.log( UHSErrorHandler.ERROR, this, String.format( "Failed to created 'hints/' dir: %s", hintsDir.getAbsolutePath() ), 0, null );
+				logger.error( "Failed to created \"hints/\" dir: {}", hintsDir.getAbsolutePath() );
 			}
 		}
 
@@ -235,6 +241,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 	private void fetchUHS( DownloadableUHS duh ) {
 		cancelFetching();
+		logger.info( "Fetching \"{}\"", duh.getName() );
 
 		uhsFetchTask = new UHSFetchTask( hintsDir );
 		uhsFetchTask.setUserAgent( CatalogParser.DEFAULT_USER_AGENT );
@@ -244,6 +251,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 	private void fetchCatalog() {
 		cancelFetching();
+		logger.info( "Fetching catalog" );
 
 		catalogFetchTask = new StringFetchTask();
 		catalogFetchTask.setUserAgent( CatalogParser.DEFAULT_USER_AGENT );
@@ -292,12 +300,16 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 		progressDlg.dismiss();
 		if ( fetchResult.status == UHSFetchResult.STATUS_COMPLETED ) {
+			logger.info( "Saved \"{}\"", fetchResult.file.getName() );
 			Toast.makeText( this, String.format( "Saved %s", fetchResult.file.getName() ), Toast.LENGTH_SHORT ).show();
 		}
 		else {
 			if ( fetchResult.status != UHSFetchResult.STATUS_CANCELLED ) {
-				String message = (( fetchResult.errorCause != null ) ? fetchResult.errorCause.toString() : "Unknown error");
-				Toast.makeText( this, String.format( "Download failed: %s", message ), Toast.LENGTH_LONG ).show();
+				Throwable t = fetchResult.errorCause;
+				logger.error( "Download failed: {}", (( t != null ) ? t : "Unknown error") );
+
+				String message = String.format( "Download failed: %s", (( t != null ) ? t : "Unknown error") );
+				Toast.makeText( this, message, Toast.LENGTH_LONG ).show();
 			}
 			if ( fetchResult.file != null && fetchResult.file.exists() ) {
 				fetchResult.file.delete();
@@ -336,13 +348,17 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 				catalogListView.setAdapter(new DownloadableUHSArrayAdapter( DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog ));
 			}
 			else {
+				logger.error( "Catalog was empty or parsing failed" );
 				Toast.makeText( this, "Catalog was empty or parsing failed", Toast.LENGTH_LONG ).show();
 			}
 		}
 		else {
 			if ( fetchResult.status != StringFetchResult.STATUS_CANCELLED ) {
-				String message = (( fetchResult.errorCause != null ) ? fetchResult.errorCause.toString() : "Unknown error");
-				Toast.makeText( this, String.format( "Download failed: %s", message ), Toast.LENGTH_LONG ).show();
+				Throwable t = fetchResult.errorCause;
+				logger.error( "Download failed: {}", (( t != null ) ? t : "Unknown error") );
+
+				String message = String.format( "Download failed: %s", (( t != null ) ? t : "Unknown error") );
+				Toast.makeText( this, message, Toast.LENGTH_LONG ).show();
 			}
 		}
 	}
@@ -363,7 +379,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 			if ( Arrays.binarySearch( hintNames, tmpUHS.getName() ) >= 0 ) {
 				tmpUHS.setLocal( true );
-				File uhsFile = new File(hintsDir, tmpUHS.getName());
+				File uhsFile = new File( hintsDir, tmpUHS.getName() );
 				Date localDate = new Date( uhsFile.lastModified() );
 
 				if ( tmpUHS.getDate() != null && tmpUHS.getDate().after( localDate ) ) {

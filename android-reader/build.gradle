@@ -169,4 +169,7 @@ dependencies {
 	 * support-v4 will be brought in as its dependency.
 	 */
 	compile "com.android.support:appcompat-v7:24.2.0"
+
+	compile "org.slf4j:slf4j-api:1.7.21"
+	compile "org.slf4j:slf4j-android:1.7.21"
 }

@@ -43,6 +43,10 @@ Projects
       - Android Level 10 (2.3.3 Gingerbread)
         https://developer.android.com/reference/packages.html
         (Above the sidebar, there's a dropdown list to set the API level.)
+      - SLF4J (api)
+          http://www.slf4j.org/
+      - SLF4J-Android
+          http://www.slf4j.org/android/
 
 
 Build Environment
@@ -168,4 +172,6 @@ Android Notes
 
   The "adb" command is found in the Android SDK under "platform-tools/". With "adb", you can (un)install apks, transfer files, or run commands in the device's shell.
 
-  It can also dump the device's log: "adb logcat". The dump can be made less messy with filters: "adb logcat -s OpenUHS AndroidRuntime".
+  It can also dump the device's log: "adb logcat". The dump can be made less messy with filters: "adb logcat -s OpenUHS AndroidRuntime". These are a list of "tags" apps use to identify themselves when logging.
+
+  Side note: By default, the OS prevents the SLF4J-Android logging library from reporting severities below "info". There's a trick to adjust that level: "adb shell setprop log.tag.OpenUHS [level]". (Level can be: VERBOSE, DEBUG, INFO, WARN, ERROR, ASSERT, or SUPPRESS) This change will not survive a reboot. Such minor feedback is not yet necessary for this project.
