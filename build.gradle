@@ -23,6 +23,12 @@ allprojects {
 
 project(":core") {
 	apply plugin: "org.gradle.java"
+
+	dependencies {
+		// A downstream project will need to use the SAME version for its logger binding jar, if any.
+		// Presumably, if they declare both api and binding, their build tool will version-pin.
+		compile "org.slf4j:slf4j-api:1.7.21"
+	}
 }
 
 project(":desktop-reader") {

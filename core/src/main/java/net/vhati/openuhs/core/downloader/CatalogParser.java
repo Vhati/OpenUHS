@@ -10,8 +10,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.vhati.openuhs.core.DefaultUHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 
 
@@ -65,30 +66,16 @@ public class CatalogParser {
 	public static final String DEFAULT_USER_AGENT = "UHSWIN/5.2";
 
 
+	private final Logger logger = LoggerFactory.getLogger( CatalogParser.class );
+
 	/*
 	 * SimpleDateFormat stops reading strings longer than the pattern.
 	 * So just parse date. The time segment, if present, will be ignored.
 	 */
 	private DateFormat goofyDateFormat = new SimpleDateFormat( "dd-MMM-yy" );
 
-	private UHSErrorHandler errorHandler = new DefaultUHSErrorHandler( System.err );
-
 
 	public CatalogParser() {
-	}
-
-
-	/**
-	 * Sets the error handler to notify of exceptions.
-	 *
-	 * <p>This is a convenience for logging/muting.</p>
-	 *
-	 * <p>The default handler prints to System.err.</p>
-	 *
-	 * @param eh  the error handler, or null, for quiet parsing
-	 */
-	public void setErrorHandler( UHSErrorHandler eh ) {
-		errorHandler = eh;
 	}
 
 
@@ -100,7 +87,7 @@ public class CatalogParser {
 	 * @return a List of DownloadableUHS objects
 	 */
 	public List<DownloadableUHS> parseCatalog( String catalogString ) {
-		errorHandler.log( UHSErrorHandler.INFO, null, "Catalog parse started", 0, null );
+		logger.debug( "Catalog parse started" );
 
 		List<DownloadableUHS> catalog = new ArrayList<DownloadableUHS>();
 
@@ -142,7 +129,7 @@ public class CatalogParser {
 					tmpUHS.setDate( goofyDateFormat.parse( m.group( 1 ) ) );
 				}
 				catch ( ParseException e ) {
-					errorHandler.log( UHSErrorHandler.ERROR, null, String.format( "Unexpected date format: '%s'", m.group( 1 ) ), 0, null );
+					logger.warn( "Unexpected catalog date format: '{}'", m.group( 1 ) );
 				}
 			}
 
@@ -155,7 +142,7 @@ public class CatalogParser {
 			catalog.add( tmpUHS );
 		}
 
-		errorHandler.log( UHSErrorHandler.INFO, null, String.format( "Catalog parse finished (count: %d)", catalog.size() ), 0, null );
+		logger.debug( "Catalog parse finished (count: {})", catalog.size() );
 
 		return catalog;
 	}

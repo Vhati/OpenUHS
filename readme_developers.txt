@@ -22,6 +22,8 @@ Projects
     Libraries
       - Java 1.6
           http://docs.oracle.com/javase/6/docs/api/
+      - SLF4J (api)
+          http://www.slf4j.org/
 
   desktop-reader - Swing-GUI UHS reader.
     Libraries

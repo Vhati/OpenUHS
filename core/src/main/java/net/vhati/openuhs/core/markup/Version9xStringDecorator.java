@@ -6,8 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.markup.DecoratedFragment;
 import net.vhati.openuhs.core.markup.Decoration;
 import net.vhati.openuhs.core.markup.StringDecorator;
@@ -152,8 +153,9 @@ public class Version9xStringDecorator extends StringDecorator {
 					buf.append( '™' ); replaced = true;
 				}
 				if ( !replaced ) {
-					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-					if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, this, "StringDecorator did not expect accent: \""+ tmp[c+3] + tmp[c+4] +"\" ("+ (new String(tmp)) +")", 0, null );
+					// TODO: Get the logger out of here?
+					Logger logger = LoggerFactory.getLogger( Version9xStringDecorator.class );
+					logger.warn( "StringDecorator encountered an expected accent: \"{}\" ({})", (tmp[c+3] + tmp[c+4]), (new String(tmp)) );
 				}
 				if ( replaced ) {return 7;}
 			}

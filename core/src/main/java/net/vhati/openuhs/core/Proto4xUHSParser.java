@@ -10,10 +10,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.HotSpot;
-import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParseException;
@@ -35,26 +35,16 @@ public class Proto4xUHSParser {
 	/** Move version 9x auxiliary nodes to within the master subject node and make that the new root */
 	public static final int AUX_NEST = 2;
 
+
+	private final Logger logger = LoggerFactory.getLogger( Proto4xUHSParser.class );
+
 	private int logLine = -1;
-	private UHSErrorHandler errorHandler = new DefaultUHSErrorHandler( System.err );
 
 
 	/**
 	 * Creates a Proto4xUHSParser.
 	 */
 	public Proto4xUHSParser() {
-	}
-
-
-	/**
-	 * Sets a handler to notify of non-fatal errors.
-	 *
-	 * <p>This is a convenience for logging/muting.</p>
-	 *
-	 * @param eh  a new error handler, or null
-	 */
-	public void setErrorHandler( UHSErrorHandler eh ) {
-		errorHandler = eh;
 	}
 
 
@@ -227,7 +217,7 @@ public class Proto4xUHSParser {
 				index += parseLinkNode( uhsFileArray, rootNode, currentNode, index, workingDir );
 			}
 			else if ( tmp.endsWith( "proto_hyperpng" ) ) {
-				index += parseHyperImgNode( uhsFileArray, rootNode, currentNode, index, workingDir );
+				index += parseHyperImageNode( uhsFileArray, rootNode, currentNode, index, workingDir );
 			}
 			else if ( tmp.endsWith( "proto_info" ) ) {
 				index += parseInfoNode( uhsFileArray, rootNode, currentNode, index, workingDir );
@@ -363,19 +353,25 @@ public class Proto4xUHSParser {
 							buf.append( '™' ); c+=7; continue;
 						}
 						else {
-							if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, this, "Unknown accent: "+ tmp[c+3] + tmp[c+4], logLine+1, null );
+							logger.warn( "Unknown accent: {}, (last parsed line: {})", (tmp[c+3] + tmp[c+4]), getLastParsedLineNumber() );
 						}
 					}
 				}
 				if ( c+2 < tmp.length ) {
 					chunkA = new char[] {tmp[c],tmp[c+1],tmp[c+2]};
-					if (Arrays.equals( chunkA, wspcA ) || Arrays.equals( chunkA, wspcB )) {breakStr = " "; c+=2; continue;}
-					else if (Arrays.equals( chunkA, wnlin )) {breakStr = "\n"; c+=2; continue;}
+					if ( Arrays.equals( chunkA, wspcA ) || Arrays.equals( chunkA, wspcB ) ) {
+						breakStr = " "; c+=2; continue;
+					}
+					else if ( Arrays.equals( chunkA, wnlin ) ) {
+						breakStr = "\n"; c+=2; continue;
+					}
 				}
 			}
 			if ( c+6 < tmp.length ) {
 				chunkA = new char[] {tmp[c],tmp[c+1],tmp[c+2],tmp[c+3],tmp[c+4],tmp[c+5],tmp[c+6]};
-				if ( Arrays.equals( chunkA, linebreak ) ) {buf.append( breakStr ); c += 6; continue;}
+				if ( Arrays.equals( chunkA, linebreak ) ) {
+					buf.append( breakStr ); c += 6; continue;
+				}
 			}
 			buf.append( tmp[c] );
 		}
@@ -898,7 +894,7 @@ public class Proto4xUHSParser {
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see net.vhati.openuhs.core.UHSHotSpotNode
 	 */
-	public int parseHyperImgNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
+	public int parseHyperImageNode( List<String> uhsFileArray, UHSRootNode rootNode, UHSNode currentNode, int startIndex, File workingDir ) {
 		int index = startIndex;
 		String[] tokens = null;
 		String imgPath = null;
@@ -927,7 +923,7 @@ public class Proto4xUHSParser {
 
 		tokens = (getLoggedString( uhsFileArray, index )).split( " " );
 		index++;
-		if ( tokens.length != 3 ) {
+		if ( tokens.length != 3 ) {  // TODO: What's going on here? Need to log it?
 			boolean done = false;
 			while ( !done && index < uhsFileArray.size() ) {
 				tmp = getLoggedString( uhsFileArray, index );
@@ -946,14 +942,18 @@ public class Proto4xUHSParser {
 		else {
 			imgFile = new File( imgPath );
 		}
-		// Skip dummy zeroes
-		tmpBytes = readBytesFromFile( imgFile );
-		if ( tmpBytes == null ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not get bytes for Hyperpng hunk", logLine+1, null );
+		
+		try {
+			tmpBytes = readBytesFromFile( imgFile );
+			imgNode.setContent( tmpBytes, UHSNode.IMAGE );
 		}
-		imgNode.setContent( tmpBytes, UHSNode.IMAGE );
+		catch ( IOException e ) {
+			logger.error( "Could not read referenced file: {} (last parsed line: {})", imgFile.getAbsolutePath(), getLastParsedLineNumber(), e );
+			imgNode.setContent( null, UHSNode.IMAGE );
+		}
+		// Ignore dummy zeroes after the path.
 
-		// This if-else would make regionless hyperimgs standalone and unnested
+		// This if-else would make regionless HyperImages standalone and unnested
 		//if ( getLoggedString( uhsFileArray, index ).matches( "END \\Q***********\\E "+ hyperId +"$" ) == false ) {
 			hotspotNode.addChild( imgNode );
 
@@ -1005,16 +1005,19 @@ public class Proto4xUHSParser {
 							int posY = Integer.parseInt( tokens[4] )-1;
 
 							UHSNode newNode = new UHSNode( "Overlay" );
-							tmpBytes = readBytesFromFile( imgFile );
-							if ( tmpBytes == null ) {
-								if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not get bytes for Hyperpng hunk", logLine+1, null );
+							try {
+								tmpBytes = readBytesFromFile( imgFile );
+								newNode.setContent( tmpBytes, UHSNode.IMAGE );
 							}
-							newNode.setContent( tmpBytes, UHSNode.IMAGE );
+							catch ( IOException e ) {
+								logger.error( "Could not read referenced file: {} (last parsed line: {})", imgFile.getAbsolutePath(), getLastParsedLineNumber(), e );
+								newNode.setContent( null, UHSNode.IMAGE );
+							}
 							hotspotNode.addChild( newNode );
 							hotspotNode.setSpot( newNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY ) );
 						}
 						else {
-							if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Invalid coords for hyper-overlay hunk", logLine+1, null );
+							logger.error( "Invalid HyperImage zone coordinates for proto_overlay (last parsed line: {})", getLastParsedLineNumber() );
 						}
 						index++;  // This should skip the overlay's END line
 					}
@@ -1033,7 +1036,7 @@ public class Proto4xUHSParser {
 								newNode.setLinkTarget( targetIndex );
 						}
 						else {
-							if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Invalid coords/target for hyper-link hunk", logLine+1, null );
+							logger.error( "Invalid HyperImage zone coordinates for proto_link (last parsed line: {})", getLastParsedLineNumber() );
 						}
 						index++;  // This should skip the link's END line
 					}
@@ -1163,7 +1166,7 @@ public class Proto4xUHSParser {
 			}
 			else {
 				currentBuffer = unknownBuf;
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Unknown Info hunk line: "+ tmp, logLine+1, null );
+				logger.warn( "Unknown proto_info hunk line: {} (last parsed line: {})", tmp, getLastParsedLineNumber() );
 			}
 
 			if ( currentBuffer.length() > 0 ) currentBuffer.append( breakChar );
@@ -1188,7 +1191,7 @@ public class Proto4xUHSParser {
 		String tmp = getLoggedString( uhsFileArray, index );
 		index++;
 
-		if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, this, "Unknown Hunk: "+ tmp, logLine+1, null );
+		logger.warn( "Unknown hunk: {} (last parsed line: {})", tmp, getLastParsedLineNumber() );
 
 		tmp = getLoggedString( uhsFileArray, index );
 		index++;
@@ -1213,7 +1216,7 @@ public class Proto4xUHSParser {
 	}
 
 
-	private byte[] readBytesFromFile( File f ) {
+	private byte[] readBytesFromFile( File f ) throws IOException {
 		byte[] result = null;
 		InputStream is = null;
 		try {
@@ -1230,9 +1233,6 @@ public class Proto4xUHSParser {
 			if ( offset < result.length ) result = null;
 			is.close();
 		}
-		catch ( IOException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this,  "Could not read bytes from file: "+ f.getAbsolutePath(), logLine+1, null );
-		}
 		finally {
 			try {if ( is != null ) is.close();} catch ( IOException e ) {}
 		}
@@ -1240,8 +1240,21 @@ public class Proto4xUHSParser {
 	}
 
 
+	/**
+	 * Returns a string at a given index, while caching that index for logging purposes.
+	 *
+	 * @param uhsFileArray  a List of all available lines
+	 * @param uhsFileArray  an index within that list (0-based)
+	 */
 	private String getLoggedString( List<String> uhsFileArray, int n ) {
 		logLine = n;
 		return uhsFileArray.get( n );
+	}
+
+	/**
+	 * Returns the 1-based line number of the index in the last call to getLoggedString().
+	 */
+	private int getLastParsedLineNumber() {
+		return ( logLine + 1 );
 	}
 }

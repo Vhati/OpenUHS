@@ -150,7 +150,6 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 			try {
 				File uhsFile = new File( uhsPath );
 				UHSParser uhsParser = new UHSParser();
-				uhsParser.setErrorHandler( errorHandler );
 				inRootNode = uhsParser.parseFile( uhsFile, UHSParser.AUX_NEST );
 			}
 			catch ( Exception e ) {

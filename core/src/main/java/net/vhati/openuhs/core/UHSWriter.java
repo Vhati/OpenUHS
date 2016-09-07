@@ -22,6 +22,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.vhati.openuhs.core.UHSGenerationException;
+
 
 /**
  * UHS file writer (88a only, 9x isn't implemented).
@@ -31,6 +36,8 @@ public class UHSWriter {
 	private static final int ENCRYPT_HINT = 1;
 	private static final int ENCRYPT_NEST = 2;
 	private static final int ENCRYPT_TEXT = 3;
+
+	private final Logger logger = LoggerFactory.getLogger( UHSWriter.class );
 
 	private static final Pattern crlfPtn = Pattern.compile( "\r\n" );
 
@@ -221,19 +228,15 @@ public class UHSWriter {
 	 *
 	 * <p>TODO: This method is broken and needs to be made decorator-aware.</p>
 	 *
-	 * <p>If it cannot be expressed in 88a, nothing will be written.</p>
-	 *
 	 * <p>Newlines and "^break^" are replaced by " ".</p>
 	 *
 	 * @param rootNode  an existing root node
 	 * @param os  an existing unwritten stream to write into
 	 * @see #isValid88Format(UHSRootNode)
 	 */
-	public void write88Format( UHSRootNode rootNode, OutputStream os ) throws IOException, CharacterCodingException, UnsupportedEncodingException {
+	public void write88Format( UHSRootNode rootNode, OutputStream os ) throws IOException, UHSGenerationException {
 		if ( !isValid88Format( rootNode ) ) {
-			UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "This node tree cannot be saved as 88a", 0, null );
-			return;
+			throw new UHSGenerationException( "The node tree cannot be expressed in the 88a format" );
 		}
 		StringBuffer buf = new StringBuffer();
 
@@ -310,7 +313,7 @@ public class UHSWriter {
 	 * @param rootNode  an existing root node
 	 * @param outFile  a file to write
 	 */
-	public void write9xFormat( UHSRootNode rootNode, File outFile ) throws IOException, CharacterCodingException, UnsupportedEncodingException {
+	public void write9xFormat( UHSRootNode rootNode, File outFile ) throws IOException, UHSGenerationException {
 		UHS9xInfo info = new UHS9xInfo();
 		String uhsTitle = rootNode.getUHSTitle();
 		info.encryptionKey = generate9xKey( uhsTitle );
@@ -377,7 +380,7 @@ public class UHSWriter {
 	 * <li>Write out all the binsry at the end.</li>
 	 * </ul></p>
 	 */
-	private void getLinesAndBinData( UHSNode currentNode, UHS9xInfo info, StringBuffer parentBuf ) throws CharacterCodingException, UnsupportedEncodingException {
+	private void getLinesAndBinData( UHSNode currentNode, UHS9xInfo info, StringBuffer parentBuf ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		String type = currentNode.getType();
 		boolean hasTitle = false;
 
@@ -703,6 +706,8 @@ public class UHSWriter {
 
 			if ( info.phase == 1 ) info.line += 2;  // Children will increment further.
 
+			// TODO: Use ((UHSBatchNode)currentNode).isAddon().
+			// TODO: Insert empty "-" dividers when a non-HintData thinks it's not an addon.
 			boolean first = true;
 			for ( UHSNode tmpNode : currentNode.getChildren() ) {
 				if ( tmpNode.getType().equals( "HintData" ) ) {
@@ -866,7 +871,7 @@ public class UHSWriter {
 	 *
 	 * <p>Linebreaks will be converted from "^break^" to "\r\n".</p>
 	 */
-	private String getEncryptedText( UHSNode currentNode, UHS9xInfo info, int encryption ) throws CharacterCodingException, UnsupportedEncodingException {
+	private String getEncryptedText( UHSNode currentNode, UHS9xInfo info, int encryption ) throws UHSGenerationException {
 		if ( currentNode.getContentType() != UHSNode.STRING ) return null;  // !?
 
 		String tmpString = (String)currentNode.getContent();
@@ -876,16 +881,18 @@ public class UHSWriter {
 		}
 		else if ( encryption == ENCRYPT_NEST || encryption == ENCRYPT_TEXT ) {
 			if ( info.encryptionKey == null ) {
-				UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Attempted to encrypt before a key was set", 0, null );
-				return null;  // Throw a custom error
+				throw new UHSGenerationException( "Attempted to encrypt before a key was set" );
 			}
 			StringBuffer buf = new StringBuffer( tmpString.length() );
 			String[] lines = tmpString.split( "\r\n" );
 			for ( int i=0; i < lines.length; i++ ) {
 				if ( i > 0 ) buf.append( "\r\n" );
-				if ( encryption == ENCRYPT_NEST ) buf.append( encryptNestString( lines[i], info.encryptionKey ) );
-				else if ( encryption == ENCRYPT_TEXT ) buf.append( encryptTextHunk( lines[i], info.encryptionKey ) );
+				if ( encryption == ENCRYPT_NEST ) {
+					buf.append( encryptNestString( lines[i], info.encryptionKey ) );
+				}
+				else if ( encryption == ENCRYPT_TEXT ) {
+					buf.append( encryptTextHunk( lines[i], info.encryptionKey ) );
+				}
 			}
 			tmpString = buf.toString();
 		}
@@ -1005,8 +1012,7 @@ public class UHSWriter {
 				if (asciiEncoder.canEncode( tmp[c] )) {
 					buf.append( tmp[c] );
 				} else {
-					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-					if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "No escape is known for this non-ascii character: "+ tmp[c], 0, null );
+					logger.warn( "No escape known for this non-ascii character: {}", tmp[c] );
 					buf.append( "^?^" );
 				}
 			}

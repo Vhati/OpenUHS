@@ -1,8 +1,9 @@
 package net.vhati.openuhs.core;
 
+import java.io.IOException;
 
-public class UHSParseException extends Exception {
-	protected int line;
+
+public class UHSParseException extends IOException {
 
 
     public UHSParseException() {

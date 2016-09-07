@@ -20,6 +20,7 @@ task generateJavadocs(type: Javadoc) {
 	title = "OpenUHS-Core ${project.version}"
 
 	source = sourceSets.main.allJava
+	classpath = configurations.compile
 	options.encoding = sourceEncoding
 }
 

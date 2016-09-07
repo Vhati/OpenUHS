@@ -3,8 +3,9 @@ package net.vhati.openuhs.core.markup;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.markup.DecoratedFragment;
 import net.vhati.openuhs.core.markup.Decoration;
 import net.vhati.openuhs.core.markup.StringDecorator;
@@ -57,10 +58,12 @@ public class Version9xInfoDecorator extends Version9xStringDecorator {
 				}
 			}
 			if ( currentBuffer == null ) {
+				// TODO: Get the logger out of here?
+				Logger logger = LoggerFactory.getLogger( Version9xInfoDecorator.class );
+				logger.warn( "InfoDecorator encountered an unexpected line: {}", tmp );
+
 				currentBuffer = unknownBuf;
 				breakChar = "\n";
-				UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "InfoDecorator did not expect line: "+ tmp, i, null );
 			}
 
 			// Certain multi-line buffers, get a prefix when they're 0-length

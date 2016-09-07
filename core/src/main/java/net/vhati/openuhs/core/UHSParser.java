@@ -10,10 +10,11 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.CRC16;
-import net.vhati.openuhs.core.DefaultUHSErrorHandler;
 import net.vhati.openuhs.core.HotSpot;
-import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.UHSBatchNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
@@ -43,7 +44,9 @@ public class UHSParser {
 	/** Move version 9x auxiliary nodes to within the master subject node and make that the new root */
 	public static final int AUX_NEST = 2;
 
-	private UHSErrorHandler errorHandler = new DefaultUHSErrorHandler( System.err );
+
+	private final Logger logger = LoggerFactory.getLogger( UHSParser.class );
+
 	private boolean force88a = false;
 
 	private int logHeader = 0;
@@ -51,18 +54,6 @@ public class UHSParser {
 
 
 	public UHSParser() {
-	}
-
-
-	/**
-	 * Sets a handler to notify of non-fatal errors.
-	 *
-	 * <p>This is a convenience for logging/muting.</p>
-	 *
-	 * @param eh  a new error handler, or null
-	 */
-	public void setErrorHandler( UHSErrorHandler eh ) {
-		errorHandler = eh;
 	}
 
 
@@ -299,13 +290,13 @@ public class UHSParser {
 			long storedSum = readChecksum( binHunk );
 			long calcSum = calcChecksum( f );
 			if ( storedSum == -1 ) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read the stored security checksum from this file", 0, null );
+				logger.warn( "Could not read the stored security checksum from this file" );
 			}
 			else if ( calcSum == -1 ) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not calculate the security checksum for this file", 0, null );
+				logger.warn( "Could not calculate the security checksum for this file" );
 			}
 			else if ( storedSum != calcSum ) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Calculated CRC differs from CRC stored in file ("+ calcSum +" vs "+ storedSum +"="+ (storedSum - calcSum) +")", 0, null );
+				logger.warn( "Calculated CRC differs from CRC stored in file: {} vs {} (off by: {})", calcSum, storedSum, (storedSum - calcSum) );
 			}
 		}
 		return rootNode;
@@ -424,7 +415,7 @@ public class UHSParser {
 			return rootNode;
 		}
 		catch ( NumberFormatException e ) {
-			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", (logHeader+logLine+1) ), e );
+			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", getLastParsedLineNumber() ), e );
 			throw pe;
 		}
 	}
@@ -511,7 +502,7 @@ public class UHSParser {
 			return rootNode;
 		}
 		catch ( NumberFormatException e ) {
-			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", (logHeader+logLine+1) ), e );
+			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", getLastParsedLineNumber() ), e );
 			throw pe;
 		}
 	}
@@ -559,10 +550,10 @@ public class UHSParser {
 				index += parseTextNode( uhsFileArray, binHunk, rawOffset, rootNode, currentNode, key, index );
 			}
 			else if (tmp.endsWith( " hyperpng" )) {
-				index += parseHyperImgNode( uhsFileArray, binHunk, rawOffset, rootNode, currentNode, key, index );
+				index += parseHyperImageNode( uhsFileArray, binHunk, rawOffset, rootNode, currentNode, key, index );
 			}
 			else if (tmp.endsWith( " gifa" )) {
-				index += parseHyperImgNode( uhsFileArray, binHunk, rawOffset, rootNode, currentNode, key, index );
+				index += parseHyperImageNode( uhsFileArray, binHunk, rawOffset, rootNode, currentNode, key, index );
 			}
 			else if (tmp.endsWith( " sound" )) {
 				index += parseSoundNode( uhsFileArray, binHunk, rawOffset, rootNode, currentNode, key, index );
@@ -1005,7 +996,7 @@ public class UHSParser {
 		}
 		else {
 			// This error would be at index-1, if not for getLoggedString()'s counter
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read referenced raw bytes", logHeader+logLine+1, null );
+			logger.error( "Could not read referenced raw bytes (last parsed line: {})", getLastParsedLineNumber() );
 			tmp = "";
 		}
 		String[] lines = tmp.split( "(\r\n)|\r|\n", -1 );
@@ -1080,7 +1071,7 @@ public class UHSParser {
 	 * <li>Illustrative UHS: <i>Arcania: Gothic 4</i>: Jungle and Mountains, Jungle Map</li>
 	 * <li>Illustrative UHS: <i>Nancy Drew 4: TitRT</i>: Shed, How can I solve, Finished Leaf Puzzle</li>
 	 * <li>Illustrative UHS: <i>Elder Scrolls III: Tribunal</i>: Maps, Norenen-Dur, Details</li>
-	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImg image)</li>
+	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImage image)</li>
 	 * </ul></p>
 	 *
 	 * <blockquote><pre>
@@ -1121,12 +1112,13 @@ public class UHSParser {
 	 * <p>A gifa has the same structure, but might not officially contain regions.</p>
 	 * <p>The main image gets an id, which may be referenced by an Incentive node.</p>
 	 *
-	 * </p>Line ids of nodes nested within a HyperImg are skewed
+	 * </p>Line ids of nodes nested within a HyperImage are skewed
 	 * because their initial line is the region coords, and the
 	 * node type comes second.</p>
 	 *
-	 * <p>Nested HyperImgs aren't expected to recurse further
-	 * with additional nested nodes.</p>
+	 * <p>TODO: Nested HyperImgs aren't expected to recurse further
+	 * with additional nested nodes. It is unknown whether such children would
+	 * need their ids would be doubly skewed.</p>
 	 *
 	 * @param uhsFileArray  a List of all available lines in the file
 	 * @param binHunk  array of raw bytes at the end of the file
@@ -1138,7 +1130,7 @@ public class UHSParser {
 	 * @return the number of lines consumed from the file in parsing children
 	 * @see net.vhati.openuhs.core.UHSHotSpotNode
 	 */
-	public int parseHyperImgNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
+	public int parseHyperImageNode( List<String> uhsFileArray, byte[] binHunk, long rawOffset, UHSRootNode rootNode, UHSNode currentNode, int[] key, int startIndex ) {
 		int index = startIndex;
 		String[] tokens = null;
 		long offset = 0;
@@ -1153,12 +1145,10 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		String type = "";
-		if ( tmp.indexOf( "hyperpng" ) != -1 ) type = "Hyperpng";
-		else if ( tmp.indexOf( "gifa" ) != -1 ) type = "Hypergif";
-		else {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "parseHyperImgNode() is for hyperpng and gifa hunks only.", logHeader+logLine+1, null );
-			index += innerCount;
-			return index-startIndex;
+		if ( tmp.indexOf( "hyperpng" ) != -1 ) {
+			type = "Hyperpng";
+		} else if ( tmp.indexOf( "gifa" ) != -1 ) {
+			type = "Hypergif";
 		}
 
 		UHSNode imgNode = new UHSNode( type );
@@ -1171,7 +1161,7 @@ public class UHSParser {
 		index++;
 		innerCount--;
 		if ( tokens.length != 3 ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse HyperImg stats", logHeader+logLine+1, null );
+			logger.error( "Unable to parse HyperImage's offset/length (last parsed line: {})", getLastParsedLineNumber() );
 			return innerCount+3;
 		}
 		// Skip dummy zeroes
@@ -1181,11 +1171,11 @@ public class UHSParser {
 		if ( rawOffset != -1 ) tmpBytes = readBinaryHunk( binHunk, offset, length );
 		if ( tmpBytes == null ) {
 			// This error would be at index-1, if not for getLoggedString()'s counter
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read referenced raw bytes", logHeader+logLine+1, null );
+			logger.error( "Could not read referenced raw bytes (last parsed line: {})", getLastParsedLineNumber() );
 		}
 		imgNode.setContent( tmpBytes, UHSNode.IMAGE );
 
-		// This if-else would make regionless hyperimgs standalone and unnested
+		// This if-else would make regionless HyperImages standalone and unnested
 		//if ( innerCount+3 > 3 ) {
 			imgNode.setId( mainImgIndex );
 			hotspotNode.addChild( imgNode );
@@ -1203,13 +1193,13 @@ public class UHSParser {
 
 
 		for ( int j=0; j < innerCount; ) {
-			// Nested ids in HyperImg point to zone. Node type is zone-line+1.
+			// Nested ids in HyperImage point to zone. Node type is zone-line+1.
 			int nestedIndex = index+j;
 
 			tokens = (getLoggedString( uhsFileArray, index+j )).split( " " );
 			j++;
 			if ( tokens.length != 4 ) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse HyperImg zone stats", logHeader+logLine+1, null );
+				logger.error( "Unable to parse HyperImage's zone coordinates (last parsed line: {})", getLastParsedLineNumber() );
 				return innerCount+3;
 			}
 			int zoneX1 = Integer.parseInt( tokens[0] )-1;
@@ -1219,16 +1209,16 @@ public class UHSParser {
 
 			tmp = getLoggedString( uhsFileArray, index+j );
 			j++;
-			if (tmp.matches( "[0-9]+ [A-Za-z]+$" ) == true) {
+			if ( tmp.matches( "[0-9]+ [A-Za-z]+$" ) ) {
 				int innerInnerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
-				if (tmp.endsWith( " overlay" )) {
+				if ( tmp.endsWith( " overlay" ) ) {
 					title = getLoggedString( uhsFileArray, index+j );
 					j++;
 					tokens = ( getLoggedString( uhsFileArray, index+j ) ).split( " " );
 					j++;
 
 					if ( tokens.length != 5 ) {
-						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not parse Overlay stats", logHeader+logLine+1, null );
+						logger.error( "Unable to parse Overlay's offset/length/x/y (last parsed line: {})", getLastParsedLineNumber() );
 						return innerCount+3;
 					}
 					// Skip dummy zeroes
@@ -1241,7 +1231,7 @@ public class UHSParser {
 					if ( rawOffset != -1 ) tmpBytes = readBinaryHunk( binHunk, offset, length );
 					if ( tmpBytes == null ) {
 						// This error would be at index+j-1, if not for getLoggedString()'s counter
-						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read referenced raw bytes", logHeader+logLine+1, null );
+						logger.error( "Could not read referenced raw bytes (last parsed line: {})", getLastParsedLineNumber() );
 					}
 					UHSNode overlayNode = new UHSNode( "Overlay" );
 						overlayNode.setContent( tmpBytes, UHSNode.IMAGE );  // TODO: Threw away the title.
@@ -1262,18 +1252,18 @@ public class UHSParser {
 					if ( hotspotNode.getChildCount() == childrenBefore+1 ) {
 						UHSNode newNode = hotspotNode.getChild( hotspotNode.getChildCount()-1 );
 						newNode.shiftId( -1, rootNode );
-						// It might be weird to recurse HyperImg id shifts.
+						// It might be weird to recurse HyperImage id shifts.
 						if ( tmp.endsWith( "hyperpng" ) && newNode.getChildCount() != 1 ) {
-							if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Nested HyperImage has an unexpected child count", logHeader+logLine+1, null );
+							logger.error( "Nested HyperImage has an unexpected child count (last parsed line: {})", getLastParsedLineNumber() );
 						}
 						hotspotNode.setSpot( newNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1 ) );
 					}
 					else {
-						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Failed to add nested hunk", logHeader+logLine+1, null );
+						logger.error( "Failed to add nested hunk (last parsed line: {})", getLastParsedLineNumber() );
 					}
 				}
 				else {
-					if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, this, "Unknown Hunk in HyperImage: "+ tmp, logHeader+logLine+1, null );
+					logger.error( "Unknown Hunk in HyperImage: {} (last parsed line {})", tmp, getLastParsedLineNumber() );
 					j += innerInnerCount-1;
 				}
 			} else {j++;}
@@ -1338,7 +1328,7 @@ public class UHSParser {
 		if ( rawOffset != -1 ) tmpBytes = readBinaryHunk( binHunk, offset, length );
 		if ( tmpBytes == null ) {
 			// This error would be at index-1, if not for getLoggedString()'s counter
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, this, "Could not read referenced raw bytes", logHeader+logLine+1, null );
+			logger.error( "Could not read referenced raw bytes (last parsed line: {})", getLastParsedLineNumber() );
 		}
 
 		newNode.setContent( tmpBytes, UHSNode.AUDIO );
@@ -1593,7 +1583,7 @@ public class UHSParser {
 		String[] tokens = incentiveString.split( " " );
 		for ( int i=0; i < tokens.length; i++ ) {
 			if ( tokens[i].matches( "[0-9]+[AZ]" ) ) {
-				int tmpId = Integer.parseInt( tokens[i].substring(0, tokens[i].length()-1) );
+				int tmpId = Integer.parseInt( tokens[i].substring( 0, tokens[i].length()-1 ) );
 				UHSNode tmpNode = rootNode.getNodeByLinkId( tmpId );
 				if ( tmpNode != null ) {
 					if ( tokens[i].endsWith( "Z" ) ) {
@@ -1601,8 +1591,9 @@ public class UHSParser {
 					} else if ( tokens[i].endsWith("A") ) {
 						tmpNode.setRestriction( UHSNode.RESTRICT_REGONLY );
 					}
-				} else {
-					if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, this, "Unknown node id: "+ tmpId, logHeader+logLine+1, null );
+				}
+				else {
+					logger.warn( "Incentive string referenced an unknown node id: {} (last parsed line: {})", tmpId, getLastParsedLineNumber() );
 				}
 			}
 		}
@@ -1627,7 +1618,7 @@ public class UHSParser {
 		index++;
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
-		if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, this, "Unknown Hunk: "+ tmp, logHeader+logLine+1, null );
+		logger.warn( "Unknown hunk: {} (last parsed line: {})", tmp, getLastParsedLineNumber() );
 
 		UHSNode newNode = new UHSNode( "Unknown" );
 			newNode.setContent( "^UNKNOWN HUNK^", UHSNode.STRING );
@@ -1661,9 +1652,29 @@ public class UHSParser {
 	}
 
 
-	private String getLoggedString( List<String> uhsFileArray, int n ) {
-		logLine = n;
-		return uhsFileArray.get( n );
+	/**
+	 * Returns a string at a given index, while caching that index for logging purposes.
+	 *
+	 * <p>Note: While a list of lines is involved, the index is not synonymous
+	 * with the line number seen in text editors. While parsing the 9x format,
+	 * index is reset to 0 at the end of the fake 88a header.</p>
+	 *
+	 * @param uhsFileArray  a List of all available lines
+	 * @param uhsFileArray  an index within that list (0-based)
+	 */
+	private String getLoggedString( List<String> uhsFileArray, int index ) {
+		logLine = index;
+		return uhsFileArray.get( index );
+	}
+
+	/**
+	 * Returns the 1-based line number of the index in the last call to getLoggedString().
+	 *
+	 * <p>This will be counted from the very beginning of the file,
+	 * including 9x format's fake 88a header.</p>
+	 */
+	private int getLastParsedLineNumber() {
+		return ( logHeader + logLine + 1 );
 	}
 
 

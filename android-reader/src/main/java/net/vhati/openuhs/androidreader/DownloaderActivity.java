@@ -109,7 +109,6 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		});
 
 		catalogParser = new CatalogParser();
-		catalogParser.setErrorHandler( errorHandler );
 
 		progressDlg = new ProgressDialog( this );
 			progressDlg.setProgressStyle( ProgressDialog.STYLE_HORIZONTAL );
