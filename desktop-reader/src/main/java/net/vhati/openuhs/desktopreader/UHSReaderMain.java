@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JFrame;
@@ -13,10 +14,14 @@ import javax.swing.UIManager;
 import gnu.getopt.Getopt;
 import gnu.getopt.LongOpt;
 
-import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.core.FileAppender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.Proto4xUHSParser;
-import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
@@ -41,7 +46,8 @@ public class UHSReaderMain {
 	private static final String OPTION_SAVE_88A     = "OPTION_SAVE_88A";
 	private static final String OPTION_SAVE_9X      = "OPTION_SAVE_9X";
 
-	private static DefaultUHSErrorHandler errorHandler = new DefaultUHSErrorHandler( System.err );
+	private static final Logger logger = LoggerFactory.getLogger( UHSReaderMain.class );
+
 	private static UHSReaderFrame frame = null;
 
 	private static String fileArg = null;
@@ -61,12 +67,11 @@ public class UHSReaderMain {
 			optionMap.put( OPTION_SAVE_9X, Boolean.FALSE );
 		parseArgs( args, optionMap );
 
-		UHSErrorHandlerManager.setErrorHandler( errorHandler );
-
 		if ( optionMap.get( OPTION_CLI ) == Boolean.TRUE ) {
 			if (optionMap.get( OPTION_TEST ) == Boolean.TRUE) {
-				errorHandler = null;
-				UHSErrorHandlerManager.setErrorHandler( errorHandler );
+				// Reduce log verbosity for the test.
+				ch.qos.logback.classic.Logger classicUHSLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger( "net.vhati.openuhs" );
+				classicUHSLogger.setLevel( ch.qos.logback.classic.Level.ERROR );
 			}
 
       
@@ -74,7 +79,6 @@ public class UHSReaderMain {
 			try {
 				if ( fileArg.matches( "(?i).*[.]uhs$" ) ) {
 					UHSParser uhsParser = new UHSParser();
-					uhsParser.setErrorHandler( errorHandler );
 
 					if ( optionMap.get( OPTION_OPEN_88A ) == Boolean.TRUE ) {
 						uhsParser.setForce88a( true );
@@ -83,13 +87,12 @@ public class UHSReaderMain {
 				}
 				else if ( fileArg.matches( "(?i).*[.]puhs" ) ) {
 					Proto4xUHSParser protoParser = new Proto4xUHSParser();
-					protoParser.setErrorHandler( errorHandler );
 
 					rootNode = protoParser.parseFile( new File( fileArg ), Proto4xUHSParser.AUX_NEST );
 				}
 			}
 			catch ( Exception e ) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Parsing failed", 0, e );
+				logger.error( "Parsing failed", e );
 			}
 
 			if ( rootNode == null ) {
@@ -121,7 +124,7 @@ public class UHSReaderMain {
 						UHSXML.exportTree( rootNode, basename +"_", xmlOS );
 					}
 					catch ( IOException e ) {
-						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Could not export xml", 0, e );
+						logger.error( "Exporting to xml failed", e );
 					}
 					finally {
 						try {if ( xmlOS != null ) xmlOS.close();} catch ( IOException e ) {}
@@ -140,7 +143,7 @@ public class UHSReaderMain {
 						uhsWriter.write88Format( rootNode, fos );
 					}
 					catch ( IOException e ) {
-						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Could not write 88a file", 0, e );
+						logger.error( "Exporting to 88a format failed", e );
 					}
 					finally {
 						try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
@@ -155,28 +158,36 @@ public class UHSReaderMain {
 						uhsWriter.write9xFormat( rootNode, outFile );
 					}
 					catch ( IOException e ) {
-						if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Could not write 9x file", 0, e );
+						logger.error( "Exporting to 9x format failed", e );
 					}
 				}
 				System.exit( 0 );
 			}
 		}
+		// Done with CLI.
 
-		// Fork logging to a file.
-		PrintStream logFileStream = null;
-		try {
-			logFileStream = new PrintStream( new File( "./log.txt" ), "UTF-8" );
-			errorHandler = new DefaultUHSErrorHandler( System.err, logFileStream );
-			UHSErrorHandlerManager.setErrorHandler( errorHandler );
-		}
-		catch ( IOException e ) {
-			e.printStackTrace();
+		// Fork log into a file.
+		LoggerContext lc = (LoggerContext)LoggerFactory.getILoggerFactory();
 
-			if ( logFileStream != null ) logFileStream.close();
-		}
+		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+		encoder.setContext( lc );
+		encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n" );
+		encoder.start();
 
-		if ( errorHandler != null ) errorHandler.logWelcomeMessage();
+		FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
+		fileAppender.setContext( lc );
+		fileAppender.setFile( new File( "./log.txt" ).getAbsolutePath() );
+		fileAppender.setEncoder( encoder );
+		fileAppender.start();
 
+		lc.getLogger( "net.vhati.openuhs.desktopreader" ).addAppender( fileAppender );
+
+		// Log a welcome message.
+		logger.info( "Started: {}", (new Date()) );
+		logger.info( "OS: {} {}", System.getProperty( "os.name" ), System.getProperty( "os.version" ) );
+		logger.info( "VM: {}, {}, {}", System.getProperty( "java.vm.name" ), System.getProperty( "java.version" ), System.getProperty( "os.arch" ) );
+
+		// Set a Swing Look and Feel.
 		try {
 			//for ( UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels() ) {
 			//  if ( "Nimbus".equals( info.getName() ) ) {
@@ -185,11 +196,11 @@ public class UHSReaderMain {
 			//  }
 			//}
 
-			//if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.INFO, null, "Using system Look and Feel", 0, null );
+			//logger.info( "Using system Look and Feel" );
 			//UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 		}
 		catch ( Exception e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Error setting system Look and Feel.", 0, e );
+			logger.error( "Error setting system Look and Feel.", e );
 		}
 
 		final File guiFile = (( fileArg != null ) ? new File( fileArg ) : null);
@@ -219,7 +230,7 @@ public class UHSReaderMain {
 			Class.forName( "javax.swing.JFileChooser" );
 		}
 		catch( ClassNotFoundException e ) {
-			if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Could not cache JFileChooser", 0, e );
+			logger.error( "Could not cache JFileChooser", e );
 		}
 	}
 
@@ -255,7 +266,7 @@ public class UHSReaderMain {
 				fos.write( content );
 			}
 			catch ( IOException e ) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, null, "Could not save a binary", 0, e );
+				logger.error( "Error extracting a node's binary content to a file", e );
 			}
 			finally {
 				try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
@@ -452,7 +463,7 @@ public class UHSReaderMain {
 		System.out.println( "      --open-as-88a    parse hidden 88a section of 9x hint files" );
 		System.out.println( "" );
 		System.out.println( "CLI Options:" );
-		System.out.println( "  -t, --test           quietly test parse and report success/failure" );
+		System.out.println( "  -t, --test           only test whether the file can be parsed" );
 		System.out.println( "      --hint-title     print the hint file's title" );
 		System.out.println( "      --hint-version   print the hint file's declared version" );
 		System.out.println( "  -p, --print          print hints as indented plain text" );

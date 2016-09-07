@@ -46,8 +46,9 @@ import javax.swing.SwingWorker;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.downloader.CatalogParser;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
@@ -63,7 +64,7 @@ import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
-	private UHSDownloaderPanel pronoun = this;
+	private final Logger logger = LoggerFactory.getLogger( UHSDownloaderPanel.class );
 
 	private DownloadableUHSTableModel uhsTableModel = new DownloadableUHSTableModel( new String[] {"Title","Date","FullSize","Name"} );
 	private JTable uhsTable = null;
@@ -85,8 +86,6 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	public UHSDownloaderPanel() {
 		super( new BorderLayout() );
-
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 
 		GridBagConstraints gridC = new GridBagConstraints();
 
@@ -126,7 +125,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 				uhsTable.setDefaultRenderer( Class.forName( "java.lang.Object" ), new UHSTableCellRenderer() );
 			}
 			catch( ClassNotFoundException e ) {
-				if ( errorHandler != null ) errorHandler.log( UHSErrorHandler.ERROR, pronoun, "Could not set table renderer for download panel", 0, e );
+				logger.error( "Could not set table renderer for download panel", e );
 			}
 			uhsTable.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
 			uhsTable.getTableHeader().setReorderingAllowed( false );
@@ -212,9 +211,9 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 			}
 		});
 
-		pronoun.add( ctrlPanel, BorderLayout.NORTH );
-		pronoun.add( uhsTableScroll, BorderLayout.CENTER );
-		pronoun.add( bottomPanel, BorderLayout.SOUTH );
+		this.add( ctrlPanel, BorderLayout.NORTH );
+		this.add( uhsTableScroll, BorderLayout.CENTER );
+		this.add( bottomPanel, BorderLayout.SOUTH );
 	}
 
 
@@ -374,13 +373,10 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 							}
 						}
 						catch ( Exception ex ) {
-							UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-
 							// InterruptedException, while get() was blocking.
 							// java.util.concurrent.ExecutionException, if SwingWorker threw something.
-							if ( errorHandler != null ) {
-								errorHandler.log( UHSErrorHandler.ERROR, pronoun, "Could not fetch hint files", 0, ex );
-							}
+
+							logger.error( "Could not fetch hint files", ex );
 						}
 
 						colorizeTable();
@@ -428,8 +424,6 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 							if ( fetchResult.status == StringFetchResult.STATUS_COMPLETED ) {
 
 								CatalogParser catalogParser = new CatalogParser();
-								catalogParser.setErrorHandler( UHSErrorHandlerManager.getErrorHandler() );
-
 								List<DownloadableUHS> catalog = catalogParser.parseCatalog( fetchResult.content );
 								if ( catalog.size() > 0 ) {
 									uhsTableModel.clear();
@@ -451,13 +445,10 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 							}
 						}
 						catch ( Exception ex ) {
-							UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-
 							// InterruptedException, while get() was blocking.
 							// java.util.concurrent.ExecutionException, if SwingWorker threw something.
-							if ( errorHandler != null ) {
-								errorHandler.log( UHSErrorHandler.ERROR, pronoun, "Could not fetch/parse catalog", 0, ex );
-							}
+
+							logger.error( "Could not fetch/parse catalog", ex );
 						}
 
 						if ( progressDlg != null ) progressDlg.close();
@@ -745,7 +736,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	 */
 	private Component getAncestorComponent() {
 		Component ancestorComponent = null;
-		Object ancestor = pronoun.getTopLevelAncestor();
+		Object ancestor = this.getTopLevelAncestor();
 		if ( ancestor != null ) {
 			if ( ancestor instanceof Component ) ancestorComponent = (Component)ancestor;
 		}

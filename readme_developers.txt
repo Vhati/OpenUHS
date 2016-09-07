@@ -29,6 +29,10 @@ Projects
     Libraries
       - Java 1.6
           http://docs.oracle.com/javase/6/docs/api/
+      - SLF4J (api)
+          http://www.slf4j.org/
+      - Logback (classic, core)
+          http://logback.qos.ch/
       - Java-getopt
           http://www.urbanophile.com/~arenn/hacking/download.html
       - JDOM 2.x

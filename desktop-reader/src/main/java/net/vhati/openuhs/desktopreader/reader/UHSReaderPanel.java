@@ -11,6 +11,7 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BoxLayout;
@@ -28,9 +29,10 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.Proto4xUHSParser;
-import net.vhati.openuhs.core.UHSErrorHandler;
-import net.vhati.openuhs.core.UHSErrorHandlerManager;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
@@ -65,7 +67,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	public static final int SCROLL_TO_BOTTOM = 1;
 	public static final int SCROLL_IF_INCOMPLETE = 2;
 
-	private UHSReaderPanel pronoun = this;
+	private final Logger logger = LoggerFactory.getLogger( UHSReaderPanel.class );
+
 	private String readerTitle = "";
 
 	private UHSRootNode rootNode = null;
@@ -210,7 +213,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 				chooser.addChoosableFileFilter( puhsFilter );
 				chooser.setFileFilter( uhsFilter );
 
-			int status = chooser.showOpenDialog( pronoun );
+			int status = chooser.showOpenDialog( this );
 			if ( status == 0 ) {
 				openFile( chooser.getSelectedFile() );
 			}
@@ -222,7 +225,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 			setReaderNode( futureArray.get( futureArray.size()-1 ) );
 		}
 		else if ( source == findBtn ) {
-			String tmpString = JOptionPane.showInputDialog( pronoun, "Find what?", "Find text", JOptionPane.QUESTION_MESSAGE );
+			String tmpString = JOptionPane.showInputDialog( this, "Find what?", "Find text", JOptionPane.QUESTION_MESSAGE );
 			if ( tmpString == null || tmpString.length() == 0 ) return;
 
 			UHSNode newNode = new UHSNode( "result" );
@@ -279,7 +282,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		centerScrollView.removeAll();
 		currentNodePanel = null;
 
-		pronoun.setReaderTitle( null );
+		setReaderTitle( null );
 	}
 
 
@@ -289,12 +292,9 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 * @param f  the location of the file
 	 */
 	public void openFile( final File f ) {
-		UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
 		ancestorSetNerfed( true );
 
-		if ( errorHandler != null ) {
-			errorHandler.log( UHSErrorHandler.INFO, this, String.format( "Opened %s", f.getName() ), 0, null );
-		}
+		logger.info( "Opened {}", f.getName() );
 
 		Thread parseWorker = new Thread() {
 			public void run() {
@@ -309,11 +309,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 						rootNode = protoParser.parseFile( f, Proto4xUHSParser.AUX_NEST );
 					}
 				}
-				catch ( Exception e ) {
-					UHSErrorHandler errorHandler = UHSErrorHandlerManager.getErrorHandler();
-					if ( errorHandler != null ) {
-						errorHandler.log( UHSErrorHandler.ERROR, this, "Unreadable file or parsing error", 0, e );
-					}
+				catch ( IOException e ) {
+					logger.error( "Unreadable file or parsing error", e );
 				}
 
 				final UHSRootNode finalRootNode = rootNode;
@@ -324,7 +321,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 						if ( finalRootNode != null ) {
 							setUHSNodes( finalRootNode, finalRootNode );
 						} else {
-							JOptionPane.showMessageDialog( pronoun, "Unreadable file or parsing error", "OpenUHS Cannot Continue", JOptionPane.ERROR_MESSAGE );
+							JOptionPane.showMessageDialog( UHSReaderPanel.this, "Unreadable file or parsing error", "OpenUHS Cannot Continue", JOptionPane.ERROR_MESSAGE );
 						}
 						ancestorSetNerfed( false );
 					}
@@ -405,7 +402,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 		if ( currentNode.equals(rootNode) ) {
 			questionLbl.setText( "" );
-			pronoun.setReaderTitle( (String)currentNode.getContent() );
+			setReaderTitle( (String)currentNode.getContent() );
 			showAll = true;
 		}
 		else {
@@ -430,7 +427,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 			showAll = showAllBox.isSelected();
 		}
 		centerScrollView.removeAll();
-		currentNodePanel = new NodePanel( currentNode, pronoun, showAll );
+		currentNodePanel = new NodePanel( currentNode, this, showAll );
 		centerScrollView.add( currentNodePanel );
 
 		scrollTo( SCROLL_IF_INCOMPLETE );
@@ -439,8 +436,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		showLbl.setText( (( complete ) ? currentNode.getChildCount() : currentNode.getRevealedAmount()) +"/"+ currentNode.getChildCount() );
 		showNextBtn.setEnabled( !complete );
 
-		pronoun.validate();
-		pronoun.repaint();
+		this.validate();
+		this.repaint();
 	}
 
 
@@ -457,7 +454,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		if ( tmpNode != null ) {
 			setReaderNode( tmpNode );
 		} else {
-			JOptionPane.showMessageDialog( pronoun, "Could not find link target: "+ id, "OpenUHS Cannot Continue", JOptionPane.ERROR_MESSAGE );
+			JOptionPane.showMessageDialog( this, "Could not find link target: "+ id, "OpenUHS Cannot Continue", JOptionPane.ERROR_MESSAGE );
 		}
 	}
 
@@ -471,7 +468,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	public void setReaderTitle( String s ) {
 		readerTitle = (( s != null ) ? s : "");
 
-		Object ancestor = pronoun.getTopLevelAncestor();
+		Object ancestor = getTopLevelAncestor();
 		if ( ancestor != null && ancestor instanceof Frame ) {
 			((Frame)ancestor).setTitle( readerTitle );
 		}
@@ -655,7 +652,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	private void ancestorSetNerfed( boolean b ) {
 		boolean nerfable = false;
 		Component parentComponent = null;
-		Object ancestor = pronoun.getTopLevelAncestor();
+		Object ancestor = this.getTopLevelAncestor();
 		if ( ancestor != null ) {
 			if ( ancestor instanceof Nerfable ) nerfable = true;
 			if ( ancestor instanceof Component ) parentComponent = (Component)ancestor;

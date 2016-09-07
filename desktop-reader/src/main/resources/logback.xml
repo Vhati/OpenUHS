@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+
+	<appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+		<target>System.err</target>
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>info</level>
+		</filter>
+		<encoder>
+			<pattern>%-5level %logger{0} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- Additive loggers inherit appenders and omitted values, like level. -->
+	<logger name="net.vhati.openuhs" level="debug" additivity="true">
+	</logger>
+
+	<root level="error">
+		<appender-ref ref="STDERR" />
+	</root>
+</configuration>

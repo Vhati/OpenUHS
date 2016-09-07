@@ -12,29 +12,15 @@ import org.jdom2.CDATA;
 import org.jdom2.output.XMLOutputter;
 import org.jdom2.output.Format;
 
-import net.vhati.openuhs.core.DefaultUHSErrorHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.HotSpot;
-import net.vhati.openuhs.core.UHSErrorHandler;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
 
 
 public class UHSXML {
-	private static UHSErrorHandler errorHandler = new DefaultUHSErrorHandler( System.err );
-
-
-	/**
-	 * Sets the error handler to notify of exceptions.
-	 *
-	 * <p>This is a convenience for logging/muting.</p>
-	 *
-	 * <p>The default handler prints to System.err.</p>
-	 *
-	 * @param eh  the error handler, or null, for quiet parsing
-	 */
-	public static void setErrorHandler( UHSErrorHandler eh ) {
-		errorHandler = eh;
-	}
 
 
 	/**
@@ -69,8 +55,12 @@ public class UHSXML {
 	 */
 	private static int exportNode( Element parentElement, UHSNode currentNode, String basename, int n ) {
 		Element currentElement = null;
-		if ( currentNode instanceof UHSHotSpotNode ) currentElement = new Element( "hotspot-node" );
-		else currentElement = new Element( "node" );
+		if ( currentNode instanceof UHSHotSpotNode ) {
+			currentElement = new Element( "hotspot-node" );
+		}
+		else {
+			currentElement = new Element( "node" );
+		}
 
 		currentElement.setAttribute( "type", currentNode.getType() );
 
@@ -78,10 +68,12 @@ public class UHSXML {
 		currentElement.setAttribute( "id", (( id == -1 ) ? "" : id+"") );
 
 		int restriction = currentNode.getRestriction();
-		if ( restriction == UHSNode.RESTRICT_NAG )
+		if ( restriction == UHSNode.RESTRICT_NAG ) {
 			currentElement.setAttribute( "restriction", "nag" );
-		else if ( restriction == UHSNode.RESTRICT_REGONLY )
+		}
+		else if ( restriction == UHSNode.RESTRICT_REGONLY ) {
 			currentElement.setAttribute( "restriction", "regonly" );
+		}
 
 		int contentType = currentNode.getContentType();
 		String contentTypeString = "";
@@ -89,7 +81,8 @@ public class UHSXML {
 		if ( contentType == UHSNode.STRING ) {
 			contentTypeString = "string";
 			contentString = (String)currentNode.getContent();
-		} else {
+		}
+		else {
 			if ( contentType == UHSNode.IMAGE ) {
 				contentTypeString = "image";
 			}
@@ -99,7 +92,8 @@ public class UHSXML {
 			else {
 				contentTypeString = "unknown";
 			}
-			contentString = basename + n + (( id == -1 ) ? "" : "_"+id) +"."+ UHSUtil.getFileExtension( (byte[])(currentNode.getContent()) );
+			String guessedExt = UHSUtil.getFileExtension( (byte[])currentNode.getContent() );
+			contentString = String.format( "%s%d%s.%s", basename, n, (( id == -1 ) ? "" : "_"+id), guessedExt );
 			n++;
 		}
 		Element contentElement = new Element( "content" );
