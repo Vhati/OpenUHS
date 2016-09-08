@@ -60,7 +60,7 @@ public class Version9xInfoDecorator extends Version9xStringDecorator {
 			if ( currentBuffer == null ) {
 				// TODO: Get the logger out of here?
 				Logger logger = LoggerFactory.getLogger( Version9xInfoDecorator.class );
-				logger.warn( "InfoDecorator encountered an unexpected line: {}", tmp );
+				logger.warn( "InfoDecorator encountered an unexpected line in node content: {}", tmp );
 
 				currentBuffer = unknownBuf;
 				breakChar = "\n";
