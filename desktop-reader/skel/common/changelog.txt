@@ -7,6 +7,7 @@
  - Added a tar distribution for OSX/Linux with launcher scripts.
  - License changed to GPLv3.
  - Fixed the downloader's broken find button.
+ - Changed how commandline options work.
  - Incorporated SLF4J into the core library for standardized logging.
  - Incorporated Logback for logging on the desktop reader.
  - Fixed NestHints not revealing in batches, as the official reader does.
@@ -39,7 +40,7 @@
  - Added getopt jar, which was missing in 0.6.4.
  - Added Linux/Mac .command frontend script.
  - Made Windows frontend script fancier and commandline friendly.
- - Added commandline switches to print or extract content from hint files.
+ - Added commandline options to print or extract content from hint files.
  - Added an error popup when unable to download from a server.
  - Added logging to "log.txt".
  - Changed the lib's UHSNode content to String/byte[], leaving image/sound handling to the GUI.
@@ -48,7 +49,7 @@
  - Minor javadoc improvements.
 
 ## [0.6.4]  (2011-01-05, YANKED)
- - Added commandline switches (run with -h or --help to see them).
+ - Added commandline options (run with -h or --help to see them).
  - Added an option to test a UHS file's validity without showing the GUI.
  - Lowercase ash character was added (#a+ae#a-). Only "Fallout: New Vegas" has one.
  - The mouse cursor becomes busy while loading.

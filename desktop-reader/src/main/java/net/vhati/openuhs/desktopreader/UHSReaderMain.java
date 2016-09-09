@@ -4,15 +4,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-import gnu.getopt.Getopt;
-import gnu.getopt.LongOpt;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import joptsimple.OptionSpec;
+import joptsimple.util.RegexMatcher;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -33,91 +37,141 @@ import net.vhati.openuhs.desktopreader.UHSXML;
 public class UHSReaderMain {
 	public static final String VERSION = "0.7.0";
 
-	private static final String OPTION_CLI          = "OPTION_CLI";
-	private static final String OPTION_HELP         = "OPTION_HELP";
-	private static final String OPTION_VERSION      = "OPTION_VERSION";
-	private static final String OPTION_OPEN_88A     = "OPTION_OPEN_88A";
-	private static final String OPTION_TEST         = "OPTION_TEST";
-	private static final String OPTION_HINT_TITLE   = "OPTION_HINT_TITLE";
-	private static final String OPTION_HINT_VERSION = "OPTION_HINT_VERSION";
-	private static final String OPTION_PRINT_TEXT   = "OPTION_PRINT_TEXT";
-	private static final String OPTION_SAVE_XML     = "OPTION_SAVE_XML";
-	private static final String OPTION_SAVE_BIN     = "OPTION_SAVE_BIN";
-	private static final String OPTION_SAVE_88A     = "OPTION_SAVE_88A";
-	private static final String OPTION_SAVE_9X      = "OPTION_SAVE_9X";
-
 	private static final Logger logger = LoggerFactory.getLogger( UHSReaderMain.class );
-
-	private static UHSReaderFrame frame = null;
-
-	private static String fileArg = null;
 
 
 	public static void main( String[] args ) {
-		Map<String, Boolean> optionMap = new HashMap<String, Boolean>();
-			optionMap.put( OPTION_CLI, Boolean.FALSE );
-			optionMap.put( OPTION_OPEN_88A, Boolean.FALSE );
-			optionMap.put( OPTION_TEST, Boolean.FALSE );
-			optionMap.put( OPTION_HINT_TITLE, Boolean.FALSE );
-			optionMap.put( OPTION_HINT_VERSION, Boolean.FALSE );
-			optionMap.put( OPTION_PRINT_TEXT, Boolean.FALSE );
-			optionMap.put( OPTION_SAVE_XML, Boolean.FALSE );
-			optionMap.put( OPTION_SAVE_BIN, Boolean.FALSE );
-			optionMap.put( OPTION_SAVE_88A, Boolean.FALSE );
-			optionMap.put( OPTION_SAVE_9X, Boolean.FALSE );
-		parseArgs( args, optionMap );
+		OptionParser parser = new OptionParser();
+		OptionSpec<Void> optionHelp = parser.acceptsAll( Arrays.asList( "h", "help" ) ).forHelp();
+		OptionSpec<Void> optionVersion = parser.accepts( "version" );
+		OptionSpec<Void> optionForce88a = parser.accepts( "force-88a", "parse 9x hint files as if using an 88a reader" );
+		OptionSpec<Void> optionBatch = parser.acceptsAll( Arrays.asList( "b", "batch" ), "disable the default GUI and log file" );
+		OptionSpec<String> optionLoglevel = parser.acceptsAll( Arrays.asList( "v", "loglevel" ), "set console logging level" ).withRequiredArg().withValuesConvertedBy( new RegexMatcher( "debug|info|warn|error|off", Pattern.CASE_INSENSITIVE ) );
+		OptionSpec<Void> optionHintTitle = parser.accepts( "hint-title", "print the hint file's title" );
+		OptionSpec<Void> optionHintVersion = parser.accepts( "hint-version", "print the hint file's declared version" );
+		OptionSpec<Void> optionSaveXml = parser.accepts( "save-xml", "extract text as xml (in this dir)" );
+		OptionSpec<Void> optionSaveBin = parser.accepts( "save-bin", "extract embedded binaries (in this dir)" );
+		OptionSpec<Void> optionSave88a = parser.accepts( "save-88a", "save as 88a format (in this dir)" );
+		OptionSpec<Void> optionSave9x = parser.accepts( "save-9x", "save as 9x format (in this dir)" );
+		OptionSpec<Void> optionPrint = parser.acceptsAll( Arrays.asList( "p", "print" ), "print the hint file's content as indented text" );
+		OptionSpec<File> optionScanDir = parser.accepts( "scan-dir", "scan all files in a dir for parse errors" ).withRequiredArg().describedAs( "dir" ).ofType( File.class );
+		OptionSpec<File> optionEtc = parser.nonOptions().ofType( File.class );
 
-		if ( optionMap.get( OPTION_CLI ) == Boolean.TRUE ) {
-			if (optionMap.get( OPTION_TEST ) == Boolean.TRUE) {
-				// Reduce log verbosity for the test.
-				ch.qos.logback.classic.Logger classicUHSLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger( "net.vhati.openuhs" );
-				classicUHSLogger.setLevel( ch.qos.logback.classic.Level.ERROR );
+		try {
+			OptionSet options = parser.parse( args );
+
+			// A way to test multiple options.
+			// List<OptionSpec<?>> foundOptions = options.specs();
+			// if ( Collections.disjoint( foundOptions, Arrays.asList( optionTest, optionPrint ) ) ) ///...
+
+			if ( options.has( optionHelp ) ) {
+				try {
+					parser.printHelpOn( System.out );
+				}
+				catch ( IOException e ) {
+					logger.error( "Error printing help message", e );
+					throw new ExitException();
+				}
+				System.exit( 0 );
+			}
+			else if ( options.has( optionVersion ) ) {
+				showVersion();
+				System.exit( 0 );
 			}
 
-      
+			File etcFile = options.valueOf( optionEtc );  // Assume one.
 			UHSRootNode rootNode = null;
-			try {
-				if ( fileArg.matches( "(?i).*[.]uhs$" ) ) {
-					UHSParser uhsParser = new UHSParser();
 
-					if ( optionMap.get( OPTION_OPEN_88A ) == Boolean.TRUE ) {
-						uhsParser.setForce88a( true );
+			if ( options.has( optionLoglevel ) ) {
+				ch.qos.logback.classic.Logger classicUHSLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger( "net.vhati.openuhs" );
+
+				if ( "off".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
+					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.OFF );
+				}
+				else if ( "error".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
+					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.ERROR );
+				}
+				else if ( "warn".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
+					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.WARN );
+				}
+				else if ( "info".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
+					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.INFO );
+				}
+				else if ( "debug".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
+					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.DEBUG );
+				}
+			}
+
+			// Scan  an entire dir for parse errors, discard rootNodes.
+			// TODO: Valdate all the markup that was delegated to decorators.
+			if ( options.has( optionScanDir ) ) {
+				File scanDir = options.valueOf( optionScanDir );
+
+				for ( File f : scanDir.listFiles() ) {
+					try {
+						if ( f.getName().matches( "(?i).*[.]uhs$" ) ) {
+							logger.info( "Scanning \"{}\"", f.getName() );
+							UHSParser uhsParser = new UHSParser();
+
+							if ( options.has( optionForce88a ) ) {
+								uhsParser.setForce88a( true );
+							}
+							uhsParser.parseFile( f, UHSParser.AUX_NEST );
+						}
+						else if ( f.getName().matches( "(?i).*[.]puhs" ) ) {
+							logger.info( "Scanning \"{}\"", f.getName() );
+							Proto4xUHSParser protoParser = new Proto4xUHSParser();
+
+							protoParser.parseFile( f, Proto4xUHSParser.AUX_NEST );
+						}
 					}
-					rootNode = uhsParser.parseFile( new File( fileArg ), UHSParser.AUX_NEST );
+					catch ( Exception e ) {
+						logger.error( "Parsing \"{}\" failed", f.getName(), e );
+					}
 				}
-				else if ( fileArg.matches( "(?i).*[.]puhs" ) ) {
-					Proto4xUHSParser protoParser = new Proto4xUHSParser();
-
-					rootNode = protoParser.parseFile( new File( fileArg ), Proto4xUHSParser.AUX_NEST );
-				}
-			}
-			catch ( Exception e ) {
-				logger.error( "Parsing failed", e );
 			}
 
-			if ( rootNode == null ) {
-				if ( optionMap.get( OPTION_TEST ) == Boolean.TRUE ) {
-					System.out.println( "Test: Parsing failed" );
+			if ( etcFile != null ) {
+				try {
+					if ( etcFile.getName().matches( "(?i).*[.]uhs$" ) ) {
+						UHSParser uhsParser = new UHSParser();
+
+						if ( options.has( optionForce88a ) ) {
+							uhsParser.setForce88a( true );
+						}
+						rootNode = uhsParser.parseFile( etcFile, UHSParser.AUX_NEST );
+					}
+					else if ( etcFile.getName().matches( "(?i).*[.]puhs" ) ) {
+						Proto4xUHSParser protoParser = new Proto4xUHSParser();
+
+						rootNode = protoParser.parseFile( etcFile, Proto4xUHSParser.AUX_NEST );
+					}
 				}
-				System.exit( 1 );
+				catch ( Exception e ) {
+					logger.error( "Parsing \"{}\" failed", etcFile.getName(), e );
+				}
+
+				if ( rootNode == null ) {
+					throw new ExitException();
+				}
 			}
-			else {
-				if ( optionMap.get( OPTION_TEST ) == Boolean.TRUE ) {
-					System.out.println( "Test: Parsing succeeded" );
-				}
-				if ( optionMap.get( OPTION_HINT_TITLE ) == Boolean.TRUE ) {
+
+			if ( rootNode != null ) {
+				logger.debug( "Parsing \"{}\" succeeded", etcFile.getName() );
+
+				if ( options.has( optionHintTitle ) ) {
 					String hintTitle = rootNode.getUHSTitle();
 					System.out.println( String.format( "Title: %s", ((hintTitle != null) ? hintTitle : "Unknown") ) );
 				}
-				if ( optionMap.get( OPTION_HINT_VERSION ) == Boolean.TRUE ) {
+				if ( options.has( optionHintVersion ) ) {
 					String hintVersion = rootNode.getUHSVersion();
 					System.out.println( String.format( "Version: %s", ((hintVersion != null) ? hintVersion : "Unknown") ) );
 				}
-				if ( optionMap.get( OPTION_PRINT_TEXT ) == Boolean.TRUE ) {
+				if ( options.has( optionPrint ) ) {
 					rootNode.printNode("", "\t", System.out);
 				}
-				if ( optionMap.get( OPTION_SAVE_XML ) == Boolean.TRUE ) {
-					String basename = (new File( fileArg )).getName().replaceAll( "[.][^.]*$", "" );
+				if ( options.has( optionSaveXml ) ) {
+					String basename = etcFile.getName().replaceAll( "[.][^.]*$", "" );
 					FileOutputStream xmlOS = null;
 					try {
 						xmlOS = new FileOutputStream( "./"+ basename +".xml" );
@@ -125,18 +179,25 @@ public class UHSReaderMain {
 					}
 					catch ( IOException e ) {
 						logger.error( "Exporting to xml failed", e );
+						throw new ExitException();
 					}
 					finally {
 						try {if ( xmlOS != null ) xmlOS.close();} catch ( IOException e ) {}
 					}
 				}
-				if ( optionMap.get( OPTION_SAVE_BIN ) == Boolean.TRUE ) {
-					String basename = (new File( fileArg )).getName().replaceAll( "[.][^.]*$", "" );
-					extractNode( rootNode, new File( "./" ), basename +"_", 1 );
+				if ( options.has( optionSaveBin ) ) {
+					String basename = etcFile.getName().replaceAll( "[.][^.]*$", "" );
+					try {
+						extractNode( rootNode, new File( "./" ), basename +"_", 1 );
+					}
+					catch ( IOException e ) {
+						logger.error( "Extracting binary content failed", e );
+						throw new ExitException();
+					}
 				}
-				if ( optionMap.get( OPTION_SAVE_88A ) == Boolean.TRUE ) {
+				if ( options.has( optionSaveBin ) ) {
 					UHSWriter uhsWriter = new UHSWriter();
-					String basename = (new File( fileArg )).getName().replaceAll( "[.][^.]*$", "" );
+					String basename = etcFile.getName().replaceAll( "[.][^.]*$", "" );
 					FileOutputStream fos = null;
 					try {
 						fos = new FileOutputStream( "./"+ basename +".uhs" );
@@ -144,14 +205,15 @@ public class UHSReaderMain {
 					}
 					catch ( IOException e ) {
 						logger.error( "Exporting to 88a format failed", e );
+						throw new ExitException();
 					}
 					finally {
 						try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
 					}
 				}
-				if ( optionMap.get( OPTION_SAVE_9X ) == Boolean.TRUE ) {
+				if ( options.has( optionSave9x ) ) {
 					UHSWriter uhsWriter = new UHSWriter();
-					String basename = (new File( fileArg )).getName().replaceAll( "[.][^.]*$", "" );
+					String basename = etcFile.getName().replaceAll( "[.][^.]*$", "" );
 					File outFile = new File( "./"+ basename +".uhs" );
 
 					try {
@@ -159,60 +221,66 @@ public class UHSReaderMain {
 					}
 					catch ( IOException e ) {
 						logger.error( "Exporting to 9x format failed", e );
+						throw new ExitException();
 					}
 				}
-				System.exit( 0 );
+			}
+			// Done with CLI.
+
+			if ( !options.has( optionBatch ) ) {
+				// Fork log into a file.
+				LoggerContext lc = (LoggerContext)LoggerFactory.getILoggerFactory();
+
+				PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+				encoder.setContext( lc );
+				encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n" );
+				encoder.start();
+
+				FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
+				fileAppender.setContext( lc );
+				fileAppender.setFile( new File( "./openuhs-log.txt" ).getAbsolutePath() );
+				fileAppender.setEncoder( encoder );
+				fileAppender.start();
+
+				lc.getLogger( "net.vhati.openuhs.desktopreader" ).addAppender( fileAppender );
+
+				// Log a welcome message.
+				logger.debug( "Started: {}", (new Date()) );
+				logger.debug( "OS: {} {}", System.getProperty( "os.name" ), System.getProperty( "os.version" ) );
+				logger.debug( "VM: {}, {}, {}", System.getProperty( "java.vm.name" ), System.getProperty( "java.version" ), System.getProperty( "os.arch" ) );
+
+				// Set a Swing Look and Feel.
+				try {
+					//for ( UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels() ) {
+					//  if ( "Nimbus".equals( info.getName() ) ) {
+					//    UIManager.setLookAndFeel( info.getClassName() );
+					//    break;
+					//  }
+					//}
+
+					//logger.info( "Using system Look and Feel" );
+					//UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
+				}
+				catch ( Exception e ) {
+					logger.error( "Error setting system Look and Feel.", e );
+					throw new ExitException();
+				}
+
+				final UHSRootNode finalRootNode = rootNode;  // May be null.
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						guiInit( finalRootNode );
+					}
+				});
 			}
 		}
-		// Done with CLI.
-
-		// Fork log into a file.
-		LoggerContext lc = (LoggerContext)LoggerFactory.getILoggerFactory();
-
-		PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-		encoder.setContext( lc );
-		encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n" );
-		encoder.start();
-
-		FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
-		fileAppender.setContext( lc );
-		fileAppender.setFile( new File( "./log.txt" ).getAbsolutePath() );
-		fileAppender.setEncoder( encoder );
-		fileAppender.start();
-
-		lc.getLogger( "net.vhati.openuhs.desktopreader" ).addAppender( fileAppender );
-
-		// Log a welcome message.
-		logger.info( "Started: {}", (new Date()) );
-		logger.info( "OS: {} {}", System.getProperty( "os.name" ), System.getProperty( "os.version" ) );
-		logger.info( "VM: {}, {}, {}", System.getProperty( "java.vm.name" ), System.getProperty( "java.version" ), System.getProperty( "os.arch" ) );
-
-		// Set a Swing Look and Feel.
-		try {
-			//for ( UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels() ) {
-			//  if ( "Nimbus".equals( info.getName() ) ) {
-			//    UIManager.setLookAndFeel( info.getClassName() );
-			//    break;
-			//  }
-			//}
-
-			//logger.info( "Using system Look and Feel" );
-			//UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
+		catch ( ExitException e ) {
+			System.exit( 1 );
 		}
-		catch ( Exception e ) {
-			logger.error( "Error setting system Look and Feel.", e );
-		}
-
-		final File guiFile = (( fileArg != null ) ? new File( fileArg ) : null);
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				guiInit( guiFile );
-			}
-		});
 	}
 
-	private static void guiInit( File guiFile ) {
+	private static void guiInit( UHSRootNode rootNode ) {
 		UHSReaderFrame frame = new UHSReaderFrame();
 		frame.setTitlePrefix( "OpenUHS "+ UHSReaderMain.VERSION );
 		frame.setTitle( null );
@@ -221,8 +289,8 @@ public class UHSReaderMain {
 		frame.setLocationRelativeTo( null );
 		frame.setVisible( true );
 
-		if ( guiFile != null ) {
-			frame.getUHSReaderPanel().openFile( guiFile );
+		if ( rootNode != null ) {
+			frame.getUHSReaderPanel().setUHSNodes( rootNode, rootNode );
 		}
 
 		// Get the JFileChooser cached.
@@ -247,7 +315,7 @@ public class UHSReaderMain {
 	 * @return a new value for n
 	 * @see net.vhati.openuhs.desktopreader.UHSUtil#getFileExtension(byte[])
 	 */
-	public static int extractNode( UHSNode currentNode, File destDir, String basename, int n ) {
+	public static int extractNode( UHSNode currentNode, File destDir, String basename, int n ) throws IOException {
 		boolean extractable = false;
 		if (currentNode.getContentType() == UHSNode.IMAGE) extractable = true;
 		else if (currentNode.getContentType() == UHSNode.AUDIO) extractable = true;
@@ -259,14 +327,14 @@ public class UHSReaderMain {
 			byte[] content = (byte[])currentNode.getContent();
 			String extension = UHSUtil.getFileExtension( content );
 
+			File destFile = new File( destDir, (basename + n + idStr +"."+ extension) );
 			FileOutputStream fos = null;
 			try {
-				File destFile = new File( destDir, (basename + n + idStr +"."+ extension) );
 				fos = new FileOutputStream( destFile );
 				fos.write( content );
 			}
 			catch ( IOException e ) {
-				logger.error( "Error extracting a node's binary content to a file", e );
+				throw new IOException( String.format( "Error extracting %s node's binary content to a file: %s", currentNode.getType(), destFile.getAbsolutePath() ), e );
 			}
 			finally {
 				try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
@@ -281,204 +349,6 @@ public class UHSReaderMain {
 		return n;
 	}
 
-
-	/**
-	 * Does some getopt magic.
-	 *
-	 * @param argv  app args
-	 * @param optionMap  a map to fill with Boolean.TRUE values
-	 */
-	private static void parseArgs( String[] argv, Map<String, Boolean> optionMap ) {
-		boolean needFileArg = false;
-
-		//StringBuffer sb = new StringBuffer();
-		LongOpt[] longopts = new LongOpt[] {
-			new LongOpt( "help", LongOpt.NO_ARGUMENT, null, 'h' ),
-			new LongOpt( "version", LongOpt.NO_ARGUMENT, null, 2 ),
-			new LongOpt( "open-as-88a", LongOpt.NO_ARGUMENT, null, 3 ),
-			new LongOpt( "test", LongOpt.NO_ARGUMENT, null, 't' ),
-			new LongOpt( "hint-title", LongOpt.NO_ARGUMENT, null, 4 ),
-			new LongOpt( "hint-version", LongOpt.NO_ARGUMENT, null, 5 ),
-			new LongOpt( "save-xml", LongOpt.NO_ARGUMENT, null, 6 ),
-			new LongOpt( "save-bin", LongOpt.NO_ARGUMENT, null, 7 ),
-			new LongOpt( "save-88a", LongOpt.NO_ARGUMENT, null, 8 ),
-			new LongOpt( "save-9x", LongOpt.NO_ARGUMENT, null, 9 ),
-			new LongOpt( "print", LongOpt.NO_ARGUMENT, null, 'p' )
-			//longopts[1] = new LongOpt( "outputdir", LongOpt.REQUIRED_ARGUMENT, sb, 'o' );
-			//longopts[2] = new LongOpt( "maximum", LongOpt.OPTIONAL_ARGUMENT, null, 2 );
-		};
-
-		// One Colon: Req Arg; Two colons: Optional Arg; W+Semicolon: allow -Wsome-argarg
-
-		Getopt g = new Getopt( "OpenUHS", argv, "-:tpehW;", longopts );
-			g.setOpterr( false );  // We'll do our own error handling
-
-		boolean optFailed = false;
-		boolean optDone = false;
-		int c;
-		String arg;
-		while ( optDone == false && (c = g.getopt()) != -1 ) {
-			switch ( c ) {
-				//case 0:
-				// Long opts with a StringBuffer have their char stored there, and trigger the 0 case
-				//arg = g.getOptarg();
-				//System.err.println("Got long option with value '"+ (char)(new Integer( sb.toString() )).intValue() +"' with argument "+ (( arg != null ) ? arg : "null"));
-				//break;
-
-				case 1:
-					// Non-options (no leading dash) trigger 1, and their invalid letter is 1's arg
-					//   This case can happen when GetOpt's opt string starts with a "-" for return_in_order
-					g.setOptind( g.getOptind()-1 );
-					optDone = true;
-					break;
-
-				case 2:
-					// Long opts without short equivs are declared with int vals (such as 2)
-					optionMap.put( OPTION_VERSION, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					//arg = g.getOptarg();
-					//System.err.println("We picked option "+ longopts[g.getLongind()].getName() +" with value "+ (( arg != null ) ? arg : "null"));
-					break;
-
-				//case 'd':
-				// An opt with an arg
-				//arg = g.getOptarg();
-				//System.err.println("You picked option '"+ (char)c +"' with argument "+ (( arg != null ) ? arg : "null"));
-				//break;
-
-				case 3:
-					optionMap.put( OPTION_OPEN_88A, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 't':
-					optionMap.put( OPTION_TEST, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 4:
-					optionMap.put( OPTION_HINT_TITLE, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 5:
-					optionMap.put( OPTION_HINT_VERSION, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 6:
-					optionMap.put( OPTION_SAVE_XML, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 7:
-					optionMap.put( OPTION_SAVE_BIN, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 8:
-					optionMap.put( OPTION_SAVE_88A, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 9:
-					optionMap.put( OPTION_SAVE_9X, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 'p':
-					optionMap.put( OPTION_PRINT_TEXT, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					needFileArg = true;
-					break;
-
-				case 'h':
-					optionMap.put( OPTION_HELP, Boolean.TRUE );
-					optionMap.put( OPTION_CLI, Boolean.TRUE );
-					break;
-
-				case 'W':
-					System.err.println( "Error: -W did not set a valid a long option" );
-					optFailed = true;
-					break;
-
-				case ':':
-					// Invalid long opts will be seen as '0' and can't be identified
-					System.err.println( "Error: Option requires an argument: "+ (char)g.getOptopt() );
-					optFailed = true;
-					break;
-
-				case '?':
-					// Invalid long opts will be seen as '0' and can't be identified
-					System.err.println( "Error: Option is not valid: "+ (char)g.getOptopt() );
-					optFailed = true;
-					break;
-
-				default:
-					System.err.println( "Error: Unexpected case: getopt() returned "+ c );
-					optFailed = true;
-					break;
-			}
-		}
-		// These are non-opts or anything after "--"
-		for ( int i=g.getOptind(); i < argv.length; i++ ) {
-			if ( fileArg == null ) {
-				fileArg = argv[i];
-			} else {
-				System.err.println( "Error: Extraneous argument: '"+ argv[i] +"'" );
-				optFailed = true;
-			}
-		}
-
-
-		if ( needFileArg && fileArg == null ) {
-			optFailed = true;
-			System.err.println( "Error: No file was specified" );
-		}
-
-		if ( optFailed == true ) {
-			System.err.println(""); showHelp(1);
-		}
-		else if ( optionMap.get( OPTION_HELP ) == Boolean.TRUE ) {
-			showHelp(0);
-		}
-		else if ( optionMap.get( OPTION_VERSION ) == Boolean.TRUE ) {
-			showVersion();
-		}
-	}
-
-
-	public static void showHelp( int exitCode ) {
-		System.out.println( "Usage: OpenUHS [OPTION] [FILE]" );
-		System.out.println( "Reader for UHS files." );
-		System.out.println( "" );
-		System.out.println( "General Options:" );
-		System.out.println( "      --open-as-88a    parse hidden 88a section of 9x hint files" );
-		System.out.println( "" );
-		System.out.println( "CLI Options:" );
-		System.out.println( "  -t, --test           only test whether the file can be parsed" );
-		System.out.println( "      --hint-title     print the hint file's title" );
-		System.out.println( "      --hint-version   print the hint file's declared version" );
-		System.out.println( "  -p, --print          print hints as indented plain text" );
-		System.out.println( "      --save-xml       extract text as xml" );
-		System.out.println( "      --save-bin       extract embedded binaries" );
-		System.out.println( "      --save-88a       save as 88a UHS" );
-		System.out.println( "      --save-9x        save as 9x UHS (not ready for use)" );
-		System.out.println( "" );
-		System.out.println( "  -h, --help           display this help and exit" );
-		System.out.println( "      --version        output version information and exit" );
-		System.out.println( "" );
-		System.out.println( "Extracted/saved files are written to the current directory." );
-		System.out.println( "" );
-		System.exit( exitCode );
-	}
 
 	public static void showVersion() {
 		System.out.println( "OpenUHS "+ UHSReaderMain.VERSION );
@@ -497,5 +367,27 @@ public class UHSReaderMain {
 		System.out.println( "along with this program. If not, see http://www.gnu.org/licenses/." );
 		System.out.println( "" );
 		System.exit( 0 );
+	}
+
+
+
+	/**
+	 * An exception to throw so finally blocks can finish before System.exit(1).
+	 */
+	private static class ExitException extends RuntimeException {
+		public ExitException() {
+		}
+
+		public ExitException( String message ) {
+			super( message );
+		}
+
+		public ExitException( Throwable cause ) {
+			super( cause );
+		}
+
+		public ExitException( String message, Throwable cause ) {
+			super( message, cause );
+		}
 	}
 }

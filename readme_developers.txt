@@ -33,8 +33,8 @@ Projects
           http://www.slf4j.org/
       - Logback (classic, core)
           http://logback.qos.ch/
-      - Java-getopt
-          http://www.urbanophile.com/~arenn/hacking/download.html
+      - JOpt Simple 4.x
+          http://pholser.github.io/jopt-simple/
       - JDOM 2.x
           http://www.jdom.org/
 
