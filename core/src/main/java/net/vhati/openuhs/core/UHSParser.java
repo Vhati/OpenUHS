@@ -1039,15 +1039,6 @@ public class UHSParser {
 	 *
 	 * <p>UHSHotSpotNode was written to handle regions.</p>
 	 *
-	 * <p><ul>
-	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 7, the Stone Altar, Can you give me a picture of the solution?</li>
-	 * <li>Illustrative UHS: <i>Deja Vu I</i>: Sewer, The Map</li>
-	 * <li>Illustrative UHS: <i>Arcania: Gothic 4</i>: Jungle and Mountains, Jungle Map</li>
-	 * <li>Illustrative UHS: <i>Nancy Drew 4: TitRT</i>: Shed, How can I solve, Finished Leaf Puzzle</li>
-	 * <li>Illustrative UHS: <i>Elder Scrolls III: Tribunal</i>: Maps, Norenen-Dur, Details</li>
-	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImage image)</li>
-	 * </ul></p>
-	 *
 	 * <blockquote><pre>
 	 * {@code
 	 * # hyperpng (or gifa)
@@ -1091,9 +1082,22 @@ public class UHSParser {
 	 * because their initial line is the region coords, and the
 	 * node type comes second.</p>
 	 *
+	 * <p>As of OpenUHS 0.7.0, "Overlay" UHSNodes contain title text, and their
+	 * "OverlayData" child contains the image. Previous versions discarded the
+	 * title and stored the image in the "Overlay" node itself.</p>
+	 *
 	 * <p>TODO: Nested HyperImgs aren't expected to recurse further
 	 * with additional nested nodes. It is unknown whether such children would
 	 * need their ids would be doubly skewed.</p>
+	 *
+	 * <p><ul>
+	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 7, the Stone Altar, Can you give me a picture of the solution?</li>
+	 * <li>Illustrative UHS: <i>Deja Vu I</i>: Sewer, The Map</li>
+	 * <li>Illustrative UHS: <i>Arcania: Gothic 4</i>: Jungle and Mountains, Jungle Map</li>
+	 * <li>Illustrative UHS: <i>Nancy Drew 4: TitRT</i>: Shed, How can I solve, Finished Leaf Puzzle</li>
+	 * <li>Illustrative UHS: <i>Elder Scrolls III: Tribunal</i>: Maps, Norenen-Dur, Details</li>
+	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImage image)</li>
+	 * </ul></p>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1164,7 +1168,7 @@ public class UHSParser {
 
 
 		for ( int j=0; j < innerCount; ) {
-			// Nested ids in HyperImage point to zone. Node type is zone-line+1.
+			// Nested ids in HyperImage point to the zone line. Node type is at (zone line)+1.
 			int nestedIndex = index+j;
 
 			tokens = (context.getLine( index+j )).split( " " );
@@ -1204,16 +1208,16 @@ public class UHSParser {
 						logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
 					}
 					UHSNode overlayNode = new UHSNode( "Overlay" );
-						overlayNode.setContent( tmpBytes, UHSNode.IMAGE );  // TODO: Threw away the title.
+						overlayNode.setContent( title, UHSNode.STRING );
 						overlayNode.setId( nestedIndex );
 						hotspotNode.addChild( overlayNode );
 						context.getRootNode().addLink( overlayNode );
 						hotspotNode.setSpot( overlayNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY ) );
 
-					// With a title, reader's NodePanel would need to look two children deep.
-					//UHSNode newNode = new UHSNode( "OverlayData" );
-					//  newNode.setContent( tmpBytes, UHSNode.IMAGE );
-					//  overlayNode.addChild( newNode );
+					// With a title, reader's NodePanel will need to look two children deep.
+					UHSNode newNode = new UHSNode( "OverlayData" );
+					newNode.setContent( tmpBytes, UHSNode.IMAGE );
+					overlayNode.addChild( newNode );
 				}
 				else if ( tmp.endsWith( " link" ) || tmp.endsWith( " hyperpng" ) || tmp.endsWith( " text" ) || tmp.endsWith( " hint" ) ) {
 					int childrenBefore = hotspotNode.getChildCount();
@@ -1248,10 +1252,6 @@ public class UHSParser {
 	 *
 	 * <p>This seems to be limited to PCM WAV audio.</p>
 	 *
-	 * <p><ul>
-	 * <li>Illustrative UHS: <i>Tex Murphy: Overseer</i>: Day Two, Bosworth Clark's Lab, How do I operate that keypad?</li>
-	 * </ul></p>
-	 *
 	 * <blockquote><pre>
 	 * {@code
 	 * # sound
@@ -1262,6 +1262,10 @@ public class UHSParser {
 	 *
 	 * <p>Offset is counted from the beginning of the file.</p>
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
+	 *
+	 * <p><ul>
+	 * <li>Illustrative UHS: <i>Tex Murphy: Overseer</i>: Day Two, Bosworth Clark's Lab, How do I operate that keypad?</li>
+	 * </ul></p>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to

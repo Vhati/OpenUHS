@@ -747,7 +747,9 @@ public class UHSWriter {
 			else if ( "Hypergif".equals( currentNode.getChild( 0 ).getType() ) ) {
 				buf.append( "gifa" );
 			}
-			else {/* Throw an error */}
+			else {
+				throw new UHSGenerationException( String.format( "Unexpected %s child of HotSpot node", currentNode.getChild( 0 ).getType() ) );
+			}
 			buf.append( "\r\n" );
 
 			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
@@ -788,18 +790,21 @@ public class UHSWriter {
 
 				if ( info.phase == 1 ) info.line += 1;  // Zone.
 
-				if ( "Overlay".equals( tmpNode.getType() ) ) {  // lines: 3 (Technically it was preceeded by a zone in HyperImg.)
+				if ( "Overlay".equals( tmpNode.getType() ) ) {  // lines: 3 (Technically it was preceeded by a zone in HyperImage.)
 					// Overlays need the zone's x/y, so don't recurse.
 
 					if ( info.phase == 1 && tmpNode.getId() != -1 ) {
 						info.putLine( tmpNode.getId(), info.line-1 );  // Fudge the line map to point to zone.
 					}
 
+					String overlayTitle = (String)tmpNode.getContent();
+
+					UHSNode overlayImageNode = tmpNode.getFirstChild( "OverlayData" );
+					byte[] overlayImageBytes = (byte[])overlayImageNode.getContent();
+
 					StringBuffer oBuf = new StringBuffer();
 					oBuf.append( /* lineCount */ " overlay" ).append( "\r\n" );
-					oBuf.append( "^OVERLAY TITLE WAS EATEN^" ).append( "\r\n" );  // TODO: Move image binary into a child node.
-
-					byte[] overlayImageBytes = (byte[])(tmpNode.getContent());
+					oBuf.append( overlayTitle ).append( "\r\n" );
 
 					if ( info.phase == 1 ) {
 						info.registerBinarySection( overlayImageBytes.length );

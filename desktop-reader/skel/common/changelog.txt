@@ -10,6 +10,7 @@
  - Changed how commandline options work.
  - Incorporated SLF4J into the core library for standardized logging.
  - Incorporated Logback for logging on the desktop reader.
+ - Moved overlay image bytes into a child OverlayData node. The regular Overlay node is now for title text.
  - Fixed NestHints not revealing in batches, as the official reader does.
  - Added CatalogParser and DownloadableUHS to the core library.
  - Added UHSBatchNode to the core library, for NestHint chunks.

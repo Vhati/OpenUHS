@@ -10,7 +10,7 @@ public class UHSGenerationException extends IOException {
 	}
 
 	public UHSGenerationException( String message ) {
-		super(message);
+		super( message );
 	}
 
 	public UHSGenerationException( Throwable cause ) {

@@ -66,23 +66,40 @@ public class ZonePanel extends JComponent {
 		else component.setMaximumSize( d );
 	}
 
-	/**
-	 * Returns true if this zone's content is visible.
-	 */
-	public boolean getContentsVisible() {return showContents;}
-	public void setContentsVisible( boolean b ) {showContents = b; this.repaint();}
 
 	/**
-	 * Returns another zone that toggles visibility when this is clicked, or null.
+	 * Toggles whether this zone's content is visible.
 	 */
-	public ZonePanel getZoneTarget() {return zoneTarget;}
-	public void setZoneTarget( ZonePanel z ) {zoneTarget = z;}
+	public void setContentsVisible( boolean b ) {
+		showContents = b; this.repaint();
+	}
+
+	public boolean getContentsVisible() {
+		return showContents;
+	}
+
 
 	/**
-	 * Returns a UHSNode id to switch to when this is clicked, or -1.
+	 * Sets another zone that toggles visibility when this is clicked, or null.
 	 */
-	public int getLinkTarget() {return linkTarget;}
-	public void setLinkTarget( int n ) {linkTarget = n;}
+	public void setZoneTarget( ZonePanel z ) {
+		zoneTarget = z;
+	}
+
+	public ZonePanel getZoneTarget() {
+		return zoneTarget;
+	}
+
+	/**
+	 * Sets a UHSNode id to switch to when this is clicked, or -1.
+	 */
+	public void setLinkTarget( int n ) {
+		linkTarget = n;
+	}
+
+	public int getLinkTarget() {
+		return linkTarget;
+	}
 
 
 	@Override
