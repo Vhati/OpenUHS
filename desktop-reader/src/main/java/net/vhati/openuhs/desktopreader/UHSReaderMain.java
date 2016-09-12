@@ -242,6 +242,7 @@ public class UHSReaderMain {
 				FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
 				fileAppender.setContext( lc );
 				fileAppender.setFile( new File( "./openuhs-log.txt" ).getAbsolutePath() );
+				fileAppender.setAppend( false );
 				fileAppender.setEncoder( encoder );
 				fileAppender.start();
 
