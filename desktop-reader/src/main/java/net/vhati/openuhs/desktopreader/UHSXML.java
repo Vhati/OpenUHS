@@ -16,7 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.HotSpot;
+import net.vhati.openuhs.core.UHSAudioNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 
 
@@ -75,39 +77,52 @@ public class UHSXML {
 			currentElement.setAttribute( "restriction", "regonly" );
 		}
 
-		int contentType = currentNode.getContentType();
-		String contentTypeString = "";
-		String contentString = "";
-		if ( contentType == UHSNode.STRING ) {
-			contentTypeString = "string";
-			contentString = (String)currentNode.getContent();
+		// Content.
+		if ( currentNode instanceof UHSNode ) {
+			String contentTypeString = "string";
+
+			String contentString = currentNode.getRawStringContent();
+
+			Element contentElement = new Element( "content" );
+				contentElement.setAttribute( "type", contentTypeString );
+				contentElement.setContent( new CDATA( contentString ) );
+				currentElement.addContent( contentElement );
 		}
-		else {
-			if ( contentType == UHSNode.IMAGE ) {
-				contentTypeString = "image";
-			}
-			else if ( contentType == UHSNode.AUDIO ) {
-				contentTypeString = "audio";
-			}
-			else {
-				contentTypeString = "unknown";
-			}
-			String guessedExt = UHSUtil.getFileExtension( (byte[])currentNode.getContent() );
-			contentString = String.format( "%s%d%s.%s", basename, n, (( id == -1 ) ? "" : "_"+id), guessedExt );
+		if ( currentNode instanceof UHSAudioNode ) {
+			UHSAudioNode audioNode = (UHSAudioNode)currentNode;
+			String contentTypeString = "audio";
+			String ext = UHSUtil.getFileExtension( audioNode.getRawAudioContent() );
+
+			String contentString = String.format( "%s%d%s.%s", basename, n, (( id == -1 ) ? "" : "_"+id), ext );
 			n++;
+
+			Element contentElement = new Element( "content" );
+				contentElement.setAttribute( "type", contentTypeString );
+				contentElement.setContent( new CDATA( contentString ) );
+				currentElement.addContent( contentElement );
 		}
-		Element contentElement = new Element( "content" );
-			contentElement.setAttribute( "type", contentTypeString );
-			contentElement.setContent( new CDATA( contentString ) );
-			currentElement.addContent( contentElement );
+		if ( currentNode instanceof UHSImageNode ) {
+			UHSImageNode imageNode = (UHSImageNode)currentNode;
+			String contentTypeString = "image";
+			String ext = UHSUtil.getFileExtension( imageNode.getRawImageContent() );
 
+			String contentString = String.format( "%s%d%s.%s", basename, n, (( id == -1 ) ? "" : "_"+id), ext );
+			n++;
 
+			Element contentElement = new Element( "content" );
+				contentElement.setAttribute( "type", contentTypeString );
+				contentElement.setContent( new CDATA( contentString ) );
+				currentElement.addContent( contentElement );
+		}
+
+		// Children.
 		if ( currentNode instanceof UHSHotSpotNode ) {
-			List<UHSNode> children = currentNode.getChildren();
+			UHSHotSpotNode hotspotNode = (UHSHotSpotNode)currentNode;
+
+			List<UHSNode> children = hotspotNode.getChildren();
 			if ( children != null ) {
-				int childCount = children.size();
-				for ( int i=0; i < childCount; i++ ) {
-					HotSpot spot = ((UHSHotSpotNode)currentNode).getSpot( children.get( i ) );
+				for ( UHSNode tmpNode : children ) {
+					HotSpot spot = hotspotNode.getSpot( tmpNode );
 					Element childElement = new Element( "hotspot-child" );
 						childElement.setAttribute( "zx", spot.zoneX+"" );
 						childElement.setAttribute( "zy", spot.zoneY+"" );
@@ -116,7 +131,7 @@ public class UHSXML {
 						childElement.setAttribute( "px", spot.x+"" );
 						childElement.setAttribute( "py", spot.y+"" );
 						currentElement.addContent( childElement );
-						n = exportNode( childElement, children.get( i ), basename, n );
+						n = exportNode( childElement, tmpNode, basename, n );
 				}
 			}
 		}
@@ -127,10 +142,10 @@ public class UHSXML {
 			List<UHSNode> children = currentNode.getChildren();
 			if ( children != null ) {
 				int childCount = children.size();
-				for ( int i=0; i < childCount; i++ ) {
+				for ( UHSNode tmpNode : children ) {
 					Element childElement = new Element( "child" );
 						currentElement.addContent( childElement );
-						n = exportNode( childElement, children.get( i ), basename, n );
+						n = exportNode( childElement, tmpNode, basename, n );
 				}
 			}
 		}

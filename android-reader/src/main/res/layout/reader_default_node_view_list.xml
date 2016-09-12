@@ -1,0 +1,11 @@
+  <ListView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/defaultNodeViewList"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:listSelector="@android:color/transparent"
+    android:background="@android:color/transparent"
+    android:cacheColorHint="@android:color/transparent"
+    android:divider="#CCCCCC"
+    android:dividerHeight="1dp"
+    android:paddingLeft="2dp">
+  </ListView>

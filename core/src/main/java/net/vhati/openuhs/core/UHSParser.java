@@ -15,8 +15,10 @@ import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.CRC16;
 import net.vhati.openuhs.core.HotSpot;
+import net.vhati.openuhs.core.UHSAudioNode;
 import net.vhati.openuhs.core.UHSBatchNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParseContext;
 import net.vhati.openuhs.core.UHSParseException;
@@ -357,14 +359,14 @@ public class UHSParser {
 	public UHSRootNode parse88Format( UHSParseContext context, String title, int hintSectionEnd ) throws UHSParseException {
 		try {
 			UHSRootNode rootNode = new UHSRootNode();
-				rootNode.setContent( title, UHSNode.STRING );
+				rootNode.setRawStringContent( title );
 			int fudge = 1; // The format's 1-based, the array's 0-based.
 
 			int questionSectionStart = Integer.parseInt( context.getLine( 1 ) ) - fudge;
 
 			for ( int s=0; s < questionSectionStart; s+=2 ) {
 				UHSNode currentSubject = new UHSNode( "Subject" );
-					currentSubject.setContent( decryptString( context.getLine( s ) ), UHSNode.STRING );
+					currentSubject.setRawStringContent( decryptString( context.getLine( s ) ) );
 					rootNode.addChild( currentSubject );
 
 				int firstQuestion = Integer.parseInt( context.getLine( s+1 ) ) - fudge;
@@ -373,7 +375,7 @@ public class UHSParser {
 
 				for ( int q=firstQuestion; q < nextSubjectsFirstQuestion; q+=2 ) {
 					UHSNode currentQuestion = new UHSNode( "Question" );
-						currentQuestion.setContent( decryptString( context.getLine( q ) ) +"?", UHSNode.STRING );
+						currentQuestion.setRawStringContent( decryptString( context.getLine( q ) ) +"?" );
 						currentSubject.addChild( currentQuestion );
 
 					int firstHint = Integer.parseInt( context.getLine( q+1 ) ) - fudge;
@@ -388,22 +390,22 @@ public class UHSParser {
 
 					for ( int h=firstHint; h < lastHint; h++ ) {
 						UHSNode currentHint = new UHSNode( "Hint" );
-							currentHint.setContent( decryptString( context.getLine( h ) ), UHSNode.STRING );
+							currentHint.setRawStringContent( decryptString( context.getLine( h ) ) );
 							currentQuestion.addChild( currentHint );
 					}
 				}
 			}
 			UHSNode blankNode = new UHSNode( "Blank" );
-				blankNode.setContent( "--=File Info=--", UHSNode.STRING );
+				blankNode.setRawStringContent( "--=File Info=--" );
 				rootNode.addChild( blankNode );
 			UHSNode fauxVersionNode = new UHSNode( "Version" );
-				fauxVersionNode.setContent( "Version: 88a", UHSNode.STRING );
+				fauxVersionNode.setRawStringContent( "Version: 88a" );
 				rootNode.addChild( fauxVersionNode );
 				UHSNode fauxVersionDataNode = new UHSNode( "VersionData" );
-					fauxVersionDataNode.setContent( "This version info was added by OpenUHS during parsing because the 88a format does not report it.", UHSNode.STRING );
+					fauxVersionDataNode.setRawStringContent( "This version info was added by OpenUHS during parsing because the 88a format does not report it." );
 					fauxVersionNode.addChild( fauxVersionDataNode );
 			UHSNode creditNode = new UHSNode( "Credit" );
-				creditNode.setContent( "Credits", UHSNode.STRING );
+				creditNode.setRawStringContent( "Credits" );
 				rootNode.addChild( creditNode );
 
 				String breakChar = "^break^";
@@ -414,7 +416,7 @@ public class UHSParser {
 						if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 						tmpContent.append( context.getLine( i ) );
 					}
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					newNode.setStringContentDecorator( new Version88CreditDecorator() );
 					creditNode.addChild( newNode );
 
@@ -481,11 +483,11 @@ public class UHSParser {
 
 		try {
 			UHSRootNode rootNode = new UHSRootNode();
-				rootNode.setContent( "root", UHSNode.STRING );
+				rootNode.setRawStringContent( "Root" );
 			context.setRootNode( rootNode );
 
-			String name = context.getLine( 2 ); // This is the title of the master subject node
-			int[] key = generate9xKey( name );
+			String title = context.getLine( 2 ); // This is the title of the master subject node
+			int[] key = generate9xKey( title );
 			context.setKey( key );
 
 			int index = 1;
@@ -495,10 +497,11 @@ public class UHSParser {
 				if ( auxStyle == AUX_NEST ) {
 					UHSNode tmpChildNode = rootNode.getChild( 0 );
 						rootNode.setChildren( tmpChildNode.getChildren() );
-						rootNode.setContent( name, UHSNode.STRING );
+						rootNode.setRawStringContent( title );
+						rootNode.setStringContentDecorator( new Version9xTitleDecorator() );
 
 					UHSNode blankNode = new UHSNode( "Blank" );
-						blankNode.setContent( "--=File Info=--", UHSNode.STRING );
+						blankNode.setRawStringContent( "--=File Info=--" );
 						rootNode.addChild( blankNode );
 				}
 				while ( context.hasLine( index ) ) {
@@ -529,7 +532,7 @@ public class UHSParser {
 		int index = startIndex;
 
 		String tmp = context.getLine( index );
-		if ( tmp.matches( "[0-9]+ [A-Za-z]+$" ) == true ) {
+		if ( tmp.matches( "[0-9]+ [A-Za-z]+$" ) ) {
 			if (tmp.endsWith( " comment" )) {
 				index += parseCommentNode( context, currentNode, index );
 			}
@@ -609,7 +612,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode newNode = new UHSNode( "Subject" );
-			newNode.setContent( context.getLine( index ), UHSNode.STRING );
+			newNode.setRawStringContent( context.getLine( index ) );
 			newNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			newNode.setId( startIndex );
 			currentNode.addChild( newNode );
@@ -684,7 +687,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSBatchNode hintNode = new UHSBatchNode( "NestHint" );
-			hintNode.setContent( context.getLine( index ), UHSNode.STRING );
+			hintNode.setRawStringContent( context.getLine( index ) );
 			hintNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			hintNode.setId( startIndex );
 			currentNode.addChild( hintNode );
@@ -701,7 +704,7 @@ public class UHSParser {
 			if ( tmp.equals( "-" ) ) {
 				// A hint, add pending content
 				if ( tmpContent.length() > 0 ) {
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					newNode.setStringContentDecorator( new Version9xHintDecorator() );
 					hintNode.addChild( newNode );
 					hintNode.setAddon( newNode, !firstInBatch );
@@ -714,7 +717,7 @@ public class UHSParser {
 			else if ( tmp.equals( "=" ) ) {
 				// Nested hunk, add pending content
 				if ( tmpContent.length() > 0 ) {
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					newNode.setStringContentDecorator( new Version9xHintDecorator() );
 					hintNode.addChild( newNode );
 					hintNode.setAddon( newNode, !firstInBatch );
@@ -743,7 +746,7 @@ public class UHSParser {
 			}
 
 			if ( j == innerCount-1 && tmpContent.length() > 0 ) {
-				newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+				newNode.setRawStringContent( tmpContent.toString() );
 				newNode.setStringContentDecorator( new Version9xHintDecorator() );
 				hintNode.addChild( newNode );
 				hintNode.setAddon( newNode, !firstInBatch );
@@ -783,7 +786,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1 - 1;
 
 		UHSNode hintNode = new UHSNode( "Hint" );
-			hintNode.setContent( context.getLine( index ), UHSNode.STRING );
+			hintNode.setRawStringContent( context.getLine( index ) );
 			hintNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			hintNode.setId( startIndex );
 			currentNode.addChild( hintNode );
@@ -797,7 +800,7 @@ public class UHSParser {
 			tmp = context.getLine( index+j );
 			if ( tmp.equals( "-" ) ) {
 				if ( tmpContent.length() > 0 ) {
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					newNode.setStringContentDecorator( new Version9xHintDecorator() );
 					hintNode.addChild( newNode );
 					newNode = new UHSNode( "HintData" );
@@ -812,7 +815,7 @@ public class UHSParser {
 			}
 
 			if ( j == innerCount-1 && tmpContent.length() > 0 ) {
-				newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+				newNode.setRawStringContent( tmpContent.toString() );
 				newNode.setStringContentDecorator( new Version9xHintDecorator() );
 				hintNode.addChild( newNode );
 			}
@@ -849,7 +852,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode commentNode = new UHSNode( "Comment" );
-			commentNode.setContent( context.getLine( index ), UHSNode.STRING );
+			commentNode.setRawStringContent( context.getLine( index ) );
 			commentNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			commentNode.setId( startIndex );
 			currentNode.addChild( commentNode );
@@ -864,7 +867,7 @@ public class UHSParser {
 			if (tmpContent.length() > 0) tmpContent.append( breakChar );
 			tmpContent.append( context.getLine( index+j ) );
 		}
-		newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+		newNode.setRawStringContent( tmpContent.toString() );
 		newNode.setStringContentDecorator( new Version9xCommentDecorator() );
 		commentNode.addChild( newNode );
 
@@ -899,7 +902,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode creditNode = new UHSNode( "Credit" );
-			creditNode.setContent( context.getLine( index ), UHSNode.STRING );
+			creditNode.setRawStringContent( context.getLine( index ) );
 			creditNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			creditNode.setId( startIndex );
 			currentNode.addChild( creditNode );
@@ -914,7 +917,7 @@ public class UHSParser {
 			if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 			tmpContent.append( context.getLine( index+j ) );
 		}
-		newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+		newNode.setRawStringContent( tmpContent.toString() );
 		newNode.setStringContentDecorator( new Version9xCreditDecorator() );
 		creditNode.addChild( newNode );
 
@@ -953,7 +956,7 @@ public class UHSParser {
 
 		tmp ="";
 		UHSNode textNode = new UHSNode( "Text" );
-			textNode.setContent( context.getLine( index ), UHSNode.STRING );
+			textNode.setRawStringContent( context.getLine( index ) );
 			textNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			textNode.setId( startIndex );
 			currentNode.addChild( textNode );
@@ -982,7 +985,7 @@ public class UHSParser {
 			if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 			tmpContent.append( decryptTextHunk( lines[i], context.getKey() ) );
 		}
-		newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+		newNode.setRawStringContent( tmpContent.toString() );
 		newNode.setStringContentDecorator( new Version9xTextDecorator() );
 		textNode.addChild( newNode );
 
@@ -1014,7 +1017,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode newNode = new UHSNode( "Link" );
-			newNode.setContent( context.getLine( index ), UHSNode.STRING );
+			newNode.setRawStringContent( context.getLine( index ) );
 			newNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			newNode.setId( startIndex );
 			currentNode.addChild( newNode );
@@ -1082,13 +1085,9 @@ public class UHSParser {
 	 * because their initial line is the region coords, and the
 	 * node type comes second.</p>
 	 *
-	 * <p>As of OpenUHS 0.7.0, "Overlay" UHSNodes contain title text, and their
-	 * "OverlayData" child contains the image. Previous versions discarded the
-	 * title and stored the image in the "Overlay" node itself.</p>
-	 *
-	 * <p>TODO: Nested HyperImgs aren't expected to recurse further
-	 * with additional nested nodes. It is unknown whether such children would
-	 * need their ids would be doubly skewed.</p>
+	 * <p>TODO: Nested HyperImages aren't expected to recurse further
+	 * with additional nested HiperImage nodes. It is unknown whether such children
+	 * would need their ids would be doubly skewed.</p>
 	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 7, the Stone Altar, Can you give me a picture of the solution?</li>
@@ -1113,65 +1112,51 @@ public class UHSParser {
 		byte[] tmpBytes = null;
 		int x = 0;
 		int y = 0;
-		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( "HotSpot" );  // This may or may not get used
-
 		String tmp = context.getLine( index );
 		index++;
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
-		String type = "";
+		String mainType = null;  // It has to be one of these or the method wouldn't have been called.
 		if ( tmp.indexOf( "hyperpng" ) != -1 ) {
-			type = "Hyperpng";
-		} else if ( tmp.indexOf( "gifa" ) != -1 ) {
-			type = "Hypergif";
+			mainType = "Hyperpng";
+		}
+		else if ( tmp.indexOf( "gifa" ) != -1 ) {
+			mainType = "Hypergif";
 		}
 
-		UHSNode imgNode = new UHSNode( type );
-		String title = context.getLine( index );
+		String mainTitle = context.getLine( index );
 		index++;
 		innerCount--;
 
-		int mainImgIndex = index;  // Yeah, the number triplet gets an id. Weird.
-		tokens = (context.getLine( index )).split( " " );
+		int mainImageIndex = index;  // Yeah, the number triplet gets an id. Weird.
+		tokens = context.getLine( index ).split( " " );
 		index++;
 		innerCount--;
 		if ( tokens.length != 3 ) {
 			logger.error( "Unable to parse HyperImage's offset/length (last parsed line: {})", context.getLastParsedLineNumber() );
 			return innerCount+3;
 		}
-		// Skip dummy zeroes
+		// Skip dummy zeroes.
 		offset = Long.parseLong( tokens[1] ) - context.getBinaryHunkOffset();
 		length = Integer.parseInt( tokens[2] );
 
 		tmpBytes = context.readBinaryHunk( offset, length );
 		if ( tmpBytes == null ) {
-			// This error would be at index-1, if not for context.getLine()'s memory.
 			logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
 		}
-		imgNode.setContent( tmpBytes, UHSNode.IMAGE );
 
-		// This if-else would make regionless HyperImages standalone and unnested
-		//if ( innerCount+3 > 3 ) {
-			imgNode.setId( mainImgIndex );
-			hotspotNode.addChild( imgNode );
-			context.getRootNode().addLink( imgNode );
-
-			hotspotNode.setContent( title, UHSNode.STRING );
-			hotspotNode.setId( startIndex );
+		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( mainType );
+			hotspotNode.setRawStringContent( mainTitle );
+			hotspotNode.setRawImageContent( tmpBytes );
+			hotspotNode.setId( startIndex );  // TODO: id = mainImageIndex and/or startIndex?
 			currentNode.addChild( hotspotNode );
 			context.getRootNode().addLink( hotspotNode );
-		//} else {
-		//  imgNode.setId( startIndex );
-		//  currentNode.addChild( imgNode );
-		//  rootNode.addLink( imgNode );
-		//}
-
 
 		for ( int j=0; j < innerCount; ) {
 			// Nested ids in HyperImage point to the zone line. Node type is at (zone line)+1.
 			int nestedIndex = index+j;
 
-			tokens = (context.getLine( index+j )).split( " " );
+			tokens = context.getLine( index+j ).split( " " );
 			j++;
 			if ( tokens.length != 4 ) {
 				logger.error( "Unable to parse HyperImage's zone coordinates (last parsed line: {})", context.getLastParsedLineNumber() );
@@ -1187,7 +1172,7 @@ public class UHSParser {
 			if ( tmp.matches( "[0-9]+ [A-Za-z]+$" ) ) {
 				int innerInnerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 				if ( tmp.endsWith( " overlay" ) ) {
-					title = context.getLine( index+j );
+					String overlayTitle = context.getLine( index+j );
 					j++;
 					tokens = ( context.getLine( index+j ) ).split( " " );
 					j++;
@@ -1196,7 +1181,7 @@ public class UHSParser {
 						logger.error( "Unable to parse Overlay's offset/length/x/y (last parsed line: {})", context.getLastParsedLineNumber() );
 						return innerCount+3;
 					}
-					// Skip dummy zeroes
+					// Skip dummy zeroes.
 					offset = Long.parseLong( tokens[1] ) - context.getBinaryHunkOffset();
 					length = Integer.parseInt( tokens[2] );
 					int posX = Integer.parseInt( tokens[3] )-1;
@@ -1204,24 +1189,19 @@ public class UHSParser {
 
 					tmpBytes = context.readBinaryHunk( offset, length );
 					if ( tmpBytes == null ) {
-						// This error would be at index+j-1, if not for context.getLine()'s memory.
 						logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
 					}
-					UHSNode overlayNode = new UHSNode( "Overlay" );
-						overlayNode.setContent( title, UHSNode.STRING );
+					UHSImageNode overlayNode = new UHSImageNode( "Overlay" );
+						overlayNode.setRawStringContent( overlayTitle );
+						overlayNode.setRawImageContent( tmpBytes );
 						overlayNode.setId( nestedIndex );
 						hotspotNode.addChild( overlayNode );
 						context.getRootNode().addLink( overlayNode );
 						hotspotNode.setSpot( overlayNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY ) );
-
-					// With a title, reader's NodePanel will need to look two children deep.
-					UHSNode newNode = new UHSNode( "OverlayData" );
-					newNode.setContent( tmpBytes, UHSNode.IMAGE );
-					overlayNode.addChild( newNode );
 				}
 				else if ( tmp.endsWith( " link" ) || tmp.endsWith( " hyperpng" ) || tmp.endsWith( " text" ) || tmp.endsWith( " hint" ) ) {
 					int childrenBefore = hotspotNode.getChildCount();
-					j--;  // Back up to the hunk type line
+					j--;  // Back up to the hunk type line.
 					j += buildNodes( context, hotspotNode, index+j );
 					if ( hotspotNode.getChildCount() == childrenBefore+1 ) {
 						UHSNode newNode = hotspotNode.getChild( hotspotNode.getChildCount()-1 );
@@ -1237,7 +1217,7 @@ public class UHSParser {
 					}
 				}
 				else {
-					logger.error( "Unknown Hunk in HyperImage: {} (last parsed line {})", tmp, context.getLastParsedLineNumber() );
+					logger.error( "Unexpected hunk in HyperImage: {} (last parsed line {})", tmp, context.getLastParsedLineNumber() );
 					j += innerInnerCount-1;
 				}
 			} else {j++;}
@@ -1280,8 +1260,8 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		tmp ="";
-		UHSNode soundNode = new UHSNode( "Sound" );
-			soundNode.setContent( context.getLine( index ), UHSNode.STRING );
+		UHSAudioNode soundNode = new UHSAudioNode( "Sound" );
+			soundNode.setRawStringContent( context.getLine( index ) );
 			soundNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			soundNode.setId( startIndex );
 			currentNode.addChild( soundNode );
@@ -1293,16 +1273,13 @@ public class UHSParser {
 		long offset = Long.parseLong( tmp.substring( tmp.indexOf( " " )+1, tmp.lastIndexOf( " " ) ) ) - context.getBinaryHunkOffset();
 		int length = Integer.parseInt( tmp.substring( tmp.lastIndexOf( " " )+1, tmp.length() ) );
 
-		UHSNode newNode = new UHSNode( "SoundData" );
-
 		byte[] tmpBytes = context.readBinaryHunk( offset, length );
 		if ( tmpBytes == null ) {
 			// This error would be at index-1, if not for context.getLine()'s memory.
 			logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
 		}
 
-		newNode.setContent( tmpBytes, UHSNode.AUDIO );
-		soundNode.addChild( newNode );
+		soundNode.setRawAudioContent( tmpBytes );
 
 		return index-startIndex;
 	}
@@ -1330,7 +1307,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode newNode = new UHSNode( "Blank" );
-			newNode.setContent( "^^^", UHSNode.STRING );
+			newNode.setRawStringContent( "^^^" );
 			newNode.setId( startIndex );
 			currentNode.addChild( newNode );
 			context.getRootNode().addLink( newNode );
@@ -1379,7 +1356,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode versionNode = new UHSNode( "Version" );
-			versionNode.setContent( "Version: "+ context.getLine( index ), UHSNode.STRING );
+			versionNode.setRawStringContent( "Version: "+ context.getLine( index ) );
 			versionNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			versionNode.setId( startIndex );
 			currentNode.addChild( versionNode );
@@ -1394,7 +1371,7 @@ public class UHSParser {
 			if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 			tmpContent.append( context.getLine( index+j ) );
 		}
-		newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+		newNode.setRawStringContent( tmpContent.toString() );
 		newNode.setStringContentDecorator( new Version9xVersionDecorator() );
 		versionNode.addChild( newNode );
 
@@ -1438,7 +1415,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode infoNode = new UHSNode( "Info" );
-			infoNode.setContent( "Info: "+ context.getLine( index ), UHSNode.STRING );
+			infoNode.setRawStringContent( "Info: "+ context.getLine( index ) );
 			infoNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			infoNode.setId( startIndex );
 			currentNode.addChild( infoNode );
@@ -1457,7 +1434,7 @@ public class UHSParser {
 				tmpContent.append( tmp );
 			}
 
-			newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+			newNode.setRawStringContent( tmpContent.toString() );
 			newNode.setStringContentDecorator( new Version9xInfoDecorator() );
 			infoNode.addChild( newNode );
 		}
@@ -1506,7 +1483,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode incentiveNode = new UHSNode( "Incentive" );
-			incentiveNode.setContent( "Incentive: "+ context.getLine( index ), UHSNode.STRING );
+			incentiveNode.setRawStringContent( "Incentive: "+ context.getLine( index ) );
 			incentiveNode.setId( startIndex );
 			currentNode.addChild( incentiveNode );
 			context.getRootNode().addLink( incentiveNode );
@@ -1517,7 +1494,7 @@ public class UHSParser {
 			tmp = decryptNestString( context.getLine( index ), context.getKey() );
 			index++;
 			UHSNode newNode = new UHSNode( "IncentiveData" );
-				newNode.setContent( tmp, UHSNode.STRING );
+				newNode.setRawStringContent( tmp );
 				incentiveNode.addChild( newNode );
 
 			applyRestrictions( context.getRootNode(), tmp );
@@ -1571,7 +1548,7 @@ public class UHSParser {
 		logger.warn( "Unknown hunk: {} (last parsed line: {})", tmp, context.getLastParsedLineNumber() );
 
 		UHSNode newNode = new UHSNode( "Unknown" );
-			newNode.setContent( "^UNKNOWN HUNK^", UHSNode.STRING );
+			newNode.setRawStringContent( "^UNKNOWN HUNK^" );
 			currentNode.addChild( newNode );
 
 		index += innerCount;

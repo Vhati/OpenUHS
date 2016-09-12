@@ -1,22 +1,19 @@
-package net.vhati.openuhs.desktopreader.reader;
+package net.vhati.openuhs.androidreader.reader;
 
+import android.content.Context;
+import android.widget.FrameLayout;
+
+import net.vhati.openuhs.androidreader.reader.UHSReaderNavCtrl;
 import net.vhati.openuhs.core.UHSNode;
-import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
-import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
 
 
-/**
- * A reusable panel that represents a UHSNode.
- *
- * @see net.vhati.openuhs.core.UHSNode
- */
-public abstract class NodePanel extends JScrollablePanel {
-
+public abstract class NodeView extends FrameLayout {
 	private UHSNode node = null;
 	private UHSReaderNavCtrl navCtrl = null;
 
 
-	public NodePanel() {
+	public NodeView( Context context ) {
+		super( context );
 	}
 
 
@@ -58,7 +55,7 @@ public abstract class NodePanel extends JScrollablePanel {
 	 * <p>Subclasses should override this and call super.reset() late.</p>
 	 */
 	public void reset() {
-		this.node = null;
+		node = null;
 	}
 
 

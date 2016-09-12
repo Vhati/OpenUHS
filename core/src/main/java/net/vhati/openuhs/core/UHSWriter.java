@@ -25,7 +25,12 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.HotSpot;
+import net.vhati.openuhs.core.UHSAudioNode;
 import net.vhati.openuhs.core.UHSGenerationException;
+import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSImageNode;
+import net.vhati.openuhs.core.UHSNode;
 
 
 /**
@@ -177,43 +182,38 @@ public class UHSWriter {
 	public boolean isValid88Format( UHSRootNode rootNode ) {
 		boolean hasCredit = false;
 
-		if ( rootNode.getContentType() != UHSNode.STRING ) return false;
 		if ( !rootNode.isGroup() ) return false;
 
 		List<UHSNode> levelOne = rootNode.getChildren();
 		for ( int o=0; o < levelOne.size(); o++ ) {
-			UHSNode oNode = levelOne.get(o);
+			UHSNode oNode = levelOne.get( o );
 			String oType = oNode.getType();
-			if ( oType.equals("Subject") ) {
-				if ( oNode.getContentType() != UHSNode.STRING ) return false;
+			if ( "Subject".equals( oType ) ) {
 				if ( !oNode.isGroup() ) return false;
 
 				// Check Question nodes
 				List<UHSNode> levelTwo = oNode.getChildren();
 				for ( int t=0; t < levelTwo.size(); t++ ) {
 					UHSNode tNode = levelTwo.get(t);
-					if ( tNode.getContentType() != UHSNode.STRING ) return false;
 					if ( !tNode.isGroup() ) return false;
 
 					// Check Hint nodes
 					List<UHSNode> levelThree = tNode.getChildren();
 					for ( int r=0; r < levelThree.size(); r++ ) {
 						UHSNode rNode = levelThree.get( r );
-						if ( rNode.getContentType() != UHSNode.STRING ) return false;
 						if ( rNode.isGroup() ) return false;
 					}
 				}
 			}
-			else if (oType.equals( "Blank" )) {
+			else if ( "Blank".equals( oType ) ) {
 			}
-			else if (oType.equals( "Version" )) {
+			else if ( "Version".equals( oType ) ) {
 			}
-			else if (oType.equals( "Credit" )) {
+			else if ( "Credit".equals( oType ) ) {
 				if ( hasCredit ) return false;
 				hasCredit = true;
 				if ( oNode.getChildCount() != 1 ) return false;
 				// Check CreditData node
-				if ( oNode.getChild( 0 ).getContentType() != UHSNode.STRING ) return false;
 				if ( oNode.getChild( 0 ).isGroup() ) return false;
 			}
 			else return false;
@@ -241,7 +241,7 @@ public class UHSWriter {
 		StringBuffer buf = new StringBuffer();
 
 		String tmp = null;
-		List<UHSNode> subjectNodes = rootNode.getChildren( "Subject" );
+		List<UHSNode> subjectNodes = rootNode.getChildren( "Subject", UHSNode.class );
 		List<UHSNode> questionNodes = new ArrayList<UHSNode>();
 		List<UHSNode> hintNodes = new ArrayList<UHSNode>();
 		for ( int s=0; s < subjectNodes.size(); s++ ) {
@@ -296,8 +296,9 @@ public class UHSWriter {
 			buf.append( tmp ).append( "\r\n" );
 		}
 
-		UHSNode creditNode = rootNode.getChildren( "Credit" ).get( 0 );
-		tmp = ( String )creditNode.getChild( 0 ).getContent();
+		// TODO: Check for nulls.
+		UHSNode creditNode = rootNode.getFirstChild( "Credit", UHSNode.class );
+		tmp = creditNode.getFirstChild( "CreditData", UHSNode.class ).getRawStringContent();
 		tmp = tmp.replaceAll( "\\^break\\^", "\r\n" );
 		if ( tmp.length() > 0 ) buf.append( tmp ).append( "\r\n" );
 
@@ -382,7 +383,6 @@ public class UHSWriter {
 	 */
 	private void getLinesAndBinData( UHSNode currentNode, UHS9xInfo info, StringBuffer parentBuf ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		String type = currentNode.getType();
-		boolean hasTitle = false;
 
 		if ( info.phase == 1 ) {
 			if ( currentNode.getId() != -1 ) {  // Associate id with current line
@@ -391,6 +391,9 @@ public class UHSWriter {
 		}
 
 		if ( "Root".equals( type ) ) {
+			if ( currentNode instanceof UHSRootNode == false ) return;
+			UHSRootNode rootNode = (UHSRootNode)currentNode;
+
 			String fakeTitle = "Important Message!";
 
 			String fakeSubject = "Important!";
@@ -458,11 +461,14 @@ public class UHSWriter {
 			// Act like a Subject node.
 			StringBuffer sBuf = new StringBuffer();
 			sBuf.append( /* lineCount */ " subject" ).append( "\r\n" );
-			sBuf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			sBuf.append( getEncryptedText( rootNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+
+			// TODO: Deal with aux nodes. =/
 
 			if ( info.phase == 1 ) info.line += 2;  // Children will increment further.
 
-			for ( UHSNode tmpNode : currentNode.getChildren() ) {
+			for ( int i=0; i < rootNode.getChildCount(); i++ ) {
+				UHSNode tmpNode = rootNode.getChild( i );
 				getLinesAndBinData( tmpNode, info, sBuf );  // Recurse.
 			}
 
@@ -474,15 +480,17 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Link".equals( type ) ) {  // lines: 3
+			UHSNode linkNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " link" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( linkNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) {
 				// Can't resolve a link target's line number yet.
 			}
 			else if ( info.phase == 2 ) {
-				int targetLine = info.getLine( currentNode.getLinkTarget() );
+				int targetLine = info.getLine( linkNode.getLinkTarget() );
 				buf.append( targetLine );
 			}
 			buf.append( "\r\n" );
@@ -496,13 +504,15 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Text".equals( type ) ) {  // lines: 3
+			UHSNode textNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " text" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( textNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
-			UHSNode tmpNode = currentNode.getFirstChild( "TextData" );
-			if ( tmpNode == null ) {/* Throw an error */}
-			byte[] tmpBytes = encodeAsciiBytes( getEncryptedText( tmpNode, info, ENCRYPT_TEXT ) );
+			UHSNode dataNode = textNode.getFirstChild( "TextData", UHSNode.class );
+			if ( dataNode == null ) {/* Throw an error */}
+			byte[] tmpBytes = encodeAsciiBytes( getEncryptedText( dataNode, info, ENCRYPT_TEXT ) );
 
 			if ( info.phase == 1 ) {
 				info.registerBinarySection( tmpBytes.length );
@@ -525,13 +535,14 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Sound".equals( type ) ) {  // lines: 3
+			if ( currentNode instanceof UHSAudioNode == false ) return;
+			UHSAudioNode soundNode = (UHSAudioNode)currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " sound" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( soundNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
-			UHSNode tmpNode = currentNode.getFirstChild( "SoundData" );
-			if ( tmpNode == null ) {/* Throw an error */}
-			byte[] tmpBytes = (byte[])currentNode.getContent();
+			byte[] tmpBytes = soundNode.getRawAudioContent();
 
 			if ( info.phase == 1 ) {
 				info.registerBinarySection( tmpBytes.length );
@@ -554,7 +565,11 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Blank".equals( type ) ) {  // lines: 2
-			if ( "--=File Info=--".equals( currentNode.getContent() ) ) return;  // Meta: nested info node.
+			UHSNode blankNode = currentNode;
+
+			if ( "--=File Info=--".equals( blankNode.getRawStringContent() ) ) {
+				return;  // Meta: nested info node.
+			}
 
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " blank" ).append( "\r\n" );
@@ -569,13 +584,16 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Subject".equals( type ) ) {  // lines: 2 + various children's lines
+			UHSNode subjectNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " subject" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( subjectNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) info.line += 2;  // Children will increment further.
 
-			for ( UHSNode tmpNode : currentNode.getChildren() ) {
+			for ( int i=0; i < subjectNode.getChildCount(); i++ ) {
+				UHSNode tmpNode = subjectNode.getChild( i );
 				getLinesAndBinData( tmpNode, info, buf );  // Recurse.
 			}
 
@@ -585,14 +603,16 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Comment".equals( type ) ) {  // lines: 2 + content lines
+			UHSNode commentNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " comment" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( commentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
-			UHSNode tmpNode = currentNode.getFirstChild( "CommentData" );
-			if ( tmpNode == null ) {/* Throw an error */}
+			UHSNode dataNode = commentNode.getFirstChild( "CommentData", UHSNode.class );
+			if ( dataNode == null ) {/* Throw an error */}
 
-			buf.append( getEncryptedText( tmpNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) {
 				info.line += crlfCount( buf.toString() );
@@ -603,14 +623,16 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Credit".equals( type ) ) {  // lines: 2 + content lines
+			UHSNode creditNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " credit" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( creditNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
-			UHSNode tmpNode = currentNode.getFirstChild( "CreditData" );
-			if ( tmpNode == null ) {/* Throw an error */}
+			UHSNode dataNode = creditNode.getFirstChild( "CreditData", UHSNode.class );
+			if ( dataNode == null ) {/* Throw an error */}
 
-			buf.append( getEncryptedText( tmpNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) {
 				info.line += crlfCount( buf.toString() );
@@ -621,14 +643,16 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Version".equals( type ) ) {  // lines: 2 + content lines
+			UHSNode versionNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " version" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( versionNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
-			UHSNode tmpNode = currentNode.getFirstChild( "VersionData" );
-			if ( tmpNode == null ) {/* Throw an error */}
+			UHSNode dataNode = versionNode.getFirstChild( "VersionData", UHSNode.class );
+			if ( dataNode == null ) {/* Throw an error */}
 
-			buf.append( getEncryptedText( tmpNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) {
 				info.line += crlfCount( buf.toString() );
@@ -639,14 +663,16 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Info".equals( type ) ) {  // lines: 2 + content lines
+			UHSNode infoNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " info" ).append( "\r\n" );
 			buf.append( "-" ).append( "\r\n" );
 
-			UHSNode tmpNode = currentNode.getFirstChild( "InfoData" );
-			if ( tmpNode == null ) {/* Throw an error */}
+			UHSNode dataNode = infoNode.getFirstChild( "InfoData", UHSNode.class );
+			if ( dataNode == null ) {/* Throw an error */}
 
-			buf.append( getEncryptedText( tmpNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) {
 				info.line += crlfCount( buf.toString() );
@@ -657,14 +683,16 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Incentive".equals( type ) ) {  // lines: 2 + content lines
+			UHSNode incentiveNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " incentive" ).append( "\r\n" );
 			buf.append( "-" ).append( "\r\n" );
 
-			UHSNode tmpNode = currentNode.getFirstChild( "IncentiveData" );
-			if ( tmpNode == null ) {/* Throw an error */}
+			UHSNode dataNode = incentiveNode.getFirstChild( "IncentiveData", UHSNode.class );
+			if ( dataNode == null ) {/* Throw an error */}
 
-			buf.append( getEncryptedText( tmpNode, info, ENCRYPT_NEST ) ).append( "\r\n" );
+			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NEST ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) {
 				info.line += crlfCount( buf.toString() );
@@ -675,16 +703,18 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "Hint".equals( type ) ) {  // TODO?  // lines: 2 + children's content lines + (N children)-1 dividers
+			UHSNode hintNode = currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " hint" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( hintNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			boolean first = true;
-			for ( UHSNode tmpNode : currentNode.getChildren( "HintData" ) ) {
+			for ( UHSNode stringNode : hintNode.getChildren( "HintData", UHSNode.class ) ) {
 				if ( !first ) {
 					buf.append( "-" ).append( "\r\n" );  // Divider between successive children.
 				}
-				String encryptedChildContent = getEncryptedText( tmpNode, info, ENCRYPT_HINT );
+				String encryptedChildContent = getEncryptedText( stringNode, info, ENCRYPT_HINT );
 
 				buf.append( encryptedChildContent ).append( "\r\n" );
 
@@ -700,17 +730,22 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "NestHint".equals( type ) ) {  // TODO?  // lines: 2 + ugh
+			if ( currentNode instanceof UHSBatchNode == false ) return;
+			UHSBatchNode nestNode = (UHSBatchNode)currentNode;
+
 			StringBuffer buf = new StringBuffer();
 			buf.append( /* lineCount */ " nesthint" ).append( "\r\n" );
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( nestNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) info.line += 2;  // Children will increment further.
 
-			// TODO: Use ((UHSBatchNode)currentNode).isAddon().
+			// TODO: Use nestNode.isAddon().
 			// TODO: Insert empty "-" dividers when a non-HintData thinks it's not an addon.
 			boolean first = true;
-			for ( UHSNode tmpNode : currentNode.getChildren() ) {
-				if ( tmpNode.getType().equals( "HintData" ) ) {
+			for ( int i=9; i < nestNode.getChildCount(); i++ ) {
+				UHSNode tmpNode = nestNode.getChild( i );
+
+				if ( "HintData".equals( tmpNode.getType() ) ) {
 					if ( !first ) {
 						buf.append( "-" ).append( "\r\n" );
 						if ( info.phase == 1 ) info.line += 1;  // "-" divider
@@ -737,32 +772,32 @@ public class UHSWriter {
 			parentBuf.append( buf );
 		}
 		else if ( "HotSpot".equals( type ) ) {  // TODO?  // lines: 2 + 1 + ugh
+			if ( currentNode instanceof UHSHotSpotNode == false ) return;
+			UHSHotSpotNode hotspotNode = (UHSHotSpotNode)currentNode;
+
 			StringBuffer buf = new StringBuffer();
-			// Current node has the title, and first child has the main image.
+			// Current node has the title AND the main image.
 
 			buf.append( " " );
-			if ( "Hyperpng".equals( currentNode.getChild( 0 ).getType() ) ) {
+			if ( "Hyperpng".equals( hotspotNode.getType() ) ) {
 				buf.append( "hyperpng" );
 			}
-			else if ( "Hypergif".equals( currentNode.getChild( 0 ).getType() ) ) {
+			else if ( "Hypergif".equals( hotspotNode.getType() ) ) {
 				buf.append( "gifa" );
 			}
 			else {
-				throw new UHSGenerationException( String.format( "Unexpected %s child of HotSpot node", currentNode.getChild( 0 ).getType() ) );
+				throw new UHSGenerationException( String.format( "Unexpected %s child of HotSpot node", hotspotNode.getType() ) );
 			}
 			buf.append( "\r\n" );
 
-			buf.append( getEncryptedText( currentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
+			buf.append( getEncryptedText( hotspotNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
 
 			if ( info.phase == 1 ) info.line += 2;  // Chunk name and title.
 
-			byte[] mainImageBytes = (byte[])(currentNode.getChild( 0 ).getContent());
+			byte[] mainImageBytes = hotspotNode.getRawImageContent();
 
 			if ( info.phase == 1 ) {
-				// Main images also get an id here, on the binary hunk reference line.
-				if ( currentNode.getChild( 0 ).getId() != -1 ) {
-					info.putLine( currentNode.getChild( 0 ).getId(), info.line );
-				}
+				// TODO: main id vs main image id? Possibly register the other id here?
 
 				info.registerBinarySection( mainImageBytes.length );
 			}
@@ -777,14 +812,10 @@ public class UHSWriter {
 
 			if ( info.phase == 1 ) info.line += 1;  // The binary hunk reference.
 
-			boolean first = true;
-			for ( UHSNode tmpNode : currentNode.getChildren() ) {
-				if ( first ) {  // Skip the main image child, already handled.
-					first = false;
-					continue;
-				}
+			for ( int i=0; i < hotspotNode.getChildCount(); i++ ) {
+				UHSNode tmpNode = hotspotNode.getChild( i );
 
-				HotSpot spot = ((UHSHotSpotNode)currentNode).getSpot( tmpNode );
+				HotSpot spot = hotspotNode.getSpot( tmpNode );
 				buf.append( spot.zoneX ).append( " " ).append( spot.zoneY ).append( " " );
 				buf.append( spot.zoneX+spot.zoneW ).append( spot.zoneY+spot.zoneH ).append( "\r\n" );
 
@@ -793,14 +824,16 @@ public class UHSWriter {
 				if ( "Overlay".equals( tmpNode.getType() ) ) {  // lines: 3 (Technically it was preceeded by a zone in HyperImage.)
 					// Overlays need the zone's x/y, so don't recurse.
 
-					if ( info.phase == 1 && tmpNode.getId() != -1 ) {
-						info.putLine( tmpNode.getId(), info.line-1 );  // Fudge the line map to point to zone.
+					if ( tmpNode instanceof UHSImageNode == false ) {/* Throw an error */}
+					UHSImageNode overlayNode = (UHSImageNode)tmpNode;
+
+					if ( info.phase == 1 && overlayNode.getId() != -1 ) {
+						info.putLine( overlayNode.getId(), info.line-1 );  // Fudge the line map to point to zone.
 					}
 
-					String overlayTitle = (String)tmpNode.getContent();
+					String overlayTitle = overlayNode.getRawStringContent();
 
-					UHSNode overlayImageNode = tmpNode.getFirstChild( "OverlayData" );
-					byte[] overlayImageBytes = (byte[])overlayImageNode.getContent();
+					byte[] overlayImageBytes = overlayNode.getRawImageContent();
 
 					StringBuffer oBuf = new StringBuffer();
 					oBuf.append( /* lineCount */ " overlay" ).append( "\r\n" );
@@ -877,9 +910,8 @@ public class UHSWriter {
 	 * <p>Linebreaks will be converted from "^break^" to "\r\n".</p>
 	 */
 	private String getEncryptedText( UHSNode currentNode, UHS9xInfo info, int encryption ) throws UHSGenerationException {
-		if ( currentNode.getContentType() != UHSNode.STRING ) return null;  // !?
 
-		String tmpString = (String)currentNode.getContent();
+		String tmpString = currentNode.getRawStringContent();
 		tmpString = tmpString.replaceAll( "\\^break\\^", "\r\n" );
 		if ( encryption == ENCRYPT_HINT ) {
 			tmpString = encryptString( tmpString );
@@ -935,6 +967,8 @@ public class UHSWriter {
 	 * <li><b>#h+</b> through <b>#h-</b> is a hyperlink (http or email).</li>
 	 * </ul></p>
 	 *
+	 * <p>TODO: Translate between decorated strings.</p>
+	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)</li>
 	 * </ul></p>
@@ -944,8 +978,6 @@ public class UHSWriter {
 	 * @return an escaped string, or null if the content wasn't text
 	 */
 	public String escapeText( UHSNode currentNode, boolean plain ) {
-		if ( currentNode.getContentType() != UHSNode.STRING ) return null;
-
 		CharsetEncoder asciiEncoder = Charset.forName( "US-ASCII" ).newEncoder();
 
 		String accentPrefix = "#a+";
@@ -976,7 +1008,7 @@ public class UHSWriter {
 		};
 
 		StringBuffer buf = new StringBuffer();
-		char[] tmp = ((String)currentNode.getContent()).toCharArray();
+		char[] tmp = currentNode.getRawStringContent().toCharArray();
 		for ( int c=0; c < tmp.length; c++ ) {
 			boolean escaped = false;
 

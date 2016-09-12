@@ -13,25 +13,22 @@
     <!-- android:background="?android:attr/colorPrimary" -->
 
   <TextView
-    android:id="@+id/questionLbl"
+    android:id="@+id/nodeTitleLbl"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:textSize="16sp"
     android:text="INSERT QUESTION HERE" />
-  <ListView
-    android:id="@+id/childNodesList"
-    android:layout_width="fill_parent"
+
+  <FrameLayout
+    android:id="@+id/nodeViewHolder"
+    android:layout_width="match_parent"
     android:layout_height="0dp"
     android:layout_weight="1"
     android:layout_marginBottom="10dp"
     android:layout_marginTop="10dp"
-    android:listSelector="@android:color/transparent"
     android:background="@android:color/transparent"
-    android:cacheColorHint="@android:color/transparent"
-    android:divider="#CCCCCC"
-    android:dividerHeight="1dp"
-    android:paddingLeft="2dp" >
-  </ListView>
+    android:cacheColorHint="@android:color/transparent">
+  </FrameLayout>
 
   <TableLayout
     android:layout_width="match_parent"
@@ -48,7 +45,7 @@
         android:src="@drawable/btn_back_selector"
         android:background="@android:color/transparent" />
       <TextView
-        android:id="@+id/shownHintsCountLbl"
+        android:id="@+id/revealedLbl"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
@@ -65,11 +62,11 @@
     </TableRow>
   </TableLayout>
 
-      <ImageButton
-        android:id="@+id/showNextBtn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:src="@drawable/btn_show_next_selector"
-        android:background="@android:color/transparent" />
+  <ImageButton
+    android:id="@+id/revealNextBtn"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:src="@drawable/btn_show_next_selector"
+    android:background="@android:color/transparent" />
 </LinearLayout>

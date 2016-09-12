@@ -11,84 +11,65 @@ import net.vhati.openuhs.core.markup.StringDecorator;
 /**
  * A container for hierarchical content.
  *
- * <p>A UHSNode has two attributes: a String indicating its
- * type and an optional id. The id is what the root node uses
- * to determine link destinations.
+ * <p>Each node has an optional id. The id is what the root node uses
+ * to resolve link destinations. This is loosely based on the line
+ * number the original hunk appeared at in a 9x format file. After
+ * parsing, the id's value is arbitrary but must be unique.</p>
  *
- * <p>Each node has content: STRING, IMAGE, or AUDIO. Non-String
- * content is stored in raw byte[] form.</p>
+ * <p>Each node has string content. Subclasses may offer additional
+ * methods for images or audio.</p>
  *
- * <p>A node may additionally act as a group, containing nested
- * child nodes. In this case, this node's content should be
- * considered a title. The revealed amount attribute tracks the nth
- * visible child.</p>
+ * <p>A node may optionally act as a group, containing nested
+ * child nodes. A group can be visited, causing its own content to
+ * appear as a title, with its children's content listed below.
+ * The revealed amount attribute tracks the nth visible child.</p>
  *
- * <br />A non-group node may act as a hyperlink to another node.
+ * <p>A node may optionally act as a hyperlink to another node.
  * A link points to an id, resolved by the root node upon clicking.</p>
+ *
+ * <p>Note: Link nodes cannot be group nodes, and vice versa.
+ * Setting a non-negative link target will remove all children.
+ * Adding children will reset the link target.</p>
  */
 public class UHSNode {
-	public static final int STRING = 0;
-	public static final int IMAGE = 1;
-	public static final int AUDIO = 2;
-
+	/** Any reader can see children or visit the link target. */
 	public static final int RESTRICT_NONE = 0;
+
+	/** This node is a nag message that should be hidden from registered readers. */
 	public static final int RESTRICT_NAG = 1;
+
+	/** Only registered readers can see this node's children or link target. */
 	public static final int RESTRICT_REGONLY = 2;
 
-	private String type = "";
-	private int contentType = STRING;
-	private Object content = null;
-	private StringDecorator decorator = null;
-	private int id = -1;
-	private int linkIndex = -1;                                // Either Link or group, not both
-	private int restriction = RESTRICT_NONE;
-	private List<UHSNode> children = null;
-	private int revealedAmt = -1;
+	protected String type = "";
+	protected int id = -1;
+	protected int linkIndex = -1;                                // Either Link or group, not both
+	protected int restriction = RESTRICT_NONE;
+	protected List<UHSNode> children = null;
+	protected int revealValue = 0;
+
+	protected String rawStringContent = "";
+	protected StringDecorator decorator = null;
 
 
-	public UHSNode( String inType ) {
-		setType( inType );
+	/**
+	 * Constructs a node.
+	 *
+	 * @param type  an arbitrary string used to inform structure and decide special handling
+	 */
+	public UHSNode( String type ) {
+		setType( type );
 	}
 
+
+	public void setType( String type ) {
+		this.type = type;
+	}
 
 	public String getType() {
 		return type;
 	}
 
-	public void setType( String inType ) {
-		type = inType;
-	}
-
-
-	public Object getContent() {
-		return content;
-	}
-
-	/**
-	 * Sets this node's content.
-	 *
-	 * @param inContent  raw content (e.g., String or byte[])
-	 * @param inContentType  one of: STRING, IMAGE, or AUDIO
-	 */
-	public void setContent( Object inContent, int inContentType ) {
-		if ( inContentType != STRING && inContentType != IMAGE && inContentType != AUDIO ) {
-			throw new IllegalArgumentException( "Content type must be STRING, IMAGE, or AUDIO" );
-		}
-		content = inContent;
-		contentType = inContentType;
-	}
-
-	public int getContentType() {
-		return contentType;
-	}
-
-
-	/**
-	 * Returns this node's id, or -1 if one is not set.
-	 */
-	public int getId() {
-		return id;
-	}
 
 	/**
 	 * Sets this node's id.
@@ -97,13 +78,20 @@ public class UHSNode {
 	 * call the rootNode's removeLink() before,
 	 * and addLink() after.</p>
 	 *
-	 * @param input  a new id, or -1
+	 * @param n  a new id, or -1
 	 * @see UHSRootNode#removeLink(UHSNode)
 	 * @see UHSRootNode#addLink(UHSNode)
 	 */
-	public void setId( int input ) {
-		if ( input < -1 ) input = -1;
-		id = input;
+	public void setId( int n ) {
+		if ( n < -1 ) n = -1;
+		id = n;
+	}
+
+	/**
+	 * Returns this node's id, or -1 if one is not set.
+	 */
+	public int getId() {
+		return id;
 	}
 
 	/**
@@ -132,35 +120,34 @@ public class UHSNode {
 	}
 
 
-	public boolean isLink() {
-		if ( linkIndex != -1 ) return true;
-		else return false;
+	/**
+	 * Sets the id of another node to visit when this one is clicked, or -1 for none.
+	 */
+	public void setLinkTarget( int n ) {
+		if ( n < 0 ) return;
+		removeAllChildren();
+		linkIndex = n;
 	}
 
 	public int getLinkTarget() {
 		return linkIndex;
 	}
 
-	public void setLinkTarget( int input ) {
-		if ( input < 0 ) return;
-		this.removeAllChildren();
-		linkIndex = input;
+	public boolean isLink() {
+		if ( linkIndex != -1 ) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 
 	/**
-	 * Returns this node's viewing restriction.
+	 * Sets this node's viewing restriction.
 	 *
-	 * <UL>
-	 * <li>RESTRICT_NONE - Any reader can see children or the link target.</li>
-	 * <li>RESTRICT_NAG - This node is a nag message that should be hidden from registered readers.>/li?
-	 * <li>RESTRICT_REGONLY - Only registered readers can see this node's children or link target.</li>
-	 * </ul>
+	 * @param n  one of: UHSNode.RESTRICT_NONE, UHSNode.RESTRICT_NAG, or UHSNode.RESTRICT_REGONLY
 	 */
-	public int getRestriction() {
-		return restriction;
-	}
-
 	public void setRestriction( int n ) {
 		if ( n != RESTRICT_NONE && n != RESTRICT_NAG && n != RESTRICT_REGONLY ) {
 			throw new IllegalArgumentException( "Restriction must be RESTRICT_NONE, RESTRICT_NAG, or RESTRICT_REGONLY" );
@@ -168,29 +155,20 @@ public class UHSNode {
 		restriction = n;
 	}
 
-
-	/**
-	 * Returns true if this node contains nested child nodes.
-	 */
-	public boolean isGroup() {
-		if ( children != null ) return true;
-		else return false;
+	public int getRestriction() {
+		return restriction;
 	}
 
-	/**
-	 * Returns this node's child nodes of a given type.
-	 *
-	 * @return a List of UHSNodes, never null
-	 */
-	public List<UHSNode> getChildren( String type ) {
-		List<UHSNode> result = new ArrayList<UHSNode>();
-		if ( children == null ) return result;
 
-		for (int i=0; i < children.size(); i++) {
-			UHSNode tmpNode = children.get( i );
-			if ( tmpNode.getType().equals( type ) ) result.add( tmpNode );
+	public void setChildren( List<UHSNode> newChildren ) {
+		if ( newChildren == null ) {
+			this.removeAllChildren();
 		}
-		return result;
+		else {
+			children = newChildren;
+			linkIndex = -1;
+			revealValue = 0;
+		}
 	}
 
 	/**
@@ -202,42 +180,67 @@ public class UHSNode {
 		return children;
 	}
 
-	public void setChildren( List<UHSNode> newChildren ) {
-		if ( newChildren == null ) {
-			this.removeAllChildren();
+	/**
+	 * Returns this node's child nodes of a given type.
+	 *
+	 * @param type  a string to match node.getType() against
+	 * @param c  a class to expect
+	 * @return a List of UHSNodes, never null
+	 */
+	public <T extends UHSNode> List<T> getChildren( String type, Class<T> c ) {
+		List<T> result = new ArrayList<T>();
+		if ( children == null ) return result;
+
+		for (int i=0; i < children.size(); i++) {
+			UHSNode tmpNode = children.get( i );
+
+			if ( tmpNode.getType().equals( type ) && c.isInstance( tmpNode ) ) {
+				@SuppressWarnings("unchecked")
+				T castNode = c.cast( tmpNode );
+				result.add( castNode );
+			}
 		}
-		else {
-			children = newChildren;
-			linkIndex = -1;
-			revealedAmt = 1;
+		return result;
+	}
+
+	/**
+	 * Returns true if this node contains nested child nodes.
+	 */
+	public boolean isGroup() {
+		if ( children != null ) {
+			return true;
+		} else {
+			return false;
 		}
 	}
 
 
-	public void addChild( UHSNode inChild ) {
+	/**
+	 * Adds a child node to this one.
+	 */
+	public void addChild( UHSNode newChild ) {
 		if ( children == null ) {
 			linkIndex = -1;
 			children = new ArrayList<UHSNode>();
 		}
-		if ( inChild != null ) {
-			children.add( inChild );
-			if ( revealedAmt < 1 ) revealedAmt = 1;
+		if ( newChild != null ) {
+			children.add( newChild );
 		}
 	}
 
-	public void removeChild( UHSNode inChild ) {
-		if ( children == null || !children.contains( inChild ) ) return;
-		children.remove( inChild );
-		revealedAmt--;
-		if ( revealedAmt <= 0 ) revealedAmt = -1;
+	public void removeChild( UHSNode doomedNode ) {
+		if ( children == null || !children.contains( doomedNode ) ) return;
+		children.remove( doomedNode );
+		revealValue = Math.min( revealValue, getMaximumReveal() );
+
 		if ( children.size() == 0 ) removeAllChildren();
 	}
 
-	public void removeChild( int input ) {
-		if ( children == null || this.getChildCount()-1 < input ) return;
-		children.remove( input );
-		revealedAmt--;
-		if ( revealedAmt <= 0 ) revealedAmt = -1;
+	public void removeChild( int n ) {
+		if ( children == null || getChildCount()-1 < n ) return;
+		children.remove( n );
+		revealValue = Math.min( revealValue, getMaximumReveal() );
+
 		if ( children.size() == 0 ) removeAllChildren();
 	}
 
@@ -245,40 +248,42 @@ public class UHSNode {
 		if ( children == null ) return;
 		children.clear();
 		children = null;
-		revealedAmt = -1;
+		revealValue = 0;
 	}
 
 	/**
 	 * Returns this node's first child node of a given type.
 	 *
+	 * @param type  a string to match node.getType() against
+	 * @param c  a class to expect
 	 * @return a UHSNode, or null
 	 */
-	public UHSNode getFirstChild( String type ) {
-		UHSNode result = null;
-		if ( children == null ) return result;
+	public <T extends UHSNode> T getFirstChild( String type, Class<T> c ) {
+		if ( children == null ) return null;
 
-		for ( int i=0; i < children.size(); i++ ) {
-			UHSNode tmpNode = children.get( i );
-			if ( tmpNode.getType().equals( type ) ) {
-				result = tmpNode;
-				break;
+		for ( UHSNode tmpNode : children ) {
+			if ( tmpNode.getType().equals( type ) && c.isInstance( tmpNode ) ) {
+				@SuppressWarnings("unchecked")
+				T result = c.cast( tmpNode );
+				return result;
 			}
 		}
-		return result;
+		return null;
 	}
 
 	/**
 	 * Returns this node's nth child node.
 	 *
+	 * @param n  an index among children of this node
 	 * @return a UHSNode, or null (if out of range)
 	 */
-	public UHSNode getChild( int input ) {
-		if ( children == null || this.getChildCount()-1 < input ) return null;
-		return children.get( input );
+	public UHSNode getChild( int n ) {
+		if ( children == null || getChildCount()-1 < n ) return null;
+		return children.get( n );
 	}
 
-	public int indexOfChild( UHSNode inChild ) {
-		return children.indexOf( inChild );
+	public int indexOfChild( UHSNode childNode ) {
+		return children.indexOf( childNode );
 	}
 
 	public int getChildCount() {
@@ -288,49 +293,51 @@ public class UHSNode {
 
 
 	/**
-	 * Sets the number of revealed children.
+	 * Returns the highest value that might be returned by getCurrentReveal().
 	 *
-	 * @param n  a number greater than 1 and less than or equal to the child count
+	 * @return total child count, if any, or 0
+	 * @see #setCurrentReveal()
+	 * @see #getCurrentReveal()
 	 */
-	public void setRevealedAmount( int n ) {
-		if ( this.getChildCount() < n || n < 1 ) return;
-		revealedAmt = n;
+	public int getMaximumReveal() {
+		return getChildCount();
 	}
 
 	/**
-	 * Returns the number of revealed children.
-	 * Or -1 if there are no children.
+	 * Sets the current reveal progress.
+	 *
+	 * @param n  a non-negative number less than or equal to the maximum reveal
+	 * @see #getCurrentReveal()
+	 * @see #getMaximumReveal()
 	 */
-	public int getRevealedAmount() {
-		return revealedAmt;
+	public void setCurrentReveal( int n ) {
+		n = Math.min( Math.max( 0, n ), getMaximumReveal() );
+
+		revealValue = n;
+	}
+
+	/**
+	 * Returns the current reveal progress.
+	 *
+	 * @see #setCurrentReveal()
+	 * @see #getMaximumReveal()
+	 */
+	public int getCurrentReveal() {
+		return revealValue;
 	}
 
 
 	/**
-	 * Recursively prints the indented contents of this node and its children.
-	 *
-	 * @param indent  indention prefix
-	 * @param spacer  indention padding with each level
-	 * @param outStream  a stream to print to
+	 * Sets this node's content, may not be null.
 	 */
-	public void printNode( String indent, String spacer, PrintStream outStream ) {
-		int id = this.getId();
-		String idStr = ( id==-1?"":"^"+id+"^ " );
-		String linkStr = ((!this.isLink()) ? "" : " (^Link to "+ this.getLinkTarget() +"^)");
+	public void setRawStringContent( String rawStringContent ) {
+		if ( rawStringContent == null ) throw new IllegalArgumentException( "String content may not be null" );
 
-		if ( this.getContentType() == UHSNode.STRING ) {
-			outStream.println( indent + idStr + getType() +": "+ this.getContent() + linkStr );
-		}
-		else if ( this.getContentType() == UHSNode.IMAGE ) {
-			outStream.println( indent + idStr + getType() +": "+"^IMAGE^"+ linkStr );
-		}
-		else if ( this.getContentType() == UHSNode.AUDIO ) {
-			outStream.println( indent + idStr + getType() +": "+"^AUDIO^"+ linkStr );
-		}
+		this.rawStringContent = rawStringContent;
+	}
 
-		for ( int i=0; i < this.getChildCount(); i++ ) {
-			this.getChild( i ).printNode( indent+spacer, spacer, outStream );
-		}
+	public String getRawStringContent() {
+		return rawStringContent;
 	}
 
 
@@ -345,13 +352,68 @@ public class UHSNode {
 	/**
 	 * Returns content with markup parsed away.
 	 *
-	 * @return an array of DecoratedFragments for STRING nodes, or null
+	 * @return an array of DecoratedFragments, or null if no decorator is set
+	 * @see #getDecoratedStringContent()
 	 */
-	public DecoratedFragment[] getDecoratedStringContent() {
+	public DecoratedFragment[] getDecoratedStringFragments() {
 		if ( decorator != null ) {
-			return decorator.getDecoratedString( (String)content );
+			return decorator.getDecoratedString( rawStringContent );
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Returns content, with markup parsed if a decorator is set, raw otherwise.
+	 *
+	 * @return a non-null string
+	 * @see #getDecoratedStringFragments()
+	 */
+	public String getDecoratedStringContent() {
+		if ( decorator != null ) {
+			DecoratedFragment[] frags = getDecoratedStringFragments();
+
+			// Use raw length to hint at buffer capacity.
+			StringBuilder buf = new StringBuilder( getRawStringContent().length() );
+			for ( DecoratedFragment frag : frags ) {
+				buf.append( frag.fragment );
+			}
+			return buf.toString();
+		}
+		else {
+			return getRawStringContent();
+		}
+	}
+
+
+	/**
+	 * Recursively prints the indented contents of this node and its children.
+	 *
+	 * @param indent  indention prefix
+	 * @param spacer  indention padding with each level
+	 * @param outStream  a stream to print to
+	 * @see #getPrintableContent()
+	 */
+	public void printNode( String indent, String spacer, PrintStream outStream ) {
+		int id = getId();
+		String idStr = (( id == -1 ) ? "" : "^"+ id +"^ " );
+		String linkStr = ((!isLink()) ? "" : " (^Link to "+ getLinkTarget() +"^)");
+
+		outStream.println( indent + idStr + getType() +": "+ getPrintableContent() + linkStr );
+
+		for ( int i=0; i < getChildCount(); i++ ) {
+			getChild( i ).printNode( indent+spacer, spacer, outStream );
+		}
+	}
+
+	/**
+	 * Returns a string representation of this node's content for printing.
+	 *
+	 * <p>This will be spliced into a message generated by printNode().</p>
+	 *
+	 * @see #printNode(String, String, PrintStream)
+	 */
+	public String getPrintableContent() {
+		return rawStringContent;
 	}
 }

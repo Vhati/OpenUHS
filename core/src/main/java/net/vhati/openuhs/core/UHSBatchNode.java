@@ -3,7 +3,6 @@ package net.vhati.openuhs.core;
 import java.util.List;
 import java.util.Vector;
 
-import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSNode;
 
 
@@ -19,19 +18,19 @@ public class UHSBatchNode extends UHSNode {
 	private List<Boolean> batchAddons = new Vector<Boolean>();
 
 
-	public UHSBatchNode( String inType ) {
-		super( inType );
+	public UHSBatchNode( String type ) {
+		super( type );
 	}
 
 
 	/**
 	 * Returns the batch status of a child.
 	 *
-	 * @param inChild  a child node
+	 * @param childNode  a child node
 	 * @return true if that node should be revealed when its predecessor is
 	 */
-	public boolean isAddon( UHSNode inChild ) {
-		int index = super.indexOfChild( inChild );
+	public boolean isAddon( UHSNode childNode ) {
+		int index = super.indexOfChild( childNode );
 		if ( index == -1 ) return false;
 		return batchAddons.get( index ).booleanValue();
 	}
@@ -50,11 +49,11 @@ public class UHSBatchNode extends UHSNode {
 	/**
 	 * Sets the batch status of a child.
 	 *
-	 * @param inChild  a child node
+	 * @param childNode  a child node
 	 * @param addon  true if that node should be revealed when its predecessor is, false otherwise
 	 */
-	public void setAddon( UHSNode inChild, boolean addon ) {
-		int index = super.indexOfChild( inChild );
+	public void setAddon( UHSNode childNode, boolean addon ) {
+		int index = super.indexOfChild( childNode );
 		if ( index == -1 ) return;
 
 		batchAddons.set( index, new Boolean( addon ) );
@@ -69,12 +68,6 @@ public class UHSBatchNode extends UHSNode {
 	public void setAddon( int n, boolean addon ) {
 		if ( super.getChildCount()-1 < n ) return;
 		batchAddons.set( n, new Boolean( addon ) );
-	}
-
-
-	@Override
-	public Object getContent() {
-		return super.getContent();
 	}
 
 
@@ -95,17 +88,17 @@ public class UHSBatchNode extends UHSNode {
 	 *
 	 * <p>This method gives the new nodes default batch status (revealed individually).</p>
 	 *
-	 * @param inChildren  a List of new child UHSNodes
+	 * @param newChildren  a List of new child UHSNodes
 	 */
 	@Override
-	public void setChildren( List<UHSNode> inChildren ) {
-		if ( inChildren == null || inChildren.size() == 0 ) {
+	public void setChildren( List<UHSNode> newChildren ) {
+		if ( newChildren == null || newChildren.size() == 0 ) {
 			this.removeAllChildren();
 		}
 		else {
-			super.setChildren( inChildren );
+			super.setChildren( newChildren );
 			batchAddons.clear();
-			for ( int i=0; i < inChildren.size(); i++ ) {
+			for ( int i=0; i < newChildren.size(); i++ ) {
 				batchAddons.add( Boolean.FALSE );
 			}
 		}
@@ -113,14 +106,14 @@ public class UHSBatchNode extends UHSNode {
 
 
 	@Override
-	public void addChild( UHSNode inChild ) {
-		super.addChild( inChild );
+	public void addChild( UHSNode newNode ) {
+		super.addChild( newNode );
 		batchAddons.add( Boolean.FALSE );
 	}
 
 	@Override
-	public void removeChild( UHSNode inChild ) {
-		int index = super.indexOfChild( inChild );
+	public void removeChild( UHSNode doomedNode ) {
+		int index = super.indexOfChild( doomedNode );
 		if ( index == -1 ) return;
 		super.removeChild( index );
 		batchAddons.remove( index );
@@ -134,16 +127,17 @@ public class UHSBatchNode extends UHSNode {
 
 
 	/**
-	 * Sets the number of revealed children.
+	 * Sets the current reveal progress.
 	 *
-	 * <p>The given amount will be a minimum. Any 'addon' children that follow
-	 * will further increment the value.</p>
+	 * <p>The given amount will be a minimum. Revealing will continue to
+	 * increment for every 'addon' child following the last one explicitly
+	 * revealed.</p>
 	 *
-	 * @param n  a number greater than 1 and less than or equal to the child count
+	 * @param n  a non-negative number less than or equal to the maximum reveal
 	 */
 	@Override
-	public void setRevealedAmount( int n ) {
-		if ( n > this.getChildCount() || n < 1 ) return;
+	public void setCurrentReveal( int n ) {
+		n = Math.min( Math.max( 0, n ), getMaximumReveal() );
 		int pendingReveal = n;
 		for ( int i=(n-1)+1; i < this.getChildCount(); i++ ) {  // Check the children that follow.
 			if ( batchAddons.get( i ).booleanValue() ) {
@@ -152,6 +146,6 @@ public class UHSBatchNode extends UHSNode {
 				break;
 			}
 		}
-		super.setRevealedAmount( pendingReveal );
+		super.setCurrentReveal( pendingReveal );
 	}
 }

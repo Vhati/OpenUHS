@@ -4,7 +4,7 @@
   android:layout_width="fill_parent"
   android:layout_height="fill_parent">
   <Button
-    android:id="@+id/playBtn"
+    android:id="@+id/audioPlayBtn"
     android:layout_width="wrap_content" 
     android:layout_height="wrap_content" 
     android:layout_gravity="center_vertical"
@@ -13,7 +13,7 @@
     android:textSize="16sp"
     android:text="Play" />
   <TextView
-    android:id="@+id/errorText"
+    android:id="@+id/audioPlayerLbl"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:layout_gravity="center_vertical"
@@ -21,5 +21,5 @@
     android:clickable="false"
     android:focusable="false"
     android:textSize="16sp"
-    android:text="This is a sound hint." />
+    android:text="" />
 </LinearLayout>

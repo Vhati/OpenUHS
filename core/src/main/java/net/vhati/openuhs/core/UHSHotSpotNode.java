@@ -4,18 +4,21 @@ import java.util.List;
 import java.util.Vector;
 
 import net.vhati.openuhs.core.HotSpot;
+import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 
 
 /**
  * A container for UHSNodes that have clickable regions.
  *
- * <p>Children are initially invisible and associated with clickable zones.
- * When the zone is clicked, that child node is revealed, at a given position.</p>
+ * <p>This node has string content for the title, image content for the main
+ * background image, and various children. Children are initially invisible
+ * and associated with clickable HotSpot zones. When a zone is clicked, that
+ * child node is either revealed or visited (if it's not an overlay image).</p>
  *
  * @see net.vhati.openuhs.core.HotSpot
  */
-public class UHSHotSpotNode extends UHSNode {
+public class UHSHotSpotNode extends UHSImageNode {
 	private List<HotSpot> spots = new Vector<HotSpot>();
 
 
@@ -27,11 +30,11 @@ public class UHSHotSpotNode extends UHSNode {
 	/**
 	 * Returns the zone/position of a child.
 	 *
-	 * @param inChild  a child node
+	 * @param childNode  a child node
 	 * @return a HotSpot
 	 */
-	public HotSpot getSpot( UHSNode inChild ) {
-		int index = super.indexOfChild( inChild );
+	public HotSpot getSpot( UHSNode childNode ) {
+		int index = super.indexOfChild( childNode );
 		if ( index == -1 ) return null;
 		return spots.get( index );
 	}
@@ -50,11 +53,11 @@ public class UHSHotSpotNode extends UHSNode {
 	/**
 	 * Sets the zone/position of a child.
 	 *
-	 * @param inChild  a child node
+	 * @param childNode  an existing child node
 	 * @param spot  a HotSpot
 	 */
-	public void setSpot( UHSNode inChild, HotSpot spot ) {
-		int index = super.indexOfChild( inChild );
+	public void setSpot( UHSNode childNode, HotSpot spot ) {
+		int index = super.indexOfChild( childNode );
 		if ( index == -1 ) return;
 
 		spots.set( index, spot );
@@ -69,12 +72,6 @@ public class UHSHotSpotNode extends UHSNode {
 	public void setSpot( int n, HotSpot spot ) {
 		if ( super.getChildCount()-1 < n ) return;
 		spots.set( n, spot );
-	}
-
-
-	@Override
-	public Object getContent() {
-		return super.getContent();
 	}
 
 
@@ -95,17 +92,17 @@ public class UHSHotSpotNode extends UHSNode {
 	 *
 	 * <p>This method gives the new nodes default zones/positions.</p>
 	 *
-	 * @param inChildren  a List of new child UHSNodes
+	 * @param newChildren  a List of new child UHSNodes
 	 */
 	@Override
-	public void setChildren( List<UHSNode> inChildren ) {
-		if ( inChildren == null || inChildren.size() == 0 ) {
+	public void setChildren( List<UHSNode> newChildren ) {
+		if ( newChildren == null || newChildren.size() == 0 ) {
 			this.removeAllChildren();
 		}
 		else {
-			super.setChildren( inChildren );
+			super.setChildren( newChildren );
 			spots.clear();
-			for ( int i=0; i < inChildren.size(); i++ ) {
+			for ( int i=0; i < newChildren.size(); i++ ) {
 				spots.add( new HotSpot() );
 			}
 		}
@@ -113,14 +110,14 @@ public class UHSHotSpotNode extends UHSNode {
 
 
 	@Override
-	public void addChild( UHSNode inChild ) {
-		super.addChild( inChild );
+	public void addChild( UHSNode newChild ) {
+		super.addChild( newChild );
 		spots.add( new HotSpot() );
 	}
 
 	@Override
-	public void removeChild( UHSNode inChild ) {
-		int index = super.indexOfChild( inChild );
+	public void removeChild( UHSNode childNode ) {
+		int index = super.indexOfChild( childNode );
 		if ( index == -1 ) return;
 		super.removeChild( index );
 		spots.remove( index );

@@ -13,12 +13,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,8 +29,12 @@ import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.androidreader.R;
 import net.vhati.openuhs.androidreader.AndroidUHSConstants;
-import net.vhati.openuhs.androidreader.reader.NodeAdapter;
-import net.vhati.openuhs.androidreader.reader.UHSHotSpotView;
+import net.vhati.openuhs.androidreader.reader.AudioNodeView;
+import net.vhati.openuhs.androidreader.reader.DefaultNodeView;
+import net.vhati.openuhs.androidreader.reader.HotSpotNodeView;
+import net.vhati.openuhs.androidreader.reader.ImageNodeView;
+import net.vhati.openuhs.androidreader.reader.NodeView;
+import net.vhati.openuhs.androidreader.reader.UHSReaderNavCtrl;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
@@ -40,12 +42,8 @@ import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.markup.DecoratedFragment;
 
 
-public class ReaderActivity extends AppCompatActivity implements View.OnClickListener {
+public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtrl, View.OnClickListener {
 	public static final String EXTRA_OPEN_FILE = "net.openuhs.androidreader.OpenFile";
-
-	public static final int SCROLL_TO_TOP = 0;
-	public static final int SCROLL_TO_BOTTOM = 1;
-	public static final int SCROLL_IF_INCOMPLETE = 2;
 
 	private final Logger logger = LoggerFactory.getLogger( AndroidUHSConstants.LOG_TAG );
 
@@ -56,23 +54,20 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	private UHSRootNode rootNode = null;
 	private UHSNode currentNode = null;
 
-	private NodeAdapter nodeAdapter = null;
-	private ListView listView = null;
-	private UHSHotSpotView hotSpotView = null;
+	private List<NodeView> nodeViewRegistry = new ArrayList<NodeView>();
+
+	private NodeView currentNodeView = null;
 
 	private List<UHSNode> historyArray = new ArrayList<UHSNode>();
 	private List<UHSNode> futureArray = new ArrayList<UHSNode>();
 	private boolean showAllOverride = false;
 
-	private TextView questionLbl = null;
+	private TextView nodeTitleLbl = null;
 	private FrameLayout nodeViewHolder = null;
 	private ImageButton backBtn = null;
 	private ImageButton forwardBtn = null;
-	private TextView shownHintsCountLbl = null;
-	private ImageButton showNextBtn = null;
-
-	private ReaderActivity navCtrl = this;
-	private UHSNode dummyNode = new UHSNode( "Blank" );
+	private TextView revealedLbl = null;
+	private ImageButton revealNextBtn = null;
 
 
 	/** Called when the activity is first created. */
@@ -86,52 +81,26 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 		toolbar.setTitle( "" );  // Ensure it's non-null so support will defer its text to Toolbar.
 		this.setSupportActionBar( toolbar );
 
-		questionLbl = (TextView)findViewById( R.id.questionLbl );
+		nodeTitleLbl = (TextView)findViewById( R.id.nodeTitleLbl );
 		nodeViewHolder = (FrameLayout)findViewById( R.id.nodeViewHolder );
 		backBtn = (ImageButton)findViewById( R.id.backBtn );
 		forwardBtn = (ImageButton)findViewById( R.id.forwardBtn );
-		shownHintsCountLbl = (TextView)findViewById( R.id.shownHintsCountLbl );
-		showNextBtn = (ImageButton)findViewById( R.id.showNextBtn );
+		revealedLbl = (TextView)findViewById( R.id.revealedLbl );
+		revealNextBtn = (ImageButton)findViewById( R.id.revealNextBtn );
 
 		backBtn.setEnabled( false );
 		forwardBtn.setEnabled( false );
 
-		//listView = (ListView)findViewById( R.id.childNodesList );
-		listView = (ListView)this.getLayoutInflater().inflate( R.layout.reader_child_nodes_list, null, false );
-		nodeViewHolder.addView( listView );
-
-		nodeAdapter = new NodeAdapter( this, dummyNode, true );
-		listView.setAdapter( nodeAdapter );
-
-		hotSpotView = new UHSHotSpotView( this );
-
 		backBtn.setOnClickListener( this );
 		forwardBtn.setOnClickListener( this );
-		showNextBtn.setOnClickListener( this );
+		revealNextBtn.setOnClickListener( this );
 
-		listView.setOnItemClickListener(new OnItemClickListener() {
-			@Override
-			public void onItemClick( AdapterView<?> parent, View view, int position, long id ) {
-				//Log.i( "OpenUHS", "@!@ Clicked list item #"+ position );
-				if ( parent != listView ) return;
+		registerNodeView( new DefaultNodeView( this ) );
+		registerNodeView( new ImageNodeView( this ) );
+		registerNodeView( new AudioNodeView( this ) );
+		registerNodeView( new HotSpotNodeView( this ) );
 
-				Object o = nodeAdapter.getItem( position );
-				if ( (o instanceof UHSNode) == false ) return;
-
-				UHSNode childNode = (UHSNode)o;
-				if ( childNode.isGroup() ) {
-					navCtrl.setReaderNode( childNode );
-				}
-				else if ( childNode.isLink() ) {
-					int targetIndex = childNode.getLinkTarget();
-					navCtrl.setReaderNode( targetIndex );
-				}
-			}
-		});
-		// When list items are focusable or clickable, they preempt the list's click listener.
-		// This is a workaround reminder, in case it's ever needed.
-		//   android:descendantFocusability="blocksDescendants"
-		//   listView.setDescendantFocusability( ViewGroup.FOCUS_BLOCK_DESCENDANTS );
+		reset();
 
 		// Check bundle args for a file to open.
 		String uhsPath = null;
@@ -147,29 +116,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 			uhsPath = (String)savedInstanceState.getSerializable( EXTRA_OPEN_FILE );
 		}
 
-		if ( uhsPath != null ) {
-			UHSRootNode inRootNode = null;
-			try {
-				File uhsFile = new File( uhsPath );
-				logger.info( "Reader opened \"{}\"", uhsFile.getName() );
-
-				UHSParser uhsParser = new UHSParser();
-				inRootNode = uhsParser.parseFile( uhsFile, UHSParser.AUX_NEST );
-			}
-			catch ( Exception e ) {
-				logger.error( "Parsing failed", e );
-				// TODO: Show a GUI alert, and exit gracefully.
-
-				TextView tv = new TextView( this );
-				tv.setText( e.toString() );
-				this.setContentView( tv );
-			}
-
-			if ( inRootNode != null ) {
-				reset();
-				setUHSNodes( inRootNode, inRootNode );
-			}
-		}
+		if ( uhsPath != null ) openFile( new File( uhsPath ) );
 	}
 
 
@@ -188,7 +135,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 				item.setChecked( showAllOverride );
 
 				if ( showAllOverride ) {  // Reveal all hints here if it is now checked.
-					while ( showNext() != false );
+					while ( revealNext() != false );
 				}
 				return true;
 
@@ -216,11 +163,39 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 				setReaderNode( futureArray.get( futureArray.size()-1 ) );
 				break;
 
-			case R.id.showNextBtn:
-				showNext();
-				scrollTo( SCROLL_TO_BOTTOM );
+			case R.id.revealNextBtn:
+				revealNext();
 				break;
 		}
+	}
+
+
+	/**
+	 * Registers a reusable NodeView to handle a UHSNode class (and its subclasses).
+	 *
+	 * <p>When needed, views will be searched (in reverse order of
+	 * registration) for the first one whose accept() method returns true.</p>
+	 *
+	 * <p>Registered views determine the result of isNodeVisitable().</p>
+	 *
+	 * @see isNodeVisitable(UHSNode)
+	 * @see net.vhati.openuhs.androidreader.reader.NodeView.accept(UHSNode)
+	 */
+	public void registerNodeView( NodeView nodeView ) {
+		nodeViewRegistry.add( nodeView );
+	}
+
+	/**
+	 * Returns a previously registered NodeView capable of representing a UHSNode, or null.
+	 *
+	 * @see #registerNodeView(NodeView)
+	 */
+	protected NodeView getViewForNode( UHSNode node ) {
+		for ( int i=nodeViewRegistry.size()-1; i >= 0 ; i-- ) {
+			NodeView nv = nodeViewRegistry.get( i );
+			if ( nv.accept( node ) ) return nv;
+		}
+		return null;
 	}
 
 
@@ -234,30 +209,58 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 		forwardBtn.setEnabled( false );
 		//findBtn.setEnabled( false );
 
-		shownHintsCountLbl.setText( "" );
-		showNextBtn.setEnabled( false );
+		revealedLbl.setText( "" );
+		revealNextBtn.setEnabled( false );
 
 		rootNode = null;
 		currentNode = null;
 
-		nodeAdapter.setNode( dummyNode, true );
-		nodeAdapter.notifyDataSetChanged();
+		if ( currentNodeView != null ) currentNodeView.reset();
+		currentNodeView = null;
 
 		setReaderTitle( null );
 	}
 
 
 	/**
+	 * Opens a UHS file.
+	 *
+	 * @param f  the location of the file
+	 */
+	public void openFile( final File f ) {
+		UHSRootNode newRootNode = null;
+		try {
+			logger.info( "Reader opened \"{}\"", f.getName() );
+
+			UHSParser uhsParser = new UHSParser();
+			newRootNode = uhsParser.parseFile( f, UHSParser.AUX_NEST );
+		}
+		catch ( Exception e ) {
+			Toast.makeText( this, "Parsing failed.", Toast.LENGTH_LONG ).show();
+			logger.error( "Unreadable file or parsing error", e );
+			// TODO: Exit gracefully.
+		}
+
+		if ( newRootNode != null ) {
+			reset();
+			setReaderRootNode( newRootNode );
+		}
+	}
+
+
+	/**
 	 * Displays a new UHS tree.
 	 *
-	 * @param inCurrentNode  the new initial node
-	 * @param inRootNode  the new root node
+	 * @param newRootNode  the new root node
 	 */
-	public void setUHSNodes( UHSNode inCurrentNode, UHSRootNode inRootNode ) {
+	public void setReaderRootNode( UHSRootNode newRootNode ) {
 		reset();
-		rootNode = inRootNode;
+		rootNode = newRootNode;
 		//findBtn.setEnabled( true );
-		setReaderNode( inCurrentNode );
+		setReaderNode( rootNode );
+
+		String title = rootNode.getUHSTitle();
+		setReaderTitle( (( title != null ) ? title : "") );
 	}
 
 
@@ -268,20 +271,21 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	 *
 	 * @param newNode  the new node
 	 */
+	@Override
 	public void setReaderNode( UHSNode newNode ) {
 		if ( newNode == null ) {return;}
 
-		int matchesNextPrev = 0; // -1 prev, 1 next, 0 neither.
-
-		if ( historyArray.size() > 0 && historyArray.get( historyArray.size()-1 ).equals( newNode ) ) {
-			matchesNextPrev = -1;
+		NodeView newNodeView = getViewForNode( newNode );
+		if ( newNodeView == null ) {
+			Toast.makeText( this, "That node is not supported by this reader.", Toast.LENGTH_LONG ).show();
+			logger.error( "The reader has no registered NodeViews for node ({}) with content: {}", newNode.getClass().getCanonicalName(), newNode.getPrintableContent() );
+			return;
 		}
-		else if ( futureArray.size() > 0 && futureArray.get( futureArray.size()-1 ).equals( newNode ) ) {
-			matchesNextPrev = 1;
+		else {
+			logger.debug( "Setting reader's node view to: {}", newNodeView.getClass().getCanonicalName() );
 		}
 
-
-		if ( matchesNextPrev == -1 ) {
+		if ( !historyArray.isEmpty() && historyArray.get( historyArray.size()-1 ).equals( newNode ) ) {
 			// Move one node into the past.
 			historyArray.remove( historyArray.size()-1 );
 			if ( currentNode != null ) {
@@ -289,7 +293,7 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 				futureArray.add( currentNode );
 			}
 		}
-		else if ( matchesNextPrev == 1 ) {
+		else if ( !futureArray.isEmpty() && futureArray.get( futureArray.size()-1 ).equals( newNode ) ) {
 			// Move one node into the future.
 			futureArray.remove( futureArray.size()-1 );
 			if ( currentNode != null ) {
@@ -308,61 +312,29 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 		backBtn.setEnabled( (historyArray.size() > 0) );
 		forwardBtn.setEnabled( (futureArray.size() > 0) );
 
-
 		currentNode = newNode;
-		boolean needToShowAll = false;
 
-		if ( currentNode == rootNode ) {
-			questionLbl.setText( "" );
-			setReaderTitle( (String)currentNode.getContent() );
-			needToShowAll = true;
+		if ( currentNodeView != null ) currentNodeView.reset();
+
+		if ( currentNodeView != newNodeView ) {
+			nodeViewHolder.removeAllViews();
+
+			currentNodeView = newNodeView;
+			currentNodeView.setNavCtrl( this );
+			nodeViewHolder.addView( currentNodeView );
 		}
-		else if ( currentNode.getContentType() == UHSNode.STRING ) {
-			StringBuffer questionBuf = new StringBuffer();
-			questionBuf.append( currentNode.getType() ).append( "=" );
+		currentNodeView.setNode( currentNode, showAllOverride );
 
-			if ( currentNode.getStringContentDecorator() != null ) {
-				DecoratedFragment[] fragments = currentNode.getDecoratedStringContent();
-				for ( int i=0; i < fragments.length; i++ ) {
-					questionBuf.append( fragments[i].fragment );
-				}
-			}
-			else {
-				questionBuf.append( (String)currentNode.getContent() );
-			}
-			questionLbl.setText( questionBuf.toString() );
+		nodeTitleLbl.setText( currentNodeView.getTitle() );
+
+		if ( currentNodeView.isRevealSupported() ) {
+			revealedLbl.setText( currentNode.getCurrentReveal() +"/"+ currentNode.getMaximumReveal() );
+		} else {
+			revealedLbl.setText( "" );
 		}
-		else {
-			questionLbl.setText( "" );
-		}
+		revealNextBtn.setEnabled( !currentNodeView.isComplete() );
 
-		if ( currentNode instanceof UHSHotSpotNode ) {
-			if ( hotSpotView.getParent() == null ) {
-				nodeViewHolder.removeAllViews();
-				nodeViewHolder.addView( hotSpotView );
-			}
-
-			hotSpotView.setNode( currentNode );
-
-			shownHintsCountLbl.setText( "" );
-			showNextBtn.setEnabled( false );
-		}
-		else {  // The regular list of children.
-			if ( listView.getParent() == null ) {
-				nodeViewHolder.removeAllViews();
-				nodeViewHolder.addView( listView );
-			}
-
-			needToShowAll = ( needToShowAll || showAllOverride );
-			nodeAdapter.setNode( newNode, needToShowAll );
-			scrollTo( SCROLL_IF_INCOMPLETE );
-
-			boolean complete = nodeAdapter.isComplete();
-			shownHintsCountLbl.setText( String.format( "%d/%d", (( complete ) ? currentNode.getChildCount() : currentNode.getRevealedAmount()), currentNode.getChildCount() ) );
-			showNextBtn.setEnabled( !complete );
-
-			nodeAdapter.notifyDataSetChanged();
-		}
+		nodeViewHolder.invalidate();
 	}
 
 
@@ -371,8 +343,9 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 	 *
 	 * <p>Nothing will happen if the ID isn't among the root node's list of link targets.</p>
 	 *
-	 * @param id  ID of the new node
+	 * @param id  the id of the new node
 	 */
+	@Override
 	public void setReaderNode( int id ) {
 		UHSNode tmpNode = rootNode.getLink( id );
 		if ( tmpNode != null ) {
@@ -384,67 +357,42 @@ public class ReaderActivity extends AppCompatActivity implements View.OnClickLis
 
 
 	/**
-	 * Sets the reader's title to the specified string.
+	 * Sets the reader's title.
 	 *
 	 * @param s  a title (null is treated as "")
 	 */
+	@Override
 	public void setReaderTitle( String s ) {
 		readerTitle = (( s != null ) ? s : "");
+
 		toolbar.setTitle( readerTitle );
 	}
 
-	/**
-	 * Gets the title of the reader.
-	 *
-	 * @return the title of the reader
-	 */
+	@Override
 	public String getReaderTitle() {
 		return readerTitle;
 	}
 
-
-	/**
-	 * Reveals the next hint of the current node panel.
-	 *
-	 * @return true if successful, false otherwise
-	 */
-	public boolean showNext() {
-		if ( nodeAdapter == null ) return false;
-
-		int revealed = nodeAdapter.showNext();
-		nodeAdapter.notifyDataSetChanged();
-
-		if ( revealed == -1 ) {
-			showNextBtn.setEnabled( false );
-			return false;
-		}
-		else {
-			int hintCount = currentNode.getChildCount();
-			if ( revealed == hintCount ) showNextBtn.setEnabled( false );
-			shownHintsCountLbl.setText( String.format( "%d/%d", revealed, hintCount ) );
-			return true;
-		}
+	@Override
+	public boolean isNodeVisitable( UHSNode node ) {
+		return ( getViewForNode( node ) != null );
 	}
 
 
 	/**
-	 * Scrolls to the top/bottom of the visible hints.
+	 * Reveals the next hint of the current node view.
 	 *
-	 * @param position  either SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
+	 * @return true if successful, false otherwise
 	 */
-	public void scrollTo( int position ) {
-		if ( position == SCROLL_IF_INCOMPLETE ) {
-			if ( nodeAdapter.isComplete() ) {
-				position = SCROLL_TO_TOP;
-			} else {
-				position = SCROLL_TO_BOTTOM;
-			}
-		}
-		if ( position == SCROLL_TO_TOP ) {
-			listView.smoothScrollToPosition( 0 );
-		}
-		else if ( position == SCROLL_TO_BOTTOM ) {
-			listView.smoothScrollToPosition( nodeAdapter.getCount()-1 );
-		}
+	public boolean revealNext() {
+		if ( currentNodeView == null ) return false;
+		if ( currentNodeView.isComplete() ) return false;
+
+		currentNodeView.revealNext();
+
+		revealedLbl.setText( currentNodeView.getCurrentReveal() +"/"+ currentNodeView.getMaximumReveal() );
+		revealNextBtn.setEnabled( !currentNodeView.isComplete() );
+
+		return true;
 	}
 }

@@ -1,0 +1,31 @@
+package net.vhati.openuhs.core;
+
+import net.vhati.openuhs.core.UHSNode;
+
+
+public class UHSImageNode extends UHSNode {
+	protected byte[] rawImageContent = null;
+
+
+	public UHSImageNode( String type ) {
+		super( type );
+	}
+
+
+	/**
+	 * Sets this node's image content, or null.
+	 */
+	public void setRawImageContent( byte[] rawImageContent ) {
+		this.rawImageContent = rawImageContent;
+	}
+
+	public byte[] getRawImageContent() {
+		return rawImageContent;
+	}
+
+
+	@Override
+	public String getPrintableContent() {
+		return "^Image^";
+	}
+}

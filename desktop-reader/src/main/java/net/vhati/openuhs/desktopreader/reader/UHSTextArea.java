@@ -9,6 +9,9 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import javax.swing.text.StyledDocument;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.markup.DecoratedFragment;
 
@@ -18,42 +21,66 @@ import net.vhati.openuhs.core.markup.DecoratedFragment;
  */
 public class UHSTextArea extends JTextPane {
 	private static final String STYLE_NAME_REGULAR = "regular";
-	private static final String STYLE_NAME_GROUP = "group";
+	private static final String STYLE_NAME_VISITABLE = "visitable";
 	private static final String STYLE_NAME_LINK = "link";
 	private static final String STYLE_NAME_HYPERLINK = "hyper";
 	private static final String STYLE_NAME_MONOSPACED = "monospaced";
 
-	public static Color GROUP_COLOR = Color.BLUE;
+	public static Color VISITABLE_COLOR = Color.BLUE;
 	public static Color LINK_COLOR = Color.GREEN.darker().darker();
 	public static Color HYPER_COLOR = Color.MAGENTA.darker().darker();
 	public static final StyleContext DEFAULT_STYLES = UHSTextArea.getDefaultStyleContext();
 
-	private UHSTextArea pronoun = this;
+	private final Logger logger = LoggerFactory.getLogger( UHSTextArea.class );
 
-	private UHSNode node = null;
 	private StyledDocument doc = null;
+	private UHSNode node = null;
+	private boolean visitable = false;
 
 
 	/**
 	 * Constructs a text area with the class-default style context.
 	 */
-	public UHSTextArea( UHSNode n ) {
-		this( n, DEFAULT_STYLES );
+	public UHSTextArea() {
+		this( DEFAULT_STYLES );
 	}
 
 	/**
 	 * Constructor.
 	 *
-	 * @param n  the UHSNode to display.
 	 * @param styleContext  a collection of font styles to use.
 	 */
-	public UHSTextArea( UHSNode n, StyleContext styleContext ) {
+	public UHSTextArea( StyleContext styleContext ) {
 		super();
-		node = n;
 
 		doc = new DefaultStyledDocument( styleContext );
-		pronoun.setStyledDocument( doc );
+		this.setStyledDocument( doc );
+	}
+
+	/**
+	 * Sets a node to represent.
+	 *
+	 * @param node  the node
+	 * @param visitable  true if the reader supports visiting this node, false otherwise
+	 */
+	public void setNode( UHSNode node, boolean visitable ) {
+		this.node = node;
+		this.visitable = visitable;
 		updateContent();
+	}
+
+	/**
+	 * Sets a style indicating to the user that this node can be visited.
+	 */
+	public void setVisitable( boolean b ) {
+		if ( visitable == b ) return;
+
+		visitable = b;
+		updateContent();
+	}
+
+	public boolean isVisitable() {
+		return visitable;
 	}
 
 
@@ -63,15 +90,22 @@ public class UHSTextArea extends JTextPane {
 	public void updateContent() {
 		try {doc.remove( 0, doc.getLength() );}
 		catch ( BadLocationException e ) {}
-		if ( node.getContentType() != UHSNode.STRING ) return;
+
+		if ( node == null ) return;
 
 		String normStyleName = null;
-		if (node.isGroup()) normStyleName = STYLE_NAME_GROUP;
-		else if (node.isLink()) normStyleName = STYLE_NAME_LINK;
-		else normStyleName = STYLE_NAME_REGULAR;
+		if ( isVisitable() ) {
+			normStyleName = STYLE_NAME_VISITABLE;
+		}
+		else if ( node.isLink() ) {
+			normStyleName = STYLE_NAME_LINK;
+		}
+		else {
+			normStyleName = STYLE_NAME_REGULAR;
+		}
 
 		if (node.getStringContentDecorator() != null) {
-			DecoratedFragment[] fragments = node.getDecoratedStringContent();
+			DecoratedFragment[] fragments = node.getDecoratedStringFragments();
 			for ( int i=0; i < fragments.length; i++ ) {
 				String styleName = normStyleName;
 				for ( int a=0; a < fragments[i].attributes.length; a++ ) {
@@ -88,18 +122,22 @@ public class UHSTextArea extends JTextPane {
 				try {
 					doc.insertString( doc.getLength(), fragments[i].fragment, doc.getStyle( styleName ) );
 				}
-				catch ( BadLocationException e ) {e.printStackTrace();}
+				catch ( BadLocationException e ) {
+					logger.error( "Error updating text", e );
+				}
 			}
 		}
 		else {
 			try {
-				doc.insertString( doc.getLength(), (String)node.getContent(), doc.getStyle( normStyleName ) );
+				doc.insertString( doc.getLength(), node.getRawStringContent(), doc.getStyle( normStyleName ) );
 			}
-			catch ( BadLocationException e ) {e.printStackTrace();}
+			catch ( BadLocationException e ) {
+				logger.error( "Error updating text", e );
+			}
 		}
 
-		pronoun.validate();
-		pronoun.repaint();
+		this.validate();
+		this.repaint();
 	}
 
 
@@ -116,7 +154,7 @@ public class UHSTextArea extends JTextPane {
 	 * Java's default
 	 * - base
 	 * - - regular
-	 * - - - group
+	 * - - - visitable
 	 * - - - link
 	 * - - - hyper
 	 * - - - monospaced
@@ -129,8 +167,8 @@ public class UHSTextArea extends JTextPane {
 			Style baseStyle = result.addStyle( "base", defaultStyle );
 				Style regularStyle = result.addStyle( STYLE_NAME_REGULAR, baseStyle );
 
-					Style groupStyle = result.addStyle( STYLE_NAME_GROUP, regularStyle );
-						StyleConstants.setForeground( groupStyle, GROUP_COLOR );
+					Style visitableStyle = result.addStyle( STYLE_NAME_VISITABLE, regularStyle );
+						StyleConstants.setForeground( visitableStyle, VISITABLE_COLOR );
 
 					Style linkStyle = result.addStyle( STYLE_NAME_LINK, regularStyle );
 						StyleConstants.setForeground( linkStyle, LINK_COLOR );

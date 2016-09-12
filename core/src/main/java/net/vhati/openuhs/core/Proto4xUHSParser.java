@@ -9,6 +9,8 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.Proto4xUHSParseContext;
 import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParseException;
 import net.vhati.openuhs.core.UHSRootNode;
@@ -38,6 +41,9 @@ public class Proto4xUHSParser {
 
 
 	private final Logger logger = LoggerFactory.getLogger( Proto4xUHSParser.class );
+
+	private Pattern startPtn = Pattern.compile( "START \\Q***********\\E ([0-9]+)(?: ([Z|A]))?$" );
+	private Pattern endPtn = Pattern.compile( "END \\Q***********\\E ([0-9]+)$" );
 
 
 	/**
@@ -148,7 +154,7 @@ public class Proto4xUHSParser {
 
 		try {
 			UHSRootNode rootNode = new UHSRootNode();
-				rootNode.setContent( "root", UHSNode.STRING );
+				rootNode.setRawStringContent( "Root" );
 				context.setRootNode( rootNode );
 
 			int index = 1;
@@ -156,16 +162,14 @@ public class Proto4xUHSParser {
 
 			if ( auxStyle != AUX_IGNORE ) {
 				if ( auxStyle == AUX_NEST ) {
-					UHSNode tmpChildNode = rootNode.getChild( 0 );
-					rootNode.setChildren( tmpChildNode.getChildren() );
-					if ( tmpChildNode.getContentType() == UHSNode.STRING ) {
-						rootNode.setContent( tmpChildNode.getContent(), UHSNode.STRING );
-					} else {
-						rootNode.setContent( "", UHSNode.STRING );
-					}
+					UHSNode subjectNode = rootNode.getFirstChild( "proto_subject", UHSNode.class );
+
+					rootNode.setChildren( subjectNode.getChildren() );
+
+					rootNode.setRawStringContent( subjectNode.getRawStringContent() );
 
 					UHSNode blankNode = new UHSNode( "Blank" );
-						blankNode.setContent( "--=File Info=--", UHSNode.STRING );
+						blankNode.setRawStringContent( "--=File Info=--" );
 						rootNode.addChild( blankNode );
 				}
 				while ( context.hasLine( index ) ) {
@@ -200,7 +204,7 @@ public class Proto4xUHSParser {
 		int index = startIndex;
 
 		String tmp = context.getLine( index );
-		if ( tmp.matches( "[0-9]+ [A-Za-z_]+$" ) == true ) {
+		if ( tmp.matches( "[0-9]+ [A-Za-z_]+$" ) ) {
 			if ( tmp.endsWith( "proto_subject" ) ) {
 				index += parseSubjectNode( context, currentNode, index );
 			}
@@ -265,6 +269,8 @@ public class Proto4xUHSParser {
 	 * <li><b>#h+</b> through <b>#h-</b> is a hyperlink (http or email).</li>
 	 * </ul></p>
 	 *
+	 * <p>TODO: This needs to be delegated to node content decorators.</p>
+	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)</li>
 	 * </ul></p>
@@ -272,7 +278,6 @@ public class Proto4xUHSParser {
 	 * @param currentNode  the node whose content needs replacing
 	 */
 	public void parseTextEscapes( UHSNode currentNode ) {
-		if ( currentNode.getContentType() != UHSNode.STRING ) return;
 
 		char[] linebreak = new char[] {'^','b','r','e','a','k','^'};
 		char[] accentPrefix = new char[] {'#','a','+'};
@@ -282,7 +287,7 @@ public class Proto4xUHSParser {
 		char[] wnlin = new char[] {'#','w','-'};
 
 		StringBuffer buf = new StringBuffer();
-		char[] tmp = ((String)currentNode.getContent()).toCharArray();
+		char[] tmp = currentNode.getRawStringContent().toCharArray();
 		String breakStr = " ";
 		char[] chunkA = null;
 		char[] chunkB = null;
@@ -296,7 +301,7 @@ public class Proto4xUHSParser {
 				if ( c+7 < tmp.length ) {
 					chunkA = new char[] {tmp[c],tmp[c+1],tmp[c+2]};
 					chunkB = new char[] {tmp[c+5],tmp[c+6],tmp[c+7]};
-					if (Arrays.equals( chunkA, accentPrefix ) && Arrays.equals( chunkB, accentSuffix )) {
+					if ( Arrays.equals( chunkA, accentPrefix ) && Arrays.equals( chunkB, accentSuffix ) ) {
 						if ( tmp[c+4] == ':' ) {
 							if ( tmp[c+3] == 'A' ) {buf.append( 'Ä' ); c+=7; continue;}
 							if ( tmp[c+3] == 'E' ) {buf.append( 'Ë' ); c+=7; continue;}
@@ -356,7 +361,7 @@ public class Proto4xUHSParser {
 							buf.append( '™' ); c+=7; continue;
 						}
 						else {
-							logger.warn( "Parser encountered an unexpected accent ({}) in this line: {}", (tmp[c+3] + tmp[c+4]), ((String)currentNode.getContent()) );
+							logger.warn( "Parser encountered an unexpected accent ({}) in this line: {}", (tmp[c+3] + tmp[c+4]), currentNode.getRawStringContent() );
 						}
 					}
 				}
@@ -379,7 +384,7 @@ public class Proto4xUHSParser {
 			buf.append( tmp[c] );
 		}
 
-		currentNode.setContent(buf.toString(), UHSNode.STRING);
+		currentNode.setRawStringContent( buf.toString() );
 	}
 
 	/**
@@ -405,22 +410,27 @@ public class Proto4xUHSParser {
 	 */
 	public int parseSubjectNode( Proto4xUHSParseContext context, UHSNode currentNode, int startIndex ) {
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int subjectId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int subjectId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		if ( tokens.length >= 4 ) {
-			if ( tokens[3].equals( "Z" ) ) restriction = UHSNode.RESTRICT_NAG;
-			if ( tokens[3].equals( "A" ) ) restriction = UHSNode.RESTRICT_REGONLY;
+		if ( "Z".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_NAG;
+		}
+		else if ( "A".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_REGONLY;
 		}
 
 		UHSNode subjectNode = new UHSNode( "Subject" );
-			subjectNode.setContent( context.getLine( index ), UHSNode.STRING );
+			subjectNode.setRawStringContent( context.getLine( index ) );
 			parseTextEscapes( subjectNode );
 			subjectNode.setId( subjectId );
 			subjectNode.setRestriction( restriction );
@@ -428,12 +438,12 @@ public class Proto4xUHSParser {
 			context.getRootNode().addLink( subjectNode );
 		index++;
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ subjectId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( subjectId +"" ) ) {
+				break;
 			}
 			else if ( tmp.equals( "=" ) ) {
 				index += buildNodes( context, subjectNode, index );
@@ -467,22 +477,27 @@ public class Proto4xUHSParser {
 		String breakChar = "^break^";
 
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int hintId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int hintId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		if ( tokens.length >= 4 ) {
-			if ( tokens[3].equals( "Z" ) ) restriction = UHSNode.RESTRICT_NAG;
-			if ( tokens[3].equals( "A" ) ) restriction = UHSNode.RESTRICT_REGONLY;
+		if ( "Z".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_NAG;
+		}
+		else if ( "A".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_REGONLY;
 		}
 
 		UHSNode hintNode = new UHSNode( "Hint" );
-			hintNode.setContent( context.getLine( index ), UHSNode.STRING );
+			hintNode.setRawStringContent( context.getLine( index ) );
 			parseTextEscapes( hintNode );
 			hintNode.setId( hintId );
 			hintNode.setRestriction( restriction );
@@ -493,21 +508,21 @@ public class Proto4xUHSParser {
 		StringBuffer tmpContent = new StringBuffer();
 		UHSNode newNode = new UHSNode( "Hint" );
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ hintId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( hintId +"" ) ) {
 				if ( tmpContent.length() > 0 ) {
-					newNode.setContent(tmpContent.toString(), UHSNode.STRING);
+					newNode.setRawStringContent( tmpContent.toString() );
 					parseTextEscapes( newNode );
 					hintNode.addChild( newNode );
 				}
+				break;
 			}
 			else if ( tmp.equals( "-" ) ) {
 				if ( tmpContent.length() > 0 ) {
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					parseTextEscapes( newNode );
 					hintNode.addChild( newNode );
 					newNode = new UHSNode( "Hint" );
@@ -553,22 +568,27 @@ public class Proto4xUHSParser {
 		String breakChar = "^break^";
 
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int textId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int textId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		if ( tokens.length >= 4 ) {
-			if ( tokens[3].equals( "Z" ) ) restriction = UHSNode.RESTRICT_NAG;
-			if ( tokens[3].equals( "A" ) ) restriction = UHSNode.RESTRICT_REGONLY;
+		if ( "Z".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_NAG;
+		}
+		else if ( "A".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_REGONLY;
 		}
 
 		UHSNode textNode = new UHSNode( "Text" );
-			textNode.setContent( context.getLine( index ), UHSNode.STRING );
+			textNode.setRawStringContent( context.getLine( index ) );
 			parseTextEscapes( textNode );
 			textNode.setId( textId );
 			textNode.setRestriction( restriction );
@@ -579,20 +599,20 @@ public class Proto4xUHSParser {
 		StringBuffer tmpContent = new StringBuffer();
 		UHSNode newNode = new UHSNode( "TextData" );
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ textId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( textId +"" ) ) {
 				if ( tmpContent.length() > 0 ) {
 					if ( tmpContent.length() < 3 || !tmpContent.substring( 0, 3 ).startsWith( "#w-" ) ) {
-						tmpContent.insert( 0, "#w-" );  // Text nodes default to honoring newlines
+						tmpContent.insert( 0, "#w-" );  // Text nodes default to honoring newlines.
 					}
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					parseTextEscapes( newNode );
 					textNode.addChild( newNode );
 				}
+				break;
 			}
 			else {
 				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
@@ -633,22 +653,27 @@ public class Proto4xUHSParser {
 		String breakChar = "^break^";
 
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int commentId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int commentId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		if ( tokens.length >= 4 ) {
-			if ( tokens[3].equals( "Z" ) ) restriction = UHSNode.RESTRICT_NAG;
-			if ( tokens[3].equals( "A" ) ) restriction = UHSNode.RESTRICT_REGONLY;
+		if ( "Z".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_NAG;
+		}
+		else if ( "A".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_REGONLY;
 		}
 
 		UHSNode commentNode = new UHSNode( "Comment" );
-			commentNode.setContent( context.getLine( index ), UHSNode.STRING );
+			commentNode.setRawStringContent( context.getLine( index ) );
 			parseTextEscapes( commentNode );
 			commentNode.setId( commentId );
 			commentNode.setRestriction( restriction );
@@ -659,17 +684,17 @@ public class Proto4xUHSParser {
 		StringBuffer tmpContent = new StringBuffer();
 		UHSNode newNode = new UHSNode( "CommentData" );
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ commentId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( commentId +"" ) ) {
 				if ( tmpContent.length() > 0 ) {
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					parseTextEscapes( newNode );
 					commentNode.addChild( newNode );
 				}
+				break;
 			}
 			else {
 				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
@@ -710,22 +735,27 @@ public class Proto4xUHSParser {
 		String breakChar = "^break^";
 
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int creditId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int creditId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		if ( tokens.length >= 4 ) {
-			if ( tokens[3].equals( "Z" ) ) restriction = UHSNode.RESTRICT_NAG;
-			if ( tokens[3].equals( "A" ) ) restriction = UHSNode.RESTRICT_REGONLY;
+		if ( "Z".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_NAG;
+		}
+		else if ( "A".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_REGONLY;
 		}
 
 		UHSNode creditNode = new UHSNode( "Credit" );
-			creditNode.setContent( context.getLine( index ), UHSNode.STRING );
+			creditNode.setRawStringContent( context.getLine( index ) );
 			parseTextEscapes( creditNode );
 			creditNode.setId( creditId );
 			creditNode.setRestriction( restriction );
@@ -736,17 +766,17 @@ public class Proto4xUHSParser {
 		StringBuffer tmpContent = new StringBuffer();
 		UHSNode newNode = new UHSNode( "CreditData" );
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ creditId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( creditId +"" ) ) {
 				if ( tmpContent.length() > 0 ) {
-					newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+					newNode.setRawStringContent( tmpContent.toString() );
 					parseTextEscapes( newNode );
 					creditNode.addChild( newNode );
 				}
+				break;
 			}
 			else {
 				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
@@ -770,6 +800,7 @@ public class Proto4xUHSParser {
 	 * START *********** #
 	 * title
 	 * index
+	 * END *********** #
 	 * }
 	 * </pre></blockquote>
 	 *
@@ -780,22 +811,27 @@ public class Proto4xUHSParser {
 	 */
 	public int parseLinkNode( Proto4xUHSParseContext context, UHSNode currentNode, int startIndex ) {
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int linkId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int linkId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		if ( tokens.length >= 4 ) {
-			if ( tokens[3].equals( "Z" ) ) restriction = UHSNode.RESTRICT_NAG;
-			if ( tokens[3].equals( "A" ) ) restriction = UHSNode.RESTRICT_REGONLY;
+		if ( "Z".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_NAG;
+		}
+		else if ( "A".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_REGONLY;
 		}
 
 		UHSNode linkNode = new UHSNode( "Link" );
-			linkNode.setContent( context.getLine( index ), UHSNode.STRING );
+			linkNode.setRawStringContent( context.getLine( index ) );
 			parseTextEscapes( linkNode );
 			linkNode.setId( linkId );
 			linkNode.setRestriction( restriction );
@@ -807,12 +843,12 @@ public class Proto4xUHSParser {
 			linkNode.setLinkTarget( targetIndex );
 		index++;
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ linkId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( linkId +"" ) ) {
+				break;
 			}
 		}
 
@@ -885,151 +921,178 @@ public class Proto4xUHSParser {
 	 */
 	public int parseHyperImageNode( Proto4xUHSParseContext context, UHSNode currentNode, int startIndex ) {
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String imgPath = null;
-		File imgFile = null;
 		byte[] tmpBytes = null;
 		int x = 0;
 		int y = 0;
-		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( "HotSpot" );
-
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int hyperId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int hyperId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		if ( tokens.length >= 4 ) {
-			if ( tokens[3].equals( "Z" ) ) restriction = UHSNode.RESTRICT_NAG;
-			if ( tokens[3].equals( "A" ) ) restriction = UHSNode.RESTRICT_REGONLY;
+		if ( "Z".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_NAG;
+		}
+		else if ( "A".equals( startMatcher.group( 2 ) ) ) {
+			restriction = UHSNode.RESTRICT_REGONLY;
 		}
 
-		UHSNode imgNode = new UHSNode( "Hyperpng" );
-		String title = context.getLine( index );
+		String mainTitle = context.getLine( index );
 		index++;
 
-		tokens = (context.getLine( index )).split( " " );
+		tokens = context.getLine( index ).split( " " );
 		index++;
-		if ( tokens.length != 3 ) {  // TODO: What's going on here? Need to log it?
-			boolean done = false;
-			while ( !done && context.hasLine( index ) ) {
-				tmp = context.getLine( index );
-				index++;
-				if ( tmp.matches( "END \\Q***********\\E "+ hyperId +"$" ) == true ) {
-					done = true;
-				}
-			}
+		if ( tokens.length != 3 ) {
+			logger.error( "Unable to parse HyperImage's main image path (last parsed line: {})", context.getLastParsedLineNumber() );
+
+			index += skipToEnd( context, hyperId, index );
 			return index-startIndex;
 		}
-		imgPath = tokens[0].replaceAll( "[?]", " " ).replace( '\\', '/' );
-		imgFile = null;
-		if ( imgPath.startsWith( "." ) ) {
-			imgFile = new File( context.getWorkingDir(), imgPath );
+		String mainImagePath = tokens[0].replaceAll( "[?]", " " ).replace( '\\', '/' );
+		File mainImageFile = null;
+		if ( mainImagePath.startsWith( "." ) ) {
+			mainImageFile = new File( context.getWorkingDir(), mainImagePath );
 		}
 		else {
-			imgFile = new File( imgPath );
+			mainImageFile = new File( mainImagePath );
 		}
-		
+
+		tmpBytes = null;
 		try {
-			tmpBytes = readBytesFromFile( imgFile );
-			imgNode.setContent( tmpBytes, UHSNode.IMAGE );
+			tmpBytes = readBytesFromFile( mainImageFile );
 		}
 		catch ( IOException e ) {
-			logger.error( "Could not read referenced file: {} (last parsed line: {})", imgFile.getAbsolutePath(), context.getLastParsedLineNumber(), e );
-			imgNode.setContent( null, UHSNode.IMAGE );
+			logger.error( "Could not read referenced file: {} (last parsed line: {})", mainImageFile.getAbsolutePath(), context.getLastParsedLineNumber(), e );
 		}
 		// Ignore dummy zeroes after the path.
 
-		// This if-else would make regionless HyperImages standalone and unnested
-		//if ( context.getLine( index ).matches( "END \\Q***********\\E "+ hyperId +"$" ) == false ) {
-			hotspotNode.addChild( imgNode );
-
-			hotspotNode.setContent( title, UHSNode.STRING );
+		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( "Hyperpng" );
+			hotspotNode.setRawStringContent( mainTitle );
+			hotspotNode.setRawImageContent( tmpBytes );
 			hotspotNode.setId( hyperId );
 			hotspotNode.setRestriction( restriction );
 			currentNode.addChild( hotspotNode );
 			context.getRootNode().addLink( hotspotNode );
-		//} else {
-		//  imgNode.setId( hyperId );
-		//  currentNode.addChild( imgNode );
-		//  context.getRootNode().addLink( imgNode );
-		//}
 
+		Pattern zonePtn = Pattern.compile( "([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+)\\s*$" );
+		Pattern overlayPathPosPtn = Pattern.compile( "\\S+ (0) (0) ([0-9]+) ([0-9]+)\\s*$" );
+		Matcher zoneMatcher = null;
+		Matcher overlayPathPosMatcher = null;
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ hyperId +"$" ) == true ) {
-				done = true;
+			if ( (endMatcher = endPtn.matcher( tmp )).matches() && endMatcher.group( 1 ).equals( hyperId +"" ) ) {
+				break;
 			}
-			else if ( tmp.matches( "[0-9]+ [0-9]+ [0-9]+ [0-9]+ *$" ) ) {
-				tokens = tmp.trim().split( " " );
-				int zoneX1 = Integer.parseInt( tokens[0] )-1;
-				int zoneY1 = Integer.parseInt( tokens[1] )-1;
-				int zoneX2 = Integer.parseInt( tokens[2] )-1;
-				int zoneY2 = Integer.parseInt( tokens[3] )-1;
+			else if ( (zoneMatcher = zonePtn.matcher( tmp )).matches() ) {
+				int zoneX1 = Integer.parseInt( zoneMatcher.group( 1 ) )-1;
+				int zoneY1 = Integer.parseInt( zoneMatcher.group( 2 ) )-1;
+				int zoneX2 = Integer.parseInt( zoneMatcher.group( 3 ) )-1;
+				int zoneY2 = Integer.parseInt( zoneMatcher.group( 4 ) )-1;
+
+				if ( zoneX1 > zoneX2 || zoneY1 > zoneY2 ) {
+					logger.error( "Invalid HyperImage zone coordinates (last parsed line: {})", context.getLastParsedLineNumber() );
+
+					index += skipToEnd( context, hyperId, index );
+					return index-startIndex;
+				}
 
 				tmp = context.getLine( index );
 				index++;
-				if ( tmp.matches( "[0-9]+ [A-Za-z_]+$" ) == true ) {
+				if ( tmp.matches( "[0-9]+ [A-Za-z_]+$" ) ) {
 					if ( tmp.endsWith( "proto_overlay" ) ) {
-						index++;  // This should skip the overlay's START line
-						index++;  // This should skip the overlay's title line
-						tmp = context.getLine( index );
+						startMatcher = startPtn.matcher( context.getLine( index ) );
 						index++;
-						tokens = tmp.trim().split( " " );
-						if ( tokens.length == 5 && zoneX1 < zoneX2 && zoneY1 < zoneY2 ) {
-							imgPath = tokens[0].replaceAll( "[?]", " " ).replace( '\\', '/' );
-							imgFile = null;
-							if ( imgPath.startsWith( "." ) ) {
-								imgFile = new File( context.getWorkingDir(), imgPath );
-							} else {
-								imgFile = new File( imgPath );
-							}
-							// Skip dummy zeroes
-							int posX = Integer.parseInt( tokens[3] )-1;
-							int posY = Integer.parseInt( tokens[4] )-1;
+						startMatcher.matches();
+						int overlayId = Integer.parseInt( startMatcher.group( 1 ) );
 
-							UHSNode newNode = new UHSNode( "Overlay" );
-							try {
-								tmpBytes = readBytesFromFile( imgFile );
-								newNode.setContent( tmpBytes, UHSNode.IMAGE );
-							}
-							catch ( IOException e ) {
-								logger.error( "Could not read referenced file: {} (last parsed line: {})", imgFile.getAbsolutePath(), context.getLastParsedLineNumber(), e );
-								newNode.setContent( null, UHSNode.IMAGE );
-							}
-							hotspotNode.addChild( newNode );
-							hotspotNode.setSpot( newNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY ) );
-						}
-						else {
-							logger.error( "Invalid HyperImage zone coordinates for proto_overlay (last parsed line: {})", context.getLastParsedLineNumber() );
-						}
-						index++;  // This should skip the overlay's END line
-					}
-					else if (tmp.endsWith( "proto_link" )) {
-						index++;  // This should skip the link's START line
-						title = context.getLine( index );
+						String overlayTitle = context.getLine( index );
 						index++;
+
+						overlayPathPosMatcher = overlayPathPosPtn.matcher( context.getLine( index ) );
+						index++;
+						overlayPathPosMatcher.matches();
+
+						String overlayImagePath = overlayPathPosMatcher.group( 1 ).replaceAll( "[?]", " " ).replace( '\\', '/' );
+
+						File overlayImageFile = null;
+						if ( overlayImagePath.startsWith( "." ) ) {
+							overlayImageFile = new File( context.getWorkingDir(), overlayImagePath );
+						} else {
+							overlayImageFile = new File( overlayImagePath );
+						}
+						// Skip dummy zeroes after the path.
+						int posX = Integer.parseInt( overlayPathPosMatcher.group( 4 ) )-1;
+						int posY = Integer.parseInt( overlayPathPosMatcher.group( 5 ) )-1;
+
+						tmpBytes = null;
+						try {
+							tmpBytes = readBytesFromFile( overlayImageFile );
+						}
+						catch ( IOException e ) {
+							logger.error( "Could not read referenced file: {} (last parsed line: {})", overlayImageFile.getAbsolutePath(), context.getLastParsedLineNumber(), e );
+							// TODO: Throw an error.
+						}
+
+						UHSImageNode overlayNode = new UHSImageNode( "Overlay" );
+							overlayNode.setRawStringContent( overlayTitle );
+							overlayNode.setRawImageContent( tmpBytes );
+							overlayNode.setId( overlayId );
+							context.getRootNode().addLink( overlayNode );
+							hotspotNode.addChild( overlayNode );
+							hotspotNode.setSpot( overlayNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, posX, posY ) );
+
+						index++;  // This should skip the overlay's END line.
+					}
+					else if ( tmp.endsWith( "proto_link" ) ) {
+						startMatcher = startPtn.matcher( context.getLine( index ) );
+						index++;
+						startMatcher.matches();
+						int linkId = Integer.parseInt( startMatcher.group( 1 ) );
+
+						String linkTitle = context.getLine( index );
+						index++;
+
 						int targetIndex = Integer.parseInt( context.getLine( index ) );
 						index++;
-						if ( zoneX1 < zoneX2 && zoneY1 < zoneY2 ) {
-							UHSNode newNode = new UHSNode( "Link" );
-								newNode.setContent( title, UHSNode.STRING );
-								parseTextEscapes( newNode );
-								hotspotNode.addChild( newNode );
-								hotspotNode.setSpot( newNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1 ) );
-								newNode.setLinkTarget( targetIndex );
-						}
-						else {
-							logger.error( "Invalid HyperImage zone coordinates for proto_link (last parsed line: {})", context.getLastParsedLineNumber() );
-						}
-						index++;  // This should skip the link's END line
+
+						UHSNode newNode = new UHSNode( "Link" );
+							newNode.setRawStringContent( linkTitle );
+							parseTextEscapes( newNode );
+							newNode.setId( linkId );
+							context.getRootNode().addLink( newNode );
+							hotspotNode.addChild( newNode );
+							hotspotNode.setSpot( newNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1 ) );
+							newNode.setLinkTarget( targetIndex );
+
+						index++;  // This should skip the link's END line.
+					}
+					else {
+						logger.error( "Unexpected {} child of HyperImage (last parsed line: {})", tmp, context.getLastParsedLineNumber() );
+
+						index += skipToEnd( context, hyperId, index );
+						return index-startIndex;
 					}
 				}
+				else {
+					logger.error( "Unexpected line in HyperImage: {} (last parsed line: {})", tmp, context.getLastParsedLineNumber() );
+
+					index += skipToEnd( context, hyperId, index );
+					return index-startIndex;
+				}
+			}
+			else {
+				logger.error( "Unexpected line in HyperImage: {} (last parsed line: {})", tmp, context.getLastParsedLineNumber() );
+
+				index += skipToEnd( context, hyperId, index );
+				return index-startIndex;
 			}
 		}
 
@@ -1063,19 +1126,22 @@ public class Proto4xUHSParser {
 		String breakChar = " ";
 
 		int index = startIndex;
+		Matcher startMatcher = null;
+		Matcher endMatcher = null;
 		String[] tokens = null;
-		String tmp = context.getLine( index );  // Not interesting
+		String tmp = context.getLine( index );  // Not interesting.
 		index++;
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		tokens = tmp.split( " " );
-		int infoId = Integer.parseInt( tokens[2] );
+		startMatcher.matches();
+		int infoId = Integer.parseInt( startMatcher.group( 1 ) );
+
 		int restriction = UHSNode.RESTRICT_NONE;
-		// Don't bother with restriction
+		// Don't bother with restriction.
 
 		UHSNode infoNode = new UHSNode( "Info" );
-			infoNode.setContent( context.getLine( index ), UHSNode.STRING );
+			infoNode.setRawStringContent( context.getLine( index ) );
 			parseTextEscapes( infoNode );
 			infoNode.setId( infoId );
 			currentNode.addChild( infoNode );
@@ -1096,16 +1162,19 @@ public class Proto4xUHSParser {
 		StringBuffer currentBuffer = null;
 		UHSNode newNode = new UHSNode( "InfoData" );
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
 
-			if ( tmp.startsWith( "copyright" ) || tmp.startsWith( "author-note" ) || tmp.startsWith( "game-note" ) || tmp.startsWith( "comments" ) ) breakChar = " ";
-			else breakChar = "\n";  // The official editor doesn't seem capable of linebreaks
+			if ( tmp.startsWith( "copyright" ) || tmp.startsWith( "author-note" ) || tmp.startsWith( "game-note" ) || tmp.startsWith( "comments" ) ) {
+				breakChar = " ";
+			}
+			else {
+				breakChar = "\n";  // The official editor doesn't seem capable of linebreaks
+			}
 
-			if ( tmp.matches( "END \\Q***********\\E "+ infoId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( infoId +"" ) ) {
 				for ( int i=0; i < buffers.length; i++ ) {
 					if ( buffers[i].length() == 0 ) continue;
 					if ( tmpContent.length() > 0 ) {
@@ -1120,9 +1189,10 @@ public class Proto4xUHSParser {
 					tmpContent.append( buffers[i] );
 				}
 
-				newNode.setContent( tmpContent.toString(), UHSNode.STRING );
+				newNode.setRawStringContent( tmpContent.toString() );
 				parseTextEscapes( newNode );
 				infoNode.addChild( newNode );
+				break;
 			}
 			else if ( tmp.startsWith( "author=" ) ) {
 				currentBuffer = authorBuf;
@@ -1173,27 +1243,46 @@ public class Proto4xUHSParser {
 	 */
 	public int parseUnknownNode( Proto4xUHSParseContext context, UHSNode currentNode, int startIndex ) {
 		int index = startIndex;
-		String tmp = context.getLine( index );
-		index++;
+		Matcher startMatcher = null;
 
+		String tmp = context.getLine( index );  // Now it's interesting.
+		index++;
 		logger.warn( "Unknown hunk: {} (last parsed line: {})", tmp, context.getLastParsedLineNumber() );
 
-		tmp = context.getLine( index );
+		startMatcher = startPtn.matcher( context.getLine( index ) );
 		index++;
-		int unknownId = Integer.parseInt( tmp.substring( tmp.lastIndexOf( " " )+1 ) );
+		startMatcher.matches();
+		int unknownId = Integer.parseInt( startMatcher.group( 1 ) );
 
 		UHSNode newNode = new UHSNode( "Unknown" );
-			newNode.setContent( "^UNKNOWN HUNK^", UHSNode.STRING );
+			newNode.setRawStringContent( "^UNKNOWN HUNK^" );
 			newNode.setId( unknownId );
 			currentNode.addChild( newNode );
 			context.getRootNode().addLink( newNode );
 
-		boolean done = false;
-		while ( !done && context.hasLine( index ) ) {
+		index += skipToEnd( context, unknownId, index );
+		return index-startIndex;
+	}
+
+	/**
+	 * Consumes lines until an END line is reached.
+	 *
+	 * @param context  the parse context
+	 * @param id  an id to expect, as declared by the corresponding START line
+	 * @param startIndex  the line number to start parsing from
+	 * @return the number of lines consumed from the file
+	 */
+	public int skipToEnd( Proto4xUHSParseContext context, int id, int startIndex ) {
+		int index = startIndex;
+		Matcher endMatcher = null;
+		String tmp = null;
+
+		while ( context.hasLine( index ) ) {
 			tmp = context.getLine( index );
 			index++;
-			if ( tmp.matches( "END \\Q***********\\E "+ unknownId +"$" ) == true ) {
-				done = true;
+			endMatcher = endPtn.matcher( tmp );
+			if ( endMatcher.matches() && endMatcher.group( 1 ).equals( id +"" ) ) {
+				break;
 			}
 		}
 

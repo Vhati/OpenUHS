@@ -33,12 +33,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.Proto4xUHSParser;
+import net.vhati.openuhs.core.UHSAudioNode;
+import net.vhati.openuhs.core.UHSHotSpotNode;
+import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
-import net.vhati.openuhs.core.markup.DecoratedFragment;
 import net.vhati.openuhs.desktopreader.AppliablePanel;
 import net.vhati.openuhs.desktopreader.Nerfable;
+import net.vhati.openuhs.desktopreader.reader.AudioNodePanel;
+import net.vhati.openuhs.desktopreader.reader.DefaultNodePanel;
+import net.vhati.openuhs.desktopreader.reader.HotSpotNodePanel;
+import net.vhati.openuhs.desktopreader.reader.ImageNodePanel;
 import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
 import net.vhati.openuhs.desktopreader.reader.NodePanel;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
@@ -55,10 +61,12 @@ import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
  * import org.openuhs.reader.*;
  *
  * UHSReaderPanel readerPanel = new UHSReaderPanel();
+ * readerPanel.registerNodePanel(new DefaultNodePanel());
+ *
  * UHSParser uhsParser = new UHSParser();
  * UHSRootNode rootNode = uhsParser.parseFile(new File("./hints/somefile.uhs"));
  *
- * if (rootNode != null) readerPanel.setUHSNodes(rootNode, rootNode);
+ * if (rootNode != null) readerPanel.setReaderRootNode(rootNode);
  * </code>
  * </pre></blockquote>
  */
@@ -67,6 +75,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	public static final int SCROLL_TO_BOTTOM = 1;
 	public static final int SCROLL_IF_INCOMPLETE = 2;
 
+
 	private final Logger logger = LoggerFactory.getLogger( UHSReaderPanel.class );
 
 	private String readerTitle = "";
@@ -74,7 +83,10 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	private UHSRootNode rootNode = null;
 	private UHSNode currentNode = null;
 
+	private List<NodePanel> nodePanelRegistry = new ArrayList<NodePanel>();
+
 	private NodePanel currentNodePanel = null;
+
 	private JScrollPane centerScroll = null;
 	private JScrollablePanel centerScrollView = new JScrollablePanel( new BorderLayout() );
 
@@ -85,9 +97,9 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	private JButton forwardBtn = null;
 	private JButton findBtn = null;
 
-	private JLabel questionLbl = null;
-	private JLabel showLbl = null;
-	private JButton showNextBtn = null;
+	private JLabel nodeTitleLbl = null;
+	private JLabel revealedLbl = null;
+	private JButton revealNextBtn = null;
 	private JCheckBox showAllBox = null;
 
 	private File hintsDir = new File( "." );
@@ -135,11 +147,11 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 				topPanel.add( ctrlPanel, BorderLayout.CENTER );
 
-			JPanel questionPanel = new JPanel();
-				questionPanel.setLayout( new BoxLayout( questionPanel, BoxLayout.X_AXIS ) );
-				questionLbl = new JLabel( "" );
-					questionPanel.add( questionLbl );
-				topPanel.add( questionPanel, BorderLayout.SOUTH );
+			JPanel nodeTitlePanel = new JPanel();
+				nodeTitlePanel.setLayout( new BoxLayout( nodeTitlePanel, BoxLayout.X_AXIS ) );
+				nodeTitleLbl = new JLabel( "" );
+					nodeTitlePanel.add( nodeTitleLbl );
+				topPanel.add( nodeTitlePanel, BorderLayout.SOUTH );
 
 
 		JPanel centerPanel = new JPanel( new BorderLayout() );
@@ -150,35 +162,35 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 				centerPanel.add( centerScroll );
 
 
-		JPanel showPanel = new JPanel( new GridLayout( 0, 3 ) );
-			showLbl = new JLabel( "" );
-				showLbl.setHorizontalAlignment( SwingConstants.CENTER );
-				showPanel.add( showLbl );
+		JPanel revealPanel = new JPanel( new GridLayout( 0, 3 ) );
+			revealedLbl = new JLabel( "" );
+				revealedLbl.setHorizontalAlignment( SwingConstants.CENTER );
+				revealPanel.add( revealedLbl );
 
-			JPanel showNextHolderPanel = new JPanel( new GridBagLayout() );
-				showNextBtn = new JButton( "V" );
-					showNextBtn.setEnabled( false );
-					showNextBtn.setPreferredSize( new Dimension( showNextBtn.getPreferredSize().width*2, showNextBtn.getPreferredSize().height ) );
-					showNextHolderPanel.add( showNextBtn );
-				showPanel.add( showNextHolderPanel );
+			JPanel revealNextHolderPanel = new JPanel( new GridBagLayout() );
+				revealNextBtn = new JButton( "V" );
+					revealNextBtn.setEnabled( false );
+					revealNextBtn.setPreferredSize( new Dimension( revealNextBtn.getPreferredSize().width*2, revealNextBtn.getPreferredSize().height ) );
+					revealNextHolderPanel.add( revealNextBtn );
+				revealPanel.add( revealNextHolderPanel );
 
 			showAllBox = new JCheckBox( "Show All" );
 				showAllBox.setEnabled( true );
 				showAllBox.setHorizontalAlignment( SwingConstants.CENTER );
 				//showAllBox.setMaximumSize( showAllBox.getPreferredSize() );
-				showPanel.add( showAllBox );
+				revealPanel.add( showAllBox );
 
 		openBtn.addActionListener( this );
 		backBtn.addActionListener( this );
 		forwardBtn.addActionListener( this );
 		findBtn.addActionListener( this );
-		showNextBtn.addActionListener( this );
+		revealNextBtn.addActionListener( this );
 		showAllBox.addActionListener( this );
 
 
 		this.add( topPanel, BorderLayout.NORTH );
 		this.add( centerPanel, BorderLayout.CENTER );
-		this.add( showPanel, BorderLayout.SOUTH );
+		this.add( revealPanel, BorderLayout.SOUTH );
 
 		reset();
 	}
@@ -228,20 +240,20 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 			String tmpString = JOptionPane.showInputDialog( this, "Find what?", "Find text", JOptionPane.QUESTION_MESSAGE );
 			if ( tmpString == null || tmpString.length() == 0 ) return;
 
-			UHSNode newNode = new UHSNode( "result" );
-			newNode.setContent( "Search Results for \""+ tmpString +"\"", UHSNode.STRING );
-			searchNode( newNode, "", 0, (UHSNode)rootNode, tmpString.toLowerCase() );
+			UHSNode newNode = new UHSNode( "Result" );
+			newNode.setRawStringContent( "Search Results for \""+ tmpString +"\"" );
+			searchNode( newNode, "", 0, rootNode, tmpString.toLowerCase() );
 			setReaderNode( newNode );
 		}
-		else if ( source == showNextBtn ) {
-			showNext();
+		else if ( source == revealNextBtn ) {
+			revealNext();
 			scrollTo( SCROLL_TO_BOTTOM );
 			scrollTo( SCROLL_TO_BOTTOM );
 		}
 		else if ( source == showAllBox ) {
 			if( !showAllBox.isSelected() ) return;
 
-			while ( showNext() != false );
+			while ( revealNext() != false );
 		}
 	}
 
@@ -264,7 +276,36 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 
 	/**
-	 * Clears everything.
+	 * Registers a reusable NodePanel to handle a UHSNode class (and its subclasses).
+	 *
+	 * <p>When needed, panels will be searched (in reverse order of
+	 * registration) for the first one whose accept() method returns true.</p>
+	 *
+	 * <p>Registered panels determine the result of isNodeVisitable().</p>
+	 *
+	 * @see isNodeVisitable(UHSNode)
+	 * @see net.vhati.openuhs.desktopreader.reader.NodePanel.accept(UHSNode)
+	 */
+	public void registerNodePanel( NodePanel nodePanel ) {
+		nodePanelRegistry.add( nodePanel );
+	}
+
+	/**
+	 * Returns a previously registered NodePanel capable of representing a UHSNode, or null.
+	 *
+	 * @see #registerNodePanel(NodePanel)
+	 */
+	protected NodePanel getPanelForNode( UHSNode node ) {
+		for ( int i=nodePanelRegistry.size()-1; i >= 0 ; i-- ) {
+			NodePanel p = nodePanelRegistry.get( i );
+			if ( p.accept( node ) ) return p;
+		}
+		return null;
+	}
+
+
+	/**
+	 * Resets this panel.
 	 */
 	public void reset() {
 		historyArray.clear();
@@ -273,13 +314,14 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		forwardBtn.setEnabled( false );
 		findBtn.setEnabled( false );
 
-		showLbl.setText( "" );
-		showNextBtn.setEnabled( false );
+		revealedLbl.setText( "" );
+		revealNextBtn.setEnabled( false );
 
 		rootNode = null;
 		currentNode = null;
 
 		centerScrollView.removeAll();
+		if ( currentNodePanel != null ) currentNodePanel.reset();
 		currentNodePanel = null;
 
 		setReaderTitle( null );
@@ -319,7 +361,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 					@Override
 					public void run() {
 						if ( finalRootNode != null ) {
-							setUHSNodes( finalRootNode, finalRootNode );
+							setReaderRootNode( finalRootNode );
 						} else {
 							JOptionPane.showMessageDialog( UHSReaderPanel.this, "Unreadable file or parsing error", "OpenUHS Cannot Continue", JOptionPane.ERROR_MESSAGE );
 						}
@@ -337,39 +379,44 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	/**
 	 * Displays a new UHS tree.
 	 *
-	 * @param inCurrentNode  the new initial node
-	 * @param inRootNode  the new root node
+	 * @param newRootNode  the new root node
 	 */
-	public void setUHSNodes( UHSNode inCurrentNode, UHSRootNode inRootNode ) {
+	public void setReaderRootNode( UHSRootNode newRootNode ) {
 		reset();
-		rootNode = inRootNode;
+		rootNode = newRootNode;
 		findBtn.setEnabled( true );
-		setReaderNode( inCurrentNode );
+		setReaderNode( rootNode );
+
+		String title = rootNode.getUHSTitle();
+		setReaderTitle( (( title != null ) ? title : "") );
+
 		System.gc();
 	}
 
 
 	/**
 	 * Displays a new node within the current tree.
-	 * <p>If the node is the same as the next/prev one, breadcrumbs will be traversed.</p>
+	 * 
+	 * <p>If the new node is the same as the next/previous one, breadcrumbs
+	 * will be traversed.</p>
 	 *
 	 * @param newNode  the new node
 	 */
 	@Override
 	public void setReaderNode( UHSNode newNode ) {
-		if ( newNode == null ) {return;}
+		if ( newNode == null ) return;
 
-		int matchesNextPrev = 0; // -1 prev, 1 next, 0 neither.
-
-		if ( historyArray.size() > 0 && historyArray.get( historyArray.size()-1 ).equals( newNode ) ) {
-			matchesNextPrev = -1;
+		NodePanel newNodePanel = getPanelForNode( newNode );
+		if ( newNodePanel == null ) {
+			JOptionPane.showMessageDialog( this, "That node is not supported by this reader.", "OpenUHS Cannot Continue", JOptionPane.ERROR_MESSAGE );
+			logger.error( "The reader has no registered NodePanels for node ({}) with content: {}", newNode.getClass().getCanonicalName(), newNode.getPrintableContent() );
+			return;
 		}
-		else if ( futureArray.size() > 0 && futureArray.get( futureArray.size()-1 ).equals( newNode ) ) {
-			matchesNextPrev = 1;
+		else {
+			logger.debug( "Setting reader's node panel to: {}", newNodePanel.getClass().getCanonicalName() );
 		}
 
-
-		if ( matchesNextPrev == -1 ) {
+		if ( !historyArray.isEmpty() && historyArray.get( historyArray.size()-1 ).equals( newNode ) ) {
 			// Move one node into the past.
 			historyArray.remove( historyArray.size()-1 );
 			if ( currentNode != null ) {
@@ -377,7 +424,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 				futureArray.add( currentNode );
 			}
 		}
-		else if ( matchesNextPrev == 1 ) {
+		else if ( !futureArray.isEmpty() && futureArray.get( futureArray.size()-1 ).equals( newNode ) ) {
 			// Move one node into the future.
 			futureArray.remove( futureArray.size()-1 );
 			if ( currentNode != null ) {
@@ -393,48 +440,33 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 			// Wipe the future.
 			futureArray.clear();
 		}
-		backBtn.setEnabled( (historyArray.size() > 0) );
-		forwardBtn.setEnabled( (futureArray.size() > 0) );
-
+		backBtn.setEnabled( !historyArray.isEmpty() );
+		forwardBtn.setEnabled( !futureArray.isEmpty() );
 
 		currentNode = newNode;
-		boolean showAll = false;
+		boolean showAll = showAllBox.isSelected();
 
-		if ( currentNode.equals(rootNode) ) {
-			questionLbl.setText( "" );
-			setReaderTitle( (String)currentNode.getContent() );
-			showAll = true;
-		}
-		else {
-			if ( currentNode.getContentType() == UHSNode.STRING ) {
-				StringBuffer questionBuf = new StringBuffer();
-				questionBuf.append( currentNode.getType() ).append( "=" );
+		if ( currentNodePanel != null ) currentNodePanel.reset();
 
-				if ( currentNode.getStringContentDecorator() != null ) {
-					DecoratedFragment[] fragments = currentNode.getDecoratedStringContent();
-					for ( int i=0; i < fragments.length; i++ ) {
-						questionBuf.append( fragments[i].fragment );
-					}
-				}
-				else {
-					questionBuf.append( (String)currentNode.getContent() );
-				}
-				questionLbl.setText( questionBuf.toString() );
-			}
-			else {
-				questionLbl.setText( "" );
-			}
-			showAll = showAllBox.isSelected();
+		if ( currentNodePanel != newNodePanel ) {
+			centerScrollView.removeAll();
+
+			currentNodePanel = newNodePanel;
+			currentNodePanel.setNavCtrl( this );
+			centerScrollView.add( currentNodePanel );
 		}
-		centerScrollView.removeAll();
-		currentNodePanel = new NodePanel( currentNode, this, showAll );
-		centerScrollView.add( currentNodePanel );
+		currentNodePanel.setNode( currentNode, showAll );
+
+		nodeTitleLbl.setText( currentNodePanel.getTitle() );
 
 		scrollTo( SCROLL_IF_INCOMPLETE );
 
-		boolean complete = currentNodePanel.isComplete();
-		showLbl.setText( (( complete ) ? currentNode.getChildCount() : currentNode.getRevealedAmount()) +"/"+ currentNode.getChildCount() );
-		showNextBtn.setEnabled( !complete );
+		if ( currentNodePanel.isRevealSupported() ) {
+			revealedLbl.setText( currentNode.getCurrentReveal() +"/"+ currentNode.getMaximumReveal() );
+		} else {
+			revealedLbl.setText( "" );
+		}
+		revealNextBtn.setEnabled( !currentNodePanel.isComplete() );
 
 		this.validate();
 		this.repaint();
@@ -450,7 +482,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 */
 	@Override
 	public void setReaderNode( int id ) {
-		UHSNode tmpNode = rootNode.getLink( id );
+		UHSNode tmpNode = rootNode.getNodeByLinkId( id );
 		if ( tmpNode != null ) {
 			setReaderNode( tmpNode );
 		} else {
@@ -460,7 +492,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 
 	/**
-	 * Sets the reader's title to the specified string.
+	 * Sets the reader's title.
 	 *
 	 * @param s  a title (null is treated as "")
 	 */
@@ -474,14 +506,14 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		}
 	}
 
-	/**
-	 * Gets the title of the reader.
-	 *
-	 * @return the title of the reader
-	 */
 	@Override
 	public String getReaderTitle() {
 		return readerTitle;
+	}
+
+	@Override
+	public boolean isNodeVisitable( UHSNode node ) {
+		return ( getPanelForNode( node ) != null );
 	}
 
 
@@ -495,34 +527,29 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 * @param resultsNode  an existing temporary node to add results to
 	 * @param prefix  phrase to prepend to result titles (use "")
 	 * @param depth  recursion level reminder (use 0)
-	 * @param input  the phrase to search for
+	 * @param input  the phrase to search for (must be lowercase)
 	 */
 	public void searchNode( UHSNode resultsNode, String prefix, int depth, UHSNode currentNode, String input ) {
 		if ( input == null || input.length() == 0 ) return;
 		// Assuming input is lower case because toLowering it here would be wasteful.
 
-		if ( currentNode.getContentType() == UHSNode.STRING ) {
-			prefix = (( depth > 1 ) ? prefix+" : " : "") + currentNode.getContent();
-		} else {
-			prefix = (( depth > 1 ) ? prefix+" : " : "") + "???";
-		}
+		prefix = (( depth > 1 ) ? prefix+" : " : "") + currentNode.getDecoratedStringContent();
 
 		depth++;
-		UHSNode tmpNode = null;
-		UHSNode newNode = null;
 		boolean beenListed = false;
 		for ( int i=0; i < currentNode.getChildCount(); i++ ) {
-			tmpNode = currentNode.getChild( i );
-			if ( tmpNode.getContentType() == UHSNode.STRING && beenListed == false ) {
-				if ( ((String)tmpNode.getContent()).toLowerCase().indexOf( input ) != -1 ) {
-					newNode = new UHSNode( "result" );
-					newNode.setContent( prefix, UHSNode.STRING );
+			UHSNode tmpNode = currentNode.getChild( i );
+
+			if ( beenListed == false ) {
+				if ( tmpNode.getDecoratedStringContent().toLowerCase().indexOf( input ) != -1 ) {
+					UHSNode newNode = new UHSNode( "Result" );
+					newNode.setRawStringContent( prefix );
 					newNode.setChildren( currentNode.getChildren() );
 					resultsNode.addChild( newNode );
 					beenListed = true;
 				}
 			}
-			searchNode( resultsNode, prefix, depth, currentNode.getChild( i ), input );
+			searchNode( resultsNode, prefix, depth, tmpNode, input );
 		}
 	}
 
@@ -532,20 +559,16 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	 *
 	 * @return true if successful, false otherwise
 	 */
-	public boolean showNext() {
+	public boolean revealNext() {
 		if ( currentNodePanel == null ) return false;
+		if ( currentNodePanel.isComplete() ) return false;
 
-		int revealed = currentNodePanel.showNext();
-		if ( revealed == -1 ) {
-			showNextBtn.setEnabled( false );
-			return false;
-		}
-		else {
-			int hintCount = currentNodePanel.getNode().getChildCount();
-			if ( revealed == hintCount ) showNextBtn.setEnabled( false );
-			showLbl.setText( revealed +"/"+ hintCount);
-			return true;
-		}
+		currentNodePanel.revealNext();
+
+		revealedLbl.setText( currentNodePanel.getCurrentReveal() +"/"+ currentNodePanel.getMaximumReveal() );
+		revealNextBtn.setEnabled( !currentNodePanel.isComplete() );
+
+		return true;
 	}
 
 

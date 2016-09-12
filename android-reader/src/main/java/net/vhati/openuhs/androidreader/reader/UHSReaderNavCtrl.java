@@ -1,4 +1,5 @@
-package net.vhati.openuhs.desktopreader.reader;
+package net.vhati.openuhs.androidreader.reader;
+
 
 import net.vhati.openuhs.core.UHSNode;
 

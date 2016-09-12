@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.Proto4xUHSParser;
+import net.vhati.openuhs.core.UHSAudioNode;
+import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
@@ -103,6 +105,7 @@ public class UHSReaderMain {
 			}
 
 			// Scan  an entire dir for parse errors, discard rootNodes.
+			// TODO: Validate link targets.
 			// TODO: Valdate all the markup that was delegated to decorators.
 			if ( options.has( optionScanDir ) ) {
 				File scanDir = options.valueOf( optionScanDir );
@@ -290,7 +293,7 @@ public class UHSReaderMain {
 		frame.setVisible( true );
 
 		if ( rootNode != null ) {
-			frame.getUHSReaderPanel().setUHSNodes( rootNode, rootNode );
+			frame.getUHSReaderPanel().setReaderRootNode( rootNode );
 		}
 
 		// Get the JFileChooser cached.
@@ -317,14 +320,26 @@ public class UHSReaderMain {
 	 */
 	public static int extractNode( UHSNode currentNode, File destDir, String basename, int n ) throws IOException {
 		boolean extractable = false;
-		if (currentNode.getContentType() == UHSNode.IMAGE) extractable = true;
-		else if (currentNode.getContentType() == UHSNode.AUDIO) extractable = true;
+		if ( currentNode instanceof UHSImageNode ) {
+			extractable = true;
+		} else if ( currentNode instanceof UHSAudioNode ) {
+			extractable = true;
+		}
 
 		if ( extractable == true ) {
 			int id = currentNode.getId();
 			String idStr = (( id == -1 ) ? "" : "_"+id);
 
-			byte[] content = (byte[])currentNode.getContent();
+			byte[] content = null;
+			if ( currentNode instanceof UHSImageNode ) {
+				UHSImageNode imageNode = (UHSImageNode)currentNode;
+				content = imageNode.getRawImageContent();
+			}
+			else if ( currentNode instanceof UHSAudioNode ) {
+				UHSAudioNode audioNode = (UHSAudioNode)currentNode;
+				content = audioNode.getRawAudioContent();
+			}
+
 			String extension = UHSUtil.getFileExtension( content );
 
 			File destFile = new File( destDir, (basename + n + idStr +"."+ extension) );

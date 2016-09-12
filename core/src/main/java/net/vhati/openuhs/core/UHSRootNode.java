@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.vhati.openuhs.core.UHSNode;
+
 
 /**
  * A node to hold all others.
@@ -44,7 +46,7 @@ public class UHSRootNode extends UHSNode {
 	 * @param doomedLink  the node to remove
 	 */
 	public void removeLink( UHSNode doomedLink ) {
-		if ( !linkMap.containsKey( doomedLink.getId()+"") ) return;
+		if ( !linkMap.containsKey( doomedLink.getId()+"" ) ) return;
 		linkMap.remove( doomedLink.getId()+"" );
 	}
 
@@ -61,41 +63,38 @@ public class UHSRootNode extends UHSNode {
 	 * <p>The node itself will always be returned,
 	 * without any temporary group wrapping it.</p>
 	 *
-	 * @param id  ID of the node to get
+	 * @param id  the id of the node to get
 	 * @return the node, or null if not found
 	 */
 	public UHSNode getNodeByLinkId( int id ) {
-		Object o = linkMap.get( id+"" );
-		if ( o == null ) return null;
+		UHSNode targetNode = linkMap.get( id+"" );
 
-		UHSNode newNode = (UHSNode)o;
-		return newNode;
+		return targetNode;
 	}
 
 	/**
 	 * Gets a link's target.
 	 *
 	 * <p>If the target is not a group, a temporary
-	 * encapsulating group will be created so that
+	 * group node will be created as a wrapper so that
 	 * the target's content will not be treated as
 	 * a title.</p>
 	 *
-	 * @param id  ID of the node to get
-	 * @return the node, or null if not found
+	 * @param id  the id of the node to get
+	 * @return the node, possibly wrapped, or null if not found
 	 */
 	public UHSNode getLink( int id ) {
-		Object o = linkMap.get( id+"" );
-		if ( o == null ) return null;
+		UHSNode targetNode = linkMap.get( id+"" );
+		if ( targetNode == null ) return null;
 
-		UHSNode newNode = (UHSNode)o;
-		if ( newNode.isGroup() ) {
-			return newNode;
+		if ( targetNode.isGroup() ) {
+			return targetNode;
 		}
 		else {
-			UHSNode tmpNode = new UHSNode( "Temp" );
-			tmpNode.setContent( "", UHSNode.STRING );
-			tmpNode.addChild( newNode );
-			return tmpNode;
+			UHSNode wrapperNode = new UHSNode( "LinkWrapper" );
+			wrapperNode.setRawStringContent( "" );
+			wrapperNode.addChild( targetNode );
+			return wrapperNode;
 		}
 	}
 
@@ -103,16 +102,21 @@ public class UHSRootNode extends UHSNode {
 		return linkMap.size();
 	}
 
+
 	@Override
-	public void setChildren( List<UHSNode> inChildren ) {
-		super.setChildren( inChildren );
-		if ( this.getChildCount() > 0 ) this.setRevealedAmount( this.getChildCount() );
+	public void setChildren( List<UHSNode> newChildren ) {
+		super.setChildren( newChildren );
+		if ( this.getChildCount() > 0 ) {
+			this.setCurrentReveal( this.getMaximumReveal() );
+		}
 	}
 
 	@Override
-	public void addChild( UHSNode inChild ) {
-		super.addChild( inChild );
-		if ( this.getChildCount() > 0 ) this.setRevealedAmount( this.getChildCount() );
+	public void addChild( UHSNode newChild ) {
+		super.addChild( newChild );
+		if ( this.getChildCount() > 0 ) {
+			this.setCurrentReveal( this.getMaximumReveal() );
+		}
 	}
 
 
@@ -126,21 +130,18 @@ public class UHSRootNode extends UHSNode {
 	 */
 	public String getUHSTitle() {
 		String result = null;
-		if ( this.getContentType() == UHSNode.STRING ) {
-			String tmp = (String)this.getContent();
-			if ( tmp.equals("Root") ) {
-				if ( this.getChildCount() > 0 ) {
-					UHSNode childNode = this.getChild( 0 );
-					if ( childNode.getType() == "Subject" ) {
-						if ( childNode.getContentType() == UHSNode.STRING ) {
-							result = (String)childNode.getContent();
-						}
-					}
-				}
-			} else {
-				result = tmp;
+
+		String tmp = this.getDecoratedStringContent();
+		if ( !"Root".equals( tmp ) ) {
+			result = tmp;
+		}
+		else if ( this.getChildCount() > 0 ) {
+			UHSNode subjectNode = this.getFirstChild( "Subject", UHSNode.class );
+			if ( subjectNode != null ) {
+				result = subjectNode.getDecoratedStringContent();
 			}
 		}
+
 		if ( result != null && result.length() == 0 ) result = null;
 
 		return result;
@@ -160,16 +161,14 @@ public class UHSRootNode extends UHSNode {
 		String result = null;
 
 		for ( int i=this.getChildCount()-1; result == null && i >= 0; i-- ) {
-			UHSNode currentNode = this.getChild(i);
-			if ( currentNode.getType() == "Version" ) {
-				if ( currentNode.getContentType() == UHSNode.STRING ) {
-					result = (String)currentNode.getContent();
-				}
+			UHSNode tmpNode = this.getChild( i );
+			if ( "Version".equals( tmpNode.getType() ) ) {
+				result = tmpNode.getDecoratedStringContent();
 			}
 		}
 
 		if ( result != null ) {
-			if ( result.startsWith("Version: ") ) result = result.substring( 9 );
+			if ( result.startsWith( "Version: " ) ) result = result.substring( 9 );
 			if ( result.length() == 0 ) result = null;
 		}
 		return result;
