@@ -1118,18 +1118,24 @@ public class UHSParser {
 	 * </pre></blockquote>
 	 *
 	 * <p>The "--not-a-gap--" lines are inserted here for visual clarity.</p>
+	 *
 	 * <p>Offset is counted from the beginning of the file.</p>
+	 *
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
-	 * <p>A gifa has the same structure, but might not officially contain regions.</p>
-	 * <p>The main image gets an id, which may be referenced by an Incentive node.</p>
 	 *
-	 * </p>Line ids of nodes nested within a HyperImage are skewed
-	 * because their initial line is the region coords, and the
-	 * node type comes second.</p>
+	 * <p>A gifa has the same structure, but might not officially contain
+	 * regions.</p>
 	 *
-	 * <p>TODO: Nested HyperImages aren't expected to recurse further
-	 * with additional nested HiperImage nodes. It is unknown whether such children
-	 * would need their ids would be doubly skewed.</p>
+	 * <p>The HyperImage itself gets an id, as usual. The main image also gets
+	 * an id, which may be referenced by an Incentive node.</p>
+	 *
+	 * </p>Line ids of nodes nested within a HyperImage are skewed because
+	 * their initial line is the region coords, and the node type comes
+	 * second.</p>
+	 *
+	 * <p>TODO: HyperImages can contain additional HyperImage nodes that have
+	 * their own children. It is unknown whether such children would need
+	 * all their ids doubly skewed.</p>
 	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 7, the Stone Altar, Can you give me a picture of the solution?</li>
@@ -1190,9 +1196,10 @@ public class UHSParser {
 		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( mainType );
 			hotspotNode.setRawStringContent( mainTitle );
 			hotspotNode.setRawImageContent( tmpBytes );
-			hotspotNode.setId( startIndex );  // TODO: id = mainImageIndex and/or startIndex?
+			hotspotNode.setId( startIndex );  // TODO: The id can be mainImageIndex and/or startIndex.
 			currentNode.addChild( hotspotNode );
 			context.getRootNode().addLink( hotspotNode );
+			context.getRootNode().addLink( hotspotNode, mainImageIndex );  // TODO: Ugly. See UHSRootNode's javadoc.
 
 		for ( int j=0; j < innerCount; ) {
 			// Nested ids in HyperImage point to the zone line. Node type is at (zone line)+1.
@@ -1250,7 +1257,7 @@ public class UHSParser {
 						newNode.shiftId( -1, context.getRootNode() );
 						// It might be weird to recurse HyperImage id shifts.
 						if ( tmp.endsWith( "hyperpng" ) && newNode.getChildCount() != 1 ) {
-							logger.error( "Nested HyperImage has an unexpected child count (last parsed line: {})", context.getLastParsedLineNumber() );
+							// TODO.
 						}
 						hotspotNode.setSpot( newNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1 ) );
 					}
