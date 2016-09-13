@@ -56,7 +56,7 @@ public class Version9xStringDecorator extends StringDecorator {
 		{acuteMarkup, acuteAccent, acuteNormal},
 		{graveMarkup, graveAccent, graveNormal},
 		{circumflexMarkup, circumflexAccent, circumflexNormal},
-		{graveMarkup, graveAccent, graveNormal}
+		{tildeMarkup, tildeAccent, tildeNormal}
 	};
 
 
