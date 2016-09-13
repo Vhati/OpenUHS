@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -236,6 +237,7 @@ public class UHSReaderMain {
 
 				PatternLayoutEncoder encoder = new PatternLayoutEncoder();
 				encoder.setContext( lc );
+				encoder.setCharset( Charset.forName( "UTF-8" ) );
 				encoder.setPattern( "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n" );
 				encoder.start();
 
