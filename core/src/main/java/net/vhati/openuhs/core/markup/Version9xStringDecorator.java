@@ -155,7 +155,7 @@ public class Version9xStringDecorator extends StringDecorator {
 				if ( !replaced ) {
 					// TODO: Get the logger out of here?
 					Logger logger = LoggerFactory.getLogger( Version9xStringDecorator.class );
-					logger.warn( "StringDecorator encountered an expected accent ({}) in node content: {}", (tmp[c+3] + tmp[c+4]), (new String(tmp)) );
+					logger.warn( "StringDecorator encountered an expected accent ({}) in node content: {}", String.format( "%c%c", tmp[c+3], tmp[c+4] ), (new String(tmp)) );
 				}
 				if ( replaced ) {return 7;}
 			}
