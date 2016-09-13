@@ -190,7 +190,7 @@ public class Version9xStringDecorator extends StringDecorator {
 		}
 
 		char[] linebreak = StringDecorator.linebreak;
-		if ( c+linebreak.length < tmp.length ) {
+		if ( c+linebreak.length <= tmp.length ) {
 			char[] chunkA = new char[linebreak.length];
 			System.arraycopy( tmp, c, chunkA, 0, linebreak.length );
 			if ( Arrays.equals( chunkA, linebreak ) ) {buf.append( breakStr[0] ); return linebreak.length-1;}
