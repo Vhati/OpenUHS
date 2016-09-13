@@ -183,27 +183,18 @@ public class UHSParser {
 	 * @param f  a file to read
 	 * @param auxStyle  option for 9x files: AUX_NORMAL, AUX_IGNORE, or AUX_NEST
 	 * @return the root of a tree of nodes representing the hint file
-	 * @see #parse88Format(UHSParseContext, String, int)
+	 * @see #parse88Format(UHSParseContext)
 	 * @see #parse9xFormat(UHSParseContext, int)
 	 */
 	public UHSRootNode parseFile( File f, int auxStyle ) throws IOException, UHSParseException {
 		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
 			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
 		};
-		int index = -1;    // Make this 0-based and inc in advance.
-		int oldFudge = 0;  // Line fudge for 88a format.
-		int newFudge = 0;  // Line fudge for 9x format.
 
+		int index = -1;  // Increment before reads, and this will be the last read 0-based index.
 		String tmp = "";
-		// Four-line header is here
-		int endSectionTitles = 0;
-
-		int startHintSection = 0;
-		int endHintSection = 0;
 
 		List<String> allLines = new ArrayList<String>();
-		String title = "";
-
 		long binOffset = -1;
 		byte[] binHunk = new byte[0];
 
@@ -219,36 +210,27 @@ public class UHSParser {
 			}
 			allLines.add( tmp );
 
-			index++;
-			tmp = raf.readLine();
-			allLines.add( tmp );
-			title = tmp;
-
-			index++;
-			tmp = raf.readLine();    // Skip the startHintSection
-			allLines.add( tmp );
-
-			index++;
-			tmp = raf.readLine();
-			allLines.add( tmp );
-			endHintSection = Integer.parseInt( tmp );
-
-			// In the 88a format, indeces count from the first subject, the upcoming line.
-			// in the 9x format, this is a fake 88a header with a "upgrade your reader" notice.
-
-			// So ignore 4 lines. context.getline() will take 0-based indeces from there.
-			oldFudge = index+1;
-
 			// There's a hunk of binary referenced by offset at the end of 91a and newer files
 			// One can skip to it by searching for 0x1Ah.
+			long skippedNulls = 0;
 			byte tmpByte = -1;
 			while ( (tmpByte = (byte)raf.read()) != -1 && tmpByte != 0x1a ) {
-				raf.getChannel().position( raf.getChannel().position()-1 );
+				// There should be no nulls prior to the binary hunk.
+				if ( tmpByte == 0x00 ) {
+					skippedNulls++;
+					continue;  // A couple malformed 88a's have nulls at the end, skip.
+				}
+
+				raf.getChannel().position( raf.getChannel().position()-1 );  // Unread that byte.
 				index++;
 				tmp = raf.readLine();                 // RandomAccessFile sort of reads as ASCII/UTF-8?
-				tmp = tmp.replaceAll( "\\x00", "" );  // A couple malformed 88a's have nulls at the end
+				if ( tmp.indexOf( "\\x00" ) >= 0 ) {
+					logger.warn( "Pruned extraneous null bytes from text" );
+					tmp = tmp.replaceAll( "\\x00", "" );
+				}
 				allLines.add( tmp );
 			}
+			if ( skippedNulls > 0 ) logger.warn( "Skipped {} extraneous null bytes", skippedNulls );
 
 			binOffset = raf.getChannel().position();  // Either after 0x1a, or EOF.
 			long binSize = raf.length() - binOffset;
@@ -268,18 +250,7 @@ public class UHSParser {
 			try {if ( raf != null ) raf.close();} catch ( IOException e ) {}
 		}
 
-		// Search for a line indicating the 9x format, starting after the 88a hints section.
-		// In the 9x format, its indeces begin the line after that.
-		boolean version88a = true;
-		for ( int i=oldFudge+endHintSection-1+1; i < allLines.size(); i++ ) {
-			if ( allLines.get( i ).equals( "** END OF 88A FORMAT **" ) ) {
-				if ( !force88a ) {
-					version88a = false;
-					newFudge = i;
-					break;
-				}
-			}
-		}
+		index = 0;  // Now increment after getting lines, and this will be the pending 0-based index.
 
 		UHSParseContext context = new UHSParseContext();
 		context.setFile( f );
@@ -287,13 +258,17 @@ public class UHSParser {
 		context.setBinaryHunk( binHunk );
 		context.setBinaryHunkOffset( binOffset );
 
-		UHSRootNode rootNode = null;
-		if ( version88a ) {
-			context.setLineFudge( oldFudge );
-			rootNode = parse88Format( context, title, endHintSection );
-		}
-		else {
-			context.setLineFudge( newFudge );
+		index += parse88Format( context );
+		UHSRootNode rootNode = context.getRootNode();
+
+		// In 88a files, this would e the end.
+		// In 9x files, index should be right after "** END OF 88A FORMAT **".
+
+		if ( !force88a && context.getRootNode().isLegacy() ) {
+			// That was a fake 88a format message, now comes the 9x format.
+
+			context.setLineFudge( index-1 );  // Ignore all lines so far. Treat that END line as 0.
+
 			rootNode = parse9xFormat( context, auxStyle );
 
 			long storedSum = readChecksum( binHunk );
@@ -314,8 +289,6 @@ public class UHSParser {
 
 	/**
 	 * Generates a tree of UHSNodes from UHS 88a.
-	 *
-	 * <p>A Version node will be added, since that was not natively reported in 88a.</p>
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -343,84 +316,145 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * <p>Index references begin at the first subject.</p>
+	 * <p>There are no hunk labels. The line index denotes meaning. Text of
+	 * subjects, questions, and hints are encrypted.</p>
 	 *
-	 * <p>The official reader only honors line breaks
-	 * in credit for lines with fewer than 20 characters.
-	 * Otherwise, they're displayed as a space. No authors
-	 * ever wrote with that in mind, so it's not worth
-	 * enforcing.</p>
+	 * <p>The file's 1-based line references begin at the first subject.
+	 * This method will adjust the parse context's line fudge to ignore the
+	 * first four lines after it reads them.</p>
+	 *
+	 * <p>A Version node will be added, since that was not natively reported
+	 * in 88a.</p>
+	 *
+	 * <p>The official reader only honors line breaks in credit for lines with
+	 * fewer than 20 characters. Otherwise, they're displayed as a space. No
+	 * authors ever wrote with that in mind, so it's not worth enforcing.</p>
+	 *
+	 * <p>The generated root node will be added to the parse context. Its
+	 * legacy flag will be set if "** END OF 88A FORMAT **" was found at the
+	 * end.</p>
 	 *
 	 * @param context  the parse context
-	 * @param title  the UHS document's title (not the filename)
-	 * @param hintSectionEnd  index of the last hint, relative to the first subject (as in the file, 1-based)
-	 * @return the root of a tree of nodes
+	 * @see #decryptString(CharSequence)
+	 * @return  the number of lines consumed from the file in parsing children
 	 */
-	public UHSRootNode parse88Format( UHSParseContext context, String title, int hintSectionEnd ) throws UHSParseException {
+	public int parse88Format( UHSParseContext context ) throws UHSParseException {
 		try {
+			int fudged = 0;
+			int index = 0;
+
+			String magicLine = context.getLine( index++ );
+			if ( !"UHS".equals( magicLine ) ) {
+				throw new UHSParseException( String.format( "The 88a parser encountered an unexpected first line (not 'UHS'): %s", magicLine ) );
+			}
+
+			String title = context.getLine( index++ );
+			int headerFirstHint = Integer.parseInt( context.getLine( index++ ) );
+			int headerLastHint = Integer.parseInt( context.getLine( index++ ) );
+
 			UHSRootNode rootNode = new UHSRootNode();
 				rootNode.setRawStringContent( title );
-			int fudge = 1; // The format's 1-based, the array's 0-based.
+			context.setRootNode( rootNode );
 
-			int questionSectionStart = Integer.parseInt( context.getLine( 1 ) ) - fudge;
+			// Reset, ignoring 3 of those 4 lines, to make the next line (first subject) be 1.
+			fudged = index-1;
+			context.setLineFudge( context.getLineFudge() + fudged );
+			index = 1;
 
-			for ( int s=0; s < questionSectionStart; s+=2 ) {
+			boolean firstSubject = true;
+			int questionSectionStart = -1;
+
+			List<UHSNode> subjectNodes = new ArrayList<UHSNode>();
+			List<Integer> subjectsFirstQuestion = new ArrayList<Integer>();
+
+			// Collect all subjects at once, while adding them to the root node along the way.
+			while ( firstSubject || index < questionSectionStart ) {
 				UHSNode currentSubject = new UHSNode( "Subject" );
-					currentSubject.setRawStringContent( decryptString( context.getLine( s ) ) );
+					currentSubject.setRawStringContent( decryptString( context.getLine( index++ ) ) );
 					rootNode.addChild( currentSubject );
+					subjectNodes.add( currentSubject );
 
-				int firstQuestion = Integer.parseInt( context.getLine( s+1 ) ) - fudge;
-				int nextSubjectsFirstQuestion = Integer.parseInt( context.getLine( s+3 ) ) - fudge;
-					// On the last loop, s+3 is a question's first hint
+				int firstQuestion = Integer.parseInt( context.getLine( index++ ) );
+				subjectsFirstQuestion.add( new Integer( firstQuestion ) );
 
-				for ( int q=firstQuestion; q < nextSubjectsFirstQuestion; q+=2 ) {
-					UHSNode currentQuestion = new UHSNode( "Question" );
-						currentQuestion.setRawStringContent( decryptString( context.getLine( q ) ) +"?" );
-						currentSubject.addChild( currentQuestion );
-
-					int firstHint = Integer.parseInt( context.getLine( q+1 ) ) - fudge;
-					int lastHint = 0;
-					if ( s == questionSectionStart - 2 && q == nextSubjectsFirstQuestion - 2 ) {
-						lastHint = hintSectionEnd + 1 - fudge;
-							// Line after the final hint
-					} else {
-						lastHint = Integer.parseInt( context.getLine( q+3 ) ) - fudge;
-							// Next question's first hint
-					}
-
-					for ( int h=firstHint; h < lastHint; h++ ) {
-						UHSNode currentHint = new UHSNode( "Hint" );
-							currentHint.setRawStringContent( decryptString( context.getLine( h ) ) );
-							currentQuestion.addChild( currentHint );
-					}
+				if ( firstSubject ) {
+					questionSectionStart = firstQuestion;
+					firstSubject = false;
 				}
 			}
+
+			int s = 0;
+			List<UHSNode> questionNodes = new ArrayList<UHSNode>();
+			List<Integer> questionsFirstHint = new ArrayList<Integer>();
+
+			// Collect all questions, while adding them to subjects along the way.
+			while ( index < headerFirstHint ) {
+				if ( s+1 < subjectNodes.size() && index == subjectsFirstQuestion.get( s+1 ) ) {
+					s++;  // Reached the next subject's questions.
+				}
+				UHSNode currentSubject = subjectNodes.get( s );
+
+				UHSNode currentQuestion = new UHSNode( "Question" );
+					currentQuestion.setRawStringContent( decryptString( context.getLine( index++ ) ) +"?" );
+					currentSubject.addChild( currentQuestion );
+					questionNodes.add( currentQuestion );  // Keep a flat list as well, for counting.
+
+				int firstHint = Integer.parseInt( context.getLine( index++ ) );
+				questionsFirstHint.add( new Integer( firstHint ) );
+			}
+
+			int q = 0;
+
+			// Collect all the hints, adding them to each question.
+			while ( index <= headerLastHint ) {
+				if ( q+1 < questionNodes.size() && index == questionsFirstHint.get( q+1 ) ) {
+					q++;  // Reached the next question's hints.
+				}
+				UHSNode currentQuestion = questionNodes.get( q );
+
+				UHSNode currentHint = new UHSNode( "Hint" );
+					currentHint.setRawStringContent( decryptString( context.getLine( index++ ) ) );
+					currentQuestion.addChild( currentHint );
+			}
+			// All subjects, questions, and hints have been collected.
+
+			// Index should be at the end credit lines now.
+
 			UHSNode blankNode = new UHSNode( "Blank" );
 				blankNode.setRawStringContent( "--=File Info=--" );
 				rootNode.addChild( blankNode );
+
 			UHSNode fauxVersionNode = new UHSNode( "Version" );
 				fauxVersionNode.setRawStringContent( "Version: 88a" );
 				rootNode.addChild( fauxVersionNode );
-				UHSNode fauxVersionDataNode = new UHSNode( "VersionData" );
-					fauxVersionDataNode.setRawStringContent( "This version info was added by OpenUHS during parsing because the 88a format does not report it." );
-					fauxVersionNode.addChild( fauxVersionDataNode );
+
+			UHSNode fauxVersionDataNode = new UHSNode( "VersionData" );
+				fauxVersionDataNode.setRawStringContent( "This version info was added by OpenUHS during parsing because the 88a format does not report it." );
+				fauxVersionNode.addChild( fauxVersionDataNode );
+
 			UHSNode creditNode = new UHSNode( "Credit" );
 				creditNode.setRawStringContent( "Credits" );
 				rootNode.addChild( creditNode );
 
-				String breakChar = "^break^";
-				StringBuffer tmpContent = new StringBuffer();
-				UHSNode newNode = new UHSNode( "CreditData" );
-					for ( int i=hintSectionEnd; context.hasLine( i ); i++ ) {
-						if ( context.getLine( i ).equals( "** END OF 88A FORMAT **" ) ) break;
-						if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
-						tmpContent.append( context.getLine( i ) );
-					}
-					newNode.setRawStringContent( tmpContent.toString() );
-					newNode.setStringContentDecorator( new Version88CreditDecorator() );
-					creditNode.addChild( newNode );
+			String breakChar = "^break^";
+			StringBuilder creditDataBuf = new StringBuilder();
+			while ( context.hasLine( index ) ) {
+				String tmp = context.getLine( index++ );
 
-			return rootNode;
+				if ( "** END OF 88A FORMAT **".equals( tmp ) ) {
+					rootNode.setLegacy( true );
+					break;
+				}
+
+				if ( creditDataBuf.length() > 0 ) creditDataBuf.append( breakChar );
+				creditDataBuf.append( tmp );
+			}
+			UHSNode creditDataNode = new UHSNode( "CreditData" );
+				creditDataNode.setRawStringContent( creditDataBuf.toString() );
+				creditDataNode.setStringContentDecorator( new Version88CreditDecorator() );
+				creditNode.addChild( creditDataNode );
+
+			return ( fudged + index );  // Index was reset after the header lines.
 		}
 		catch ( NumberFormatException e ) {
 			UHSParseException pe = new UHSParseException( String.format( "Unable to parse nodes (last parsed line: %d)", context.getLastParsedLineNumber() ), e );
@@ -433,15 +467,19 @@ public class UHSParser {
 	 * Generates a tree of UHSNodes from UHS 91a format onwards.
 	 *
 	 * <p>Versions 91a, 95a, and 96a have been seen in the wild.
-	 * These UHS files are prepended with an 88a section containing an "upgrade your reader" notice.
-	 * Additionally, they exploit the 88a format to create an uninterpreted gap, with an
-	 * unencrypted message for anyone opening them in text editors.</p>
+	 * These UHS files are prepended with an 88a section containing an
+	 * "upgrade your reader" notice. Additionally, they exploit the 88a format
+	 * to include ciphertext that will become human-readable when encrypted,
+	 * with a message for anyone opening the file in text editors.</p>
 	 *
-	 * <p>As shown below, allLines (and the 1-based line count) begins after "** END OF 88A FORMAT **".</p>
+	 * <p>As shown below, the file's 1-based line references begin after
+	 * "** END OF 88A FORMAT **". Before calling, set the context's line fudge
+	 * to ignore all lines prior, so that context.getLine(0) will yield the
+	 * END line.</p>
 	 *
 	 * <blockquote><pre>
 	 * {@code
-	 * UHS
+	 * ** END OF 88A FORMAT **
 	 * # Subject
 	 * title
 	 * ...
@@ -492,6 +530,10 @@ public class UHSParser {
 
 			int index = 1;
 			index += buildNodes( context, rootNode, index );
+
+			if ( rootNode.getChildCount() == 0 ) {
+				throw new UHSParseException( String.format( "No nodes were parsed!? Started from this line: %s", context.getLine( 1 ) ) );
+			}
 
 			if ( auxStyle != AUX_IGNORE ) {
 				if ( auxStyle == AUX_NEST ) {

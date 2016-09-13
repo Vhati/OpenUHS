@@ -296,7 +296,7 @@ public class UHSNode {
 	 * Returns the highest value that might be returned by getCurrentReveal().
 	 *
 	 * @return total child count, if any, or 0
-	 * @see #setCurrentReveal()
+	 * @see #setCurrentReveal(int)
 	 * @see #getCurrentReveal()
 	 */
 	public int getMaximumReveal() {
@@ -319,7 +319,7 @@ public class UHSNode {
 	/**
 	 * Returns the current reveal progress.
 	 *
-	 * @see #setCurrentReveal()
+	 * @see #setCurrentReveal(int)
 	 * @see #getMaximumReveal()
 	 */
 	public int getCurrentReveal() {

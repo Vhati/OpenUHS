@@ -10,14 +10,31 @@ import net.vhati.openuhs.core.UHSNode;
 /**
  * A node to hold all others.
  *
- * <p>Additionally a root node is responsible for tracking nodes that are link targets.</p>
+ * <p>Additionally a root node is responsible for tracking nodes that are link
+ * targets.</p>
  */
 public class UHSRootNode extends UHSNode {
+	private boolean legacy = false;
 	private Map<String, UHSNode> linkMap = new HashMap<String, UHSNode>();
 
 
 	public UHSRootNode() {
 		super( "Root" );
+	}
+
+
+	/**
+	 * Sets whether this root node is a non-canonical message for old readers.
+	 *
+	 * <p>The 9x format begins with a fake 88a format tree telling old readers
+	 * to upgrade.</p>
+	 */
+	public void setLegacy( boolean b ) {
+		legacy = b;
+	}
+
+	public boolean isLegacy() {
+		return legacy;
 	}
 
 
