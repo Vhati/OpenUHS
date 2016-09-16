@@ -46,7 +46,7 @@ public class Version9xVersionDecorator extends Version9xStringDecorator {
 		}
 
 		// Handle lingering content
-		if (buf.length() > 0) {
+		if ( buf.length() > 0 ) {
 			String fragment = buf.toString();
 			List<String> attribList = new ArrayList<String>( 1 );
 			for ( int d=0; d < decos.length; d++ ) {

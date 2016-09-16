@@ -13,21 +13,18 @@ import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 
 
 /**
- * A StringDecorator for "Link" and various group nodes.
+ * A StringDecorator for "VersionData" nodes.
  *
- * <p>Their content is a single-line heading.</p>
- *
- * <p>Line breaks are replaced with " ".</p>
+ * <p>Line breaks are initially replaced with " " by default.</p>
  *
  * <p>Standard symbols and decorations are handled.</p>
  */
-public class Version9xTitleDecorator extends Version9xStringDecorator {
+public class Version9xIncentiveDecorator extends Version9xStringDecorator {
 
 
 	@Override
 	public DecoratedFragment[] getDecoratedString( String rawContent ) {
 		List<DecoratedFragment> resultList = new ArrayList<DecoratedFragment>();
-		char[] linebreak = StringDecorator.linebreak;
 		char[] tmp = rawContent.toCharArray();
 		StringBuffer buf = new StringBuffer( tmp.length );
 		int consumedOffset = -1;
@@ -38,15 +35,6 @@ public class Version9xTitleDecorator extends Version9xStringDecorator {
 		for ( int c=0; c < tmp.length; c++ ) {
 			consumedOffset = parseSymbolMarkup( tmp, buf, c );
 			if ( consumedOffset != -1 ) {c += consumedOffset; continue;}
-
-			if ( c+linebreak.length < tmp.length ) {
-				char[] chunkA = new char[linebreak.length];
-				System.arraycopy( tmp, c, chunkA, 0, linebreak.length );
-				if (Arrays.equals( chunkA, linebreak )) {
-					buf.append( " " );
-					c += linebreak.length-1; continue;
-				}
-			}
 
 			consumedOffset = parseLineBreakMarkup( tmp, buf, c, breakStr );
 			if ( consumedOffset != -1 ) {c += consumedOffset; continue;}

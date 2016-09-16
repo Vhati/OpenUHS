@@ -16,6 +16,7 @@ import net.vhati.openuhs.core.UHSNode;
  */
 public class UHSRootNode extends UHSNode {
 	private boolean legacy = false;
+	private UHSRootNode legacyRootNode = null;
 	private Map<String, UHSNode> linkMap = new HashMap<String, UHSNode>();
 
 
@@ -25,10 +26,12 @@ public class UHSRootNode extends UHSNode {
 
 
 	/**
-	 * Sets whether this root node is a non-canonical message for old readers.
+	 * Sets a flag indicating this root node is a non-canonical message for old readers.
 	 *
-	 * <p>The 9x format begins with a fake 88a format tree telling old readers
-	 * to upgrade.</p>
+	 * <p>The 9x format begins with a fake 88a format section telling old
+	 * readers to upgrade.</p>
+	 *
+	 * #setLegacyRootNode(UHSRootNode)
 	 */
 	public void setLegacy( boolean b ) {
 		legacy = b;
@@ -36,6 +39,22 @@ public class UHSRootNode extends UHSNode {
 
 	public boolean isLegacy() {
 		return legacy;
+	}
+
+	/**
+	 * Sets an alternate tree to display in legacy 88a readers.
+	 *
+	 * <p>The 9x format begins with a fake 88a section telling readers to
+	 * upgrade.</p>
+	 *
+	 * @see #setLegacy(boolean)
+	 */
+	public void setLegacyRootNode( UHSRootNode legacyRootNode ) {
+		this.legacyRootNode = legacyRootNode;
+	}
+
+	public UHSRootNode getLegacyRootNode() {
+		return legacyRootNode;
 	}
 
 
@@ -66,7 +85,7 @@ public class UHSRootNode extends UHSNode {
 	 * values to remove every map entry with the non-unique node.</p>
 	 *
 	 * @param doomedLink  the node to remove
-	 * @see addLink(UHSNode, int)
+	 * @see #addLink(UHSNode, int)
 	 */
 	public void removeLink( UHSNode doomedLink ) {
 		//if ( !linkMap.containsKey( doomedLink.getId()+"" ) ) return;
@@ -98,6 +117,7 @@ public class UHSRootNode extends UHSNode {
 	public void removeAllLinks() {
 		linkMap.clear();
 	}
+
 
 	/**
 	 * Gets a node by its id.

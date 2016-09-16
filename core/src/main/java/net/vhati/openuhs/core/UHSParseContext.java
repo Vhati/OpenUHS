@@ -17,7 +17,7 @@ public class UHSParseContext {
 	protected File file = null;
 	protected long binOffset = -1;
 	protected UHSRootNode rootNode = null;
-	protected int[] key = null;
+	protected int[] encryptionKey = null;
 
 	protected List<String> allLines = null;
 	protected byte[] binHunk = null;
@@ -79,12 +79,12 @@ public class UHSParseContext {
 	 * @see net.vhati.openuhs.core.UHSParser#decryptTextHunk(CharSequence, int[])
 	 * @see net.vhati.openuhs.core.UHSParser#generate9xKey(CharSequence)
 	 */
-	public void setKey( int[] key ) {
-		this.key = key;
+	public void setEncryptionKey( int[] key ) {
+		this.encryptionKey = key;
 	}
 
-	public int[] getKey() {
-		return key;
+	public int[] getEncryptionKey() {
+		return encryptionKey;
 	}
 
 

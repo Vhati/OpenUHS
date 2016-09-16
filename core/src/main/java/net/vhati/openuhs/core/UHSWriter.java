@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSAudioNode;
+import net.vhati.openuhs.core.UHSGenerationContext;
 import net.vhati.openuhs.core.UHSGenerationException;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSImageNode;
@@ -148,7 +149,7 @@ public class UHSWriter {
 		for ( int i=0; i < input.length(); i++ ) {
 			int codeoffset = i % key.length;
 			tmpChar = input.charAt( i ) + ( key[codeoffset] ^ (codeoffset + 40) );
-			while ( tmpChar > 126 ) {
+			while ( tmpChar > 127 ) {
 				tmpChar -= 96;
 			}
 			tmp.append( (char)tmpChar );
@@ -223,6 +224,16 @@ public class UHSWriter {
 	}
 
 
+	public void write88Format( UHSRootNode rootNode, OutputStream os ) throws IOException, UHSGenerationException {
+		CharsetEncoder asciiEncoder = Charset.forName( "US-ASCII" ).newEncoder();
+		asciiEncoder.onMalformedInput( CodingErrorAction.REPORT );
+		asciiEncoder.onUnmappableCharacter( CodingErrorAction.REPORT );
+
+		Writer textWriter = new OutputStreamWriter( os, asciiEncoder );
+		write88Format( rootNode, textWriter );
+		textWriter.flush();
+	}
+
 	/**
 	 * Writes the tree of a UHSRootnode in 88a format.
 	 *
@@ -231,10 +242,10 @@ public class UHSWriter {
 	 * <p>Newlines and "^break^" are replaced by " ".</p>
 	 *
 	 * @param rootNode  an existing root node
-	 * @param os  an existing unwritten stream to write into
+	 * @param writer  an existing Writer to receive text (encoding must be US-ASCII)
 	 * @see #isValid88Format(UHSRootNode)
 	 */
-	public void write88Format( UHSRootNode rootNode, OutputStream os ) throws IOException, UHSGenerationException {
+	public void write88Format( UHSRootNode rootNode, Writer writer ) throws IOException, UHSGenerationException {
 		if ( !isValid88Format( rootNode ) ) {
 			throw new UHSGenerationException( "The node tree cannot be expressed in the 88a format" );
 		}
@@ -302,7 +313,7 @@ public class UHSWriter {
 		tmp = tmp.replaceAll( "\\^break\\^", "\r\n" );
 		if ( tmp.length() > 0 ) buf.append( tmp ).append( "\r\n" );
 
-		os.write( encodeAsciiBytes( buf.toString() ) );
+		writer.append( buf );
 	}
 
 
@@ -315,40 +326,87 @@ public class UHSWriter {
 	 * @param outFile  a file to write
 	 */
 	public void write9xFormat( UHSRootNode rootNode, File outFile ) throws IOException, UHSGenerationException {
-		UHS9xInfo info = new UHS9xInfo();
-		String uhsTitle = rootNode.getUHSTitle();
-		info.encryptionKey = generate9xKey( uhsTitle );
+		CharsetEncoder asciiEncoder = Charset.forName( "US-ASCII" ).newEncoder();
+		asciiEncoder.onMalformedInput( CodingErrorAction.REPORT );
+		asciiEncoder.onUnmappableCharacter( CodingErrorAction.REPORT );
 
+		ByteArrayOutputStream textStream;
+		Writer textWriter;
 		StringBuffer buf = new StringBuffer();
-		getLinesAndBinData( rootNode, info, buf );
 
+		UHSGenerationContext context = new UHSGenerationContext();
+		context.setEncryptionKey( generate9xKey( rootNode.getUHSTitle() ) );
+
+		context.setLegacyRootNode( rootNode.getLegacyRootNode() );
+
+		if ( context.getLegacyRootNode() == null ) {
+			context.setLegacyRootNode( createDefaultLegacyRootNode() );
+		}
+
+		// Phase One.
+		textStream = new ByteArrayOutputStream();
+		textWriter = new OutputStreamWriter( textStream, asciiEncoder );
+
+		write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
+		textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
+
+		getLinesAndBinData( context, rootNode, buf, 1 );
+		textWriter.append( buf );
+		textWriter.close();
+
+		logger.debug( "Phase 1, binHunk offset: {}", textStream.size()+1 );
+		context.setBinaryHunkOffset( textStream.size() + 1 );  // Include the indicator byte.
+
+		// Phase Two.
+		context.setPhase( 2 );
 		buf.setLength( 0 );  // Null out the buffer's content, but the backing array's capacity remains.
-		info.phase = 2;
-		getLinesAndBinData( rootNode, info, buf );
+		textStream.reset();  // Null out the stream's content, but the backing array's capacity remains.
+		asciiEncoder.reset();
+		textWriter = new OutputStreamWriter( textStream, asciiEncoder );
 
-		// Encode buf to ASCII and write. Flush.
+		write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
+		textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
+
+		getLinesAndBinData( context, rootNode, buf, 1 );
+		textWriter.append( buf );
+		textWriter.close();
+
+		logger.debug( "Phase 2, binHunk offset: {}", textStream.size()+1 );
+		context.setBinaryHunkOffset( textStream.size() + 1 );  // Re-estimate the text byte count.
+
+		context.setPhase( 3 );
+		buf.setLength( 0 );
+		textStream.reset();
+		asciiEncoder.reset();
+		textWriter = new OutputStreamWriter( textStream, asciiEncoder );
+
+		write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
+		textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
+
+		getLinesAndBinData( context, rootNode, buf, 1 );
+		textWriter.append( buf );
+		textWriter.close();
+
+		logger.debug( "Phase 3, binHunk offset: {}", textStream.size()+1 );
+
+
+		// Write encoded text bytes. Flush.
 		// Write the binary indicator byte. Flush?
 		// Write binary. Flush.
 		// Write CRC. Flush.
-
-		CharsetEncoder asciiEncoder = Charset.forName( "ISO-8859-1" ).newEncoder();  // TODO: Really that charset?
-		asciiEncoder.onMalformedInput( CodingErrorAction.REPLACE );
-		asciiEncoder.onUnmappableCharacter( CodingErrorAction.REPORT );
-		asciiEncoder.replaceWith("!".getBytes( "ISO-8859-1" ));
 
 		FileOutputStream fos = null;
 		try {
 			fos = new FileOutputStream( outFile );
 
 			// Docs recommends wrapping with a BufferedWriter. Already got a buffer.
-			Writer writer = new OutputStreamWriter( fos, asciiEncoder );
-			writer.append( buf );
-			writer.flush();
+			textStream.writeTo( fos );
+			fos.flush();
 
 			fos.write( (byte)0x1a );
 			fos.flush();
 
-			info.binStream.writeTo( fos );
+			context.getBinaryHunkOutputStream().writeTo( fos );
 			fos.flush();
 
 			// TODO: CRC. Maybe CheckedOutputStream( fos, crc16 )?
@@ -364,524 +422,657 @@ public class UHSWriter {
 	 * <p>TODO: This method it not yet functional.</p>
 	 *
 	 * <p>This method recursively collects nested nodes' text in buffers,
-	 * appended to the parent's buffer. Then the parent prepends a total line count to itself.</p>
+	 * appended to the parent's buffer. Then the parent prepends a total line
+	 * count to itself.</p>
 	 *
 	 * <p>Phase 1:
 	 * <ul>
 	 * <li>Dry-run text encoding. (Critical information will be missing.)</li>
-	 * <li>Count text lines, and build an ID-to-line map, for resolving link targets later.</li>
-	 * <li>Count the total bytes of nodes' binary content, without collecting it. (for zero-padded character width)</li>
+	 * <li>Count text lines, and build an ID-to-line map, for resolving link
+	 * targets later.</li>
+	 * <li>Count the total bytes of nodes' binary content, without collecting
+	 * it. (for zero-padded character width of offsets/lengths)</li>
+	 * <li>Use total bytes of encoded text to estimate the binary hunk's
+	 * offset.</li>
 	 * </ul></p>
 	 *
 	 * <p>Phase 2:
 	 * <ul>
-	 * <li>Actually write encoded text.</li>
+	 * <li>Another dry-run encoding.</li>
 	 * <li>Use the ID-to-Line map to resolve links.</li>
 	 * <li>Collect binary content (the growing size will resolve offsets)</li>
 	 * <li>Write out all the binsry at the end.</li>
 	 * </ul></p>
 	 */
-	private void getLinesAndBinData( UHSNode currentNode, UHS9xInfo info, StringBuffer parentBuf ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	private int getLinesAndBinData( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		String type = currentNode.getType();
 
-		if ( info.phase == 1 ) {
-			if ( currentNode.getId() != -1 ) {  // Associate id with current line
-				info.putLine( currentNode.getId(), info.line );
+		if ( context.isPhaseOne() ) {
+			if ( currentNode.getId() != -1 ) {  // Associate id with current line.
+				context.putLine( currentNode.getId(), startIndex );
 			}
 		}
 
 		if ( "Root".equals( type ) ) {
-			if ( currentNode instanceof UHSRootNode == false ) return;
-			UHSRootNode rootNode = (UHSRootNode)currentNode;
-
-			String fakeTitle = "Important Message!";
-
-			String fakeSubject = "Important!";
-			String ignoreQuestion = "Ignore this!";                        // Trailing question mark implied by format.
-			String whyQuestion = "Why aren't there any more hints here?";  // Trailing question mark implied by format.
-
-			List<String> ignoreHints = new ArrayList<String>();  // Encrypted.
-			ignoreHints.add( "The following text will appear encrypted -- it is intended as instructions" );
-			ignoreHints.add( "for people without UHS readers." );
-
-			List<String> gapLines = new ArrayList<String>();  // Not encrypted.
-			gapLines.add( "-------------------------------------------------------------------------" );
-			gapLines.add( "This file is encoded in the Universal Hint System format.  The UHS is" );
-			gapLines.add( "designed to show you only the hints that you need so your game is not" );
-			gapLines.add( "spoiled.  You will need a UHS reader for your computer to view this" );
-			gapLines.add( "file.  You can find UHS readers and more information on the UHS on the" );
-			gapLines.add( "Internet at http://www.uhs-hints.com/ ." );
-			gapLines.add( "-------------------------------------------------------------------------" );
-
-			List<String> whyHints = new ArrayList<String>();  // Encrypted.
-			whyHints.add( "This file has been written for a newer UHS format which the reader that" );
-			whyHints.add( "you are using does not support.  Visit the UHS web site at" );
-			whyHints.add( "http://www.uhs-hints.com/ to see if a newer reader is available." );
-
-			int fakeSubjectCount = 1;
-			int fakeQuestionCount = 2;
-			int sSize = 2;
-			int qSize = 2;
-			int hSize = 1;
-			int firstQ = 1 + ( sSize * fakeSubjectCount );        // First line is 1. Questions begin after last subject line.
-			int firstH = firstQ + ( qSize * fakeQuestionCount );  // Hints begin after the last question line.
-
-			// Final line of the final hint, not 1 line after.
-			int lastH = firstH + ( hSize * ignoreHints.size() ) + gapLines.size() + ( hSize * whyHints.size() ) - 1;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( "UHS" ).append( "\r\n" );
-			buf.append( fakeTitle ).append( "\r\n" );
-			buf.append( firstH ).append( "\r\n" );
-			buf.append( lastH ).append( "\r\n" );
-
-			buf.append( encryptString( fakeSubject ) ).append( "\r\n" );
-			buf.append( ( qSize * /* First question index */ 0 ) + firstQ ).append( "\r\n" );
-
-			buf.append( encryptString( ignoreQuestion ) ).append( "\r\n" );
-			buf.append( ( hSize * /* First hint index */ 0 ) + firstH ).append( "\r\n" );
-
-			buf.append( encryptString( whyQuestion ) ).append( "\r\n" );
-			buf.append( ( ( hSize * ignoreHints.size() ) + gapLines.size() ) + firstH ).append( "\r\n" );
-
-			for ( String s : ignoreHints ) {
-				buf.append( encryptString( s ) ).append( "\r\n" );
-			}
-			for ( String s : gapLines ) {
-				buf.append( s ).append( "\r\n" );
-			}
-			for ( String s : whyHints ) {
-				buf.append( encryptString( s ) ).append( "\r\n" );
-			}
-			buf.append( "** END OF 88A FORMAT **" ).append( "\r\n" );
-
-			buf.append( "UHS" ).append( "\r\n" );
-			if ( info.phase == 1 ) info.line += 1;  // The version 9x header.
-
-			// Act like a Subject node.
-			StringBuffer sBuf = new StringBuffer();
-			sBuf.append( /* lineCount */ " subject" ).append( "\r\n" );
-			sBuf.append( getEncryptedText( rootNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			// TODO: Deal with aux nodes. =/
-
-			if ( info.phase == 1 ) info.line += 2;  // Children will increment further.
-
-			for ( int i=0; i < rootNode.getChildCount(); i++ ) {
-				UHSNode tmpNode = rootNode.getChild( i );
-				getLinesAndBinData( tmpNode, info, sBuf );  // Recurse.
-			}
-
-			if ( info.phase == 2 ) {
-				sBuf.insert( 0, crlfCount( sBuf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			buf.append( sBuf );
-
-			parentBuf.append( buf );
+			writeRootNode( context, currentNode, parentBuf, startIndex );
+			return 0;
 		}
-		else if ( "Link".equals( type ) ) {  // lines: 3
-			UHSNode linkNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " link" ).append( "\r\n" );
-			buf.append( getEncryptedText( linkNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				// Can't resolve a link target's line number yet.
-			}
-			else if ( info.phase == 2 ) {
-				int targetLine = info.getLine( linkNode.getLinkTarget() );
-				buf.append( targetLine );
-			}
-			buf.append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += 3;
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Subject".equals( type ) ) {
+			return writeSubjectNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Text".equals( type ) ) {  // lines: 3
-			UHSNode textNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " text" ).append( "\r\n" );
-			buf.append( getEncryptedText( textNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			UHSNode dataNode = textNode.getFirstChild( "TextData", UHSNode.class );
-			if ( dataNode == null ) {/* Throw an error */}
-			byte[] tmpBytes = encodeAsciiBytes( getEncryptedText( dataNode, info, ENCRYPT_TEXT ) );
-
-			if ( info.phase == 1 ) {
-				info.registerBinarySection( tmpBytes.length );
-			}
-			else if ( info.phase == 2 ) {
-				String offsetString = zeroPad( info.binStream.size(), info.getOffsetNumberWidth() );
-				String lengthString = zeroPad( tmpBytes.length, info.getLengthNumberWidth() );
-				buf.append( "000000 0 " ).append( offsetString ).append( " " ).append( lengthString );
-
-				info.binStream.write( tmpBytes, 0, tmpBytes.length );
-			}
-			buf.append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += 3;
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "NestHint".equals( type ) ) {
+			return writeNestHintNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Sound".equals( type ) ) {  // lines: 3
-			if ( currentNode instanceof UHSAudioNode == false ) return;
-			UHSAudioNode soundNode = (UHSAudioNode)currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " sound" ).append( "\r\n" );
-			buf.append( getEncryptedText( soundNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			byte[] tmpBytes = soundNode.getRawAudioContent();
-
-			if ( info.phase == 1 ) {
-				info.registerBinarySection( tmpBytes.length );
-			}
-			else if ( info.phase == 2 ) {
-				String offsetString = zeroPad( info.binStream.size(), info.getOffsetNumberWidth() );
-				String lengthString = zeroPad( tmpBytes.length, info.getLengthNumberWidth() );
-				buf.append( "000000 " ).append( offsetString ).append( " " ).append( lengthString );
-
-				info.binStream.write( tmpBytes, 0, tmpBytes.length );
-			}
-			buf.append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += 3;
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Hint".equals( type ) ) {
+			return writeHintNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Blank".equals( type ) ) {  // lines: 2
-			UHSNode blankNode = currentNode;
-
-			if ( "--=File Info=--".equals( blankNode.getRawStringContent() ) ) {
-				return;  // Meta: nested info node.
-			}
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " blank" ).append( "\r\n" );
-			buf.append( "-" ).append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += 2;
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Comment".equals( type ) ) {
+			return writeCommentNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Subject".equals( type ) ) {  // lines: 2 + various children's lines
-			UHSNode subjectNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " subject" ).append( "\r\n" );
-			buf.append( getEncryptedText( subjectNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) info.line += 2;  // Children will increment further.
-
-			for ( int i=0; i < subjectNode.getChildCount(); i++ ) {
-				UHSNode tmpNode = subjectNode.getChild( i );
-				getLinesAndBinData( tmpNode, info, buf );  // Recurse.
-			}
-
-			if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Credit".equals( type ) ) {
+			return writeCreditNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Comment".equals( type ) ) {  // lines: 2 + content lines
-			UHSNode commentNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " comment" ).append( "\r\n" );
-			buf.append( getEncryptedText( commentNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			UHSNode dataNode = commentNode.getFirstChild( "CommentData", UHSNode.class );
-			if ( dataNode == null ) {/* Throw an error */}
-
-			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += crlfCount( buf.toString() );
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Text".equals( type ) ) {
+			return writeTextNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Credit".equals( type ) ) {  // lines: 2 + content lines
-			UHSNode creditNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " credit" ).append( "\r\n" );
-			buf.append( getEncryptedText( creditNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			UHSNode dataNode = creditNode.getFirstChild( "CreditData", UHSNode.class );
-			if ( dataNode == null ) {/* Throw an error */}
-
-			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += crlfCount( buf.toString() );
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Link".equals( type ) ) {
+			return writeLinkNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Version".equals( type ) ) {  // lines: 2 + content lines
-			UHSNode versionNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " version" ).append( "\r\n" );
-			buf.append( getEncryptedText( versionNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			UHSNode dataNode = versionNode.getFirstChild( "VersionData", UHSNode.class );
-			if ( dataNode == null ) {/* Throw an error */}
-
-			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += crlfCount( buf.toString() );
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Hyperpng".equals( type ) || "Hypergif".equals( type ) ) {
+			return writeHotSpotNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Info".equals( type ) ) {  // lines: 2 + content lines
-			UHSNode infoNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " info" ).append( "\r\n" );
-			buf.append( "-" ).append( "\r\n" );
-
-			UHSNode dataNode = infoNode.getFirstChild( "InfoData", UHSNode.class );
-			if ( dataNode == null ) {/* Throw an error */}
-
-			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += crlfCount( buf.toString() );
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Sound".equals( type ) ) {
+			return writeSoundNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Incentive".equals( type ) ) {  // lines: 2 + content lines
-			UHSNode incentiveNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " incentive" ).append( "\r\n" );
-			buf.append( "-" ).append( "\r\n" );
-
-			UHSNode dataNode = incentiveNode.getFirstChild( "IncentiveData", UHSNode.class );
-			if ( dataNode == null ) {/* Throw an error */}
-
-			buf.append( getEncryptedText( dataNode, info, ENCRYPT_NEST ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) {
-				info.line += crlfCount( buf.toString() );
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Blank".equals( type ) ) {
+			return writeBlankNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "Hint".equals( type ) ) {  // TODO?  // lines: 2 + children's content lines + (N children)-1 dividers
-			UHSNode hintNode = currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " hint" ).append( "\r\n" );
-			buf.append( getEncryptedText( hintNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			boolean first = true;
-			for ( UHSNode stringNode : hintNode.getChildren( "HintData", UHSNode.class ) ) {
-				if ( !first ) {
-					buf.append( "-" ).append( "\r\n" );  // Divider between successive children.
-				}
-				String encryptedChildContent = getEncryptedText( stringNode, info, ENCRYPT_HINT );
-
-				buf.append( encryptedChildContent ).append( "\r\n" );
-
-				first = false;
-			}
-
-			if ( info.phase == 1 ) {
-				info.line += crlfCount( buf.toString() );
-			}
-			else if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Version".equals( type ) ) {
+			return writeVersionNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "NestHint".equals( type ) ) {  // TODO?  // lines: 2 + ugh
-			if ( currentNode instanceof UHSBatchNode == false ) return;
-			UHSBatchNode nestNode = (UHSBatchNode)currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			buf.append( /* lineCount */ " nesthint" ).append( "\r\n" );
-			buf.append( getEncryptedText( nestNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) info.line += 2;  // Children will increment further.
-
-			// TODO: Use nestNode.isAddon().
-			// TODO: Insert empty "-" dividers when a non-HintData thinks it's not an addon.
-			boolean first = true;
-			for ( int i=9; i < nestNode.getChildCount(); i++ ) {
-				UHSNode tmpNode = nestNode.getChild( i );
-
-				if ( "HintData".equals( tmpNode.getType() ) ) {
-					if ( !first ) {
-						buf.append( "-" ).append( "\r\n" );
-						if ( info.phase == 1 ) info.line += 1;  // "-" divider
-					}
-					String childContent = getEncryptedText( tmpNode, info, ENCRYPT_NEST );
-					if ( info.phase == 1 ) {
-						info.line += crlfCount( childContent ) + 1;  // +1 for the final unterminated line.
-					}
-					buf.append( childContent ).append( "\r\n" );
-				}
-				else {
-					if ( !first ) {
-						buf.append( "=" ).append( "\r\n" );
-						if ( info.phase == 1 ) info.line += 1;  // "=" divider
-					}
-					getLinesAndBinData( tmpNode, info, buf );  // Recurse.
-				}
-				first = false;
-			}
-
-			if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Info".equals( type ) ) {
+			return writeInfoNode( context, currentNode, parentBuf, startIndex );
 		}
-		else if ( "HotSpot".equals( type ) ) {  // TODO?  // lines: 2 + 1 + ugh
-			if ( currentNode instanceof UHSHotSpotNode == false ) return;
-			UHSHotSpotNode hotspotNode = (UHSHotSpotNode)currentNode;
-
-			StringBuffer buf = new StringBuffer();
-			// Current node has the title AND the main image.
-
-			buf.append( " " );
-			if ( "Hyperpng".equals( hotspotNode.getType() ) ) {
-				buf.append( "hyperpng" );
-			}
-			else if ( "Hypergif".equals( hotspotNode.getType() ) ) {
-				buf.append( "gifa" );
-			}
-			else {
-				throw new UHSGenerationException( String.format( "Unexpected %s child of HotSpot node", hotspotNode.getType() ) );
-			}
-			buf.append( "\r\n" );
-
-			buf.append( getEncryptedText( hotspotNode, info, ENCRYPT_NONE ) ).append( "\r\n" );
-
-			if ( info.phase == 1 ) info.line += 2;  // Chunk name and title.
-
-			byte[] mainImageBytes = hotspotNode.getRawImageContent();
-
-			if ( info.phase == 1 ) {
-				// TODO: main id vs main image id? Possibly register the other id here?
-
-				info.registerBinarySection( mainImageBytes.length );
-			}
-			else if ( info.phase == 2 ) {
-				String offsetString = zeroPad( info.binStream.size(), info.getOffsetNumberWidth() );
-				String lengthString = zeroPad( mainImageBytes.length, info.getLengthNumberWidth() );
-				buf.append( "000000 " ).append( offsetString ).append( " " ).append( lengthString );
-
-				info.binStream.write( mainImageBytes, 0, mainImageBytes.length );
-			}
-			buf.append( "\r\n" );
-
-			if ( info.phase == 1 ) info.line += 1;  // The binary hunk reference.
-
-			for ( int i=0; i < hotspotNode.getChildCount(); i++ ) {
-				UHSNode tmpNode = hotspotNode.getChild( i );
-
-				HotSpot spot = hotspotNode.getSpot( tmpNode );
-				buf.append( spot.zoneX ).append( " " ).append( spot.zoneY ).append( " " );
-				buf.append( spot.zoneX+spot.zoneW ).append( spot.zoneY+spot.zoneH ).append( "\r\n" );
-
-				if ( info.phase == 1 ) info.line += 1;  // Zone.
-
-				if ( "Overlay".equals( tmpNode.getType() ) ) {  // lines: 3 (Technically it was preceeded by a zone in HyperImage.)
-					// Overlays need the zone's x/y, so don't recurse.
-
-					if ( tmpNode instanceof UHSImageNode == false ) {/* Throw an error */}
-					UHSImageNode overlayNode = (UHSImageNode)tmpNode;
-
-					if ( info.phase == 1 && overlayNode.getId() != -1 ) {
-						info.putLine( overlayNode.getId(), info.line-1 );  // Fudge the line map to point to zone.
-					}
-
-					String overlayTitle = overlayNode.getRawStringContent();
-
-					byte[] overlayImageBytes = overlayNode.getRawImageContent();
-
-					StringBuffer oBuf = new StringBuffer();
-					oBuf.append( /* lineCount */ " overlay" ).append( "\r\n" );
-					oBuf.append( overlayTitle ).append( "\r\n" );
-
-					if ( info.phase == 1 ) {
-						info.registerBinarySection( overlayImageBytes.length );
-					}
-					else if ( info.phase == 2 ) {
-						String offsetString = zeroPad( info.binStream.size(), info.getOffsetNumberWidth() );
-						String lengthString = zeroPad( overlayImageBytes.length, info.getLengthNumberWidth() );
-						oBuf.append( "000000 " ).append( offsetString ).append( " " ).append( lengthString );
-						oBuf.append( spot.x ).append( " " ).append( spot.y );
-
-						info.binStream.write( overlayImageBytes, 0, overlayImageBytes.length );
-					}
-					oBuf.append( "\r\n" );
-
-					if ( info.phase == 1 ) {
-						info.line += 3;
-					}
-					else if ( info.phase == 2 ) {
-						oBuf.insert( 0, crlfCount( oBuf.toString() ) );  // Insert lineCount at the beginning.
-					}
-					buf.append( oBuf );
-				}
-				else {
-					getLinesAndBinData( tmpNode, info, buf );  // Recurse.
-
-					if ( info.phase == 1 ) {
-						// Fudge the line map to point one line earlier, to zone.
-						int badLine = info.getLine( tmpNode.getId() );
-						info.putLine( tmpNode.getId(), badLine-1 );
-
-						// TODO: It is assumed this child has no children. No further id shifting is done.
-					}
-				}
-			}
-
-			if ( info.phase == 2 ) {
-				buf.insert( 0, crlfCount( buf.toString() ) );  // Insert lineCount at the beginning.
-			}
-			parentBuf.append( buf );
+		else if ( "Incentive".equals( type ) ) {
+			return writeIncentiveNode( context, currentNode, parentBuf, startIndex );
 		}
 		else {
 			throw new IllegalArgumentException( "Unexpected version 9x node type: "+ currentNode.getType() );
 		}
 	}
+
+	/**
+	 * Returns a common fake 88a section for the start of 9x format files.
+	 *
+	 * <p>Write this root in 88a, append "** END OF 88A FORMAT **", then
+	 * write the real root in 9x.</p>
+	 */
+	public UHSRootNode createDefaultLegacyRootNode() {
+		UHSRootNode rootNode = new UHSRootNode();
+		rootNode.setRawStringContent( "Important Message!" );
+		rootNode.setLegacy( true );
+
+		UHSNode subjectNode = new UHSNode( "Subject" );
+		subjectNode.setRawStringContent( "Important!" );
+		rootNode.addChild( subjectNode );
+
+		UHSNode ignoreNode = new UHSNode( "Question" );
+		ignoreNode.setRawStringContent( "Ignore this!" );
+		subjectNode.addChild( ignoreNode );
+
+		UHSNode whyNode = new UHSNode( "Question" );
+		whyNode.setRawStringContent( "Why aren't there any more hints here?" );
+		subjectNode.addChild( whyNode );
+
+		List<String> ignoreLines = new ArrayList<String>();
+		ignoreLines.add( "The following text will appear encrypted -- it is intended as instructions" );
+		ignoreLines.add( "for people without UHS readers." );
+
+		// Pre-encrypted, to be encrypted again, and thus readable in text editors.
+		ignoreLines.add( encryptString( "-------------------------------------------------------------------------" ) );
+		ignoreLines.add( encryptString( "This file is encoded in the Universal Hint System format.  The UHS is" ) );
+		ignoreLines.add( encryptString( "designed to show you only the hints that you need so your game is not" ) );
+		ignoreLines.add( encryptString( "spoiled.  You will need a UHS reader for your computer to view this" ) );
+		ignoreLines.add( encryptString( "file.  You can find UHS readers and more information on the UHS on the" ) );
+		ignoreLines.add( encryptString( "Internet at http://www.uhs-hints.com/ ." ) );
+		ignoreLines.add( encryptString( "-------------------------------------------------------------------------" ) );
+
+		List<String> whyLines = new ArrayList<String>();
+		whyLines.add( "This file has been written for a newer UHS format which the reader that" );
+		whyLines.add( "you are using does not support.  Visit the UHS web site at" );
+		whyLines.add( "http://www.uhs-hints.com/ to see if a newer reader is available." );
+
+		for ( String line : ignoreLines ) {
+			UHSNode hintNode = new UHSNode( "Hint" );
+			hintNode.setRawStringContent( line );
+			ignoreNode.addChild( hintNode );
+		}
+
+		for ( String line : whyLines ) {
+			UHSNode hintNode = new UHSNode( "Hint" );
+			hintNode.setRawStringContent( line );
+			whyNode.addChild( hintNode );
+		}
+
+		return rootNode;
+	}
+
+	public void writeRootNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		if ( currentNode instanceof UHSRootNode == false ) return;
+		UHSRootNode rootNode = (UHSRootNode)currentNode;
+
+		int innerCount = 0;
+		String[] contentLines = null;
+		StringBuffer buf = new StringBuffer();
+
+		// Act like a Subject node.
+		innerCount = 0;
+		StringBuffer sBuf = new StringBuffer();
+
+		sBuf.append( /* lineCount */ " subject" ).append( "\r\n" );
+		contentLines = splitContentLines( rootNode, 1 );
+		appendLines( sBuf, true, contentLines );
+		innerCount += 2;
+
+		for ( int i=0; i < rootNode.getChildCount(); i++ ) {
+			UHSNode tmpNode = rootNode.getChild( i );
+			innerCount += getLinesAndBinData( context, tmpNode, sBuf, startIndex + innerCount );  // Recurse.
+		}
+
+		sBuf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		buf.append( sBuf );
+
+		// TODO: Deal with aux nodes. =/
+
+		parentBuf.append( buf );
+	}
+
+	public int writeSubjectNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + various children's lines
+		int innerCount = 0;
+
+		UHSNode subjectNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " subject" ).append( "\r\n" );
+		contentLines = splitContentLines( subjectNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		for ( int i=0; i < subjectNode.getChildCount(); i++ ) {
+			UHSNode tmpNode = subjectNode.getChild( i );
+			innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
+		}
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeNestHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// TODO?  // lines: 2 + ugh
+		int innerCount = 0;
+
+		if ( currentNode instanceof UHSBatchNode == false ) return 0;
+		UHSBatchNode nestNode = (UHSBatchNode)currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " nesthint" ).append( "\r\n" );
+		contentLines = splitContentLines( nestNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		// TODO: Use nestNode.isAddon().
+
+		boolean first = true;
+		for ( int i=0; i < nestNode.getChildCount(); i++ ) {
+			UHSNode tmpNode = nestNode.getChild( i );
+			boolean addon = nestNode.isAddon( tmpNode );
+
+			if ( first && addon ) {
+				throw new UHSGenerationException( "NestHint's first child must not be an addon" );
+			}
+
+			if ( "HintData".equals( tmpNode.getType() ) ) {
+				// First batch has no divider.
+				// Successive batches begin with a divider and a HintData.
+				// HintData addons do not get dividers when they follow other non-HintData addons.
+				if ( !first && !addon) {
+					buf.append( "-" ).append( "\r\n" );
+					innerCount++;
+				}
+				contentLines = splitContentLines( tmpNode, -1 );
+				innerCount += contentLines.length;
+				encryptContentLines( context, ENCRYPT_NEST, contentLines );
+				appendLines( buf, true, contentLines );
+			}
+			else {
+				// Batches can only be started by HintData.
+				// Insert an empty "-" HintData divider when any other node thinks it's not an addon.
+				// Can't do this for the first batch.
+				if ( !addon ) {
+					if ( first ) {
+						throw new UHSGenerationException( "NestHint's first child must be a HintData node" );
+					}
+					buf.append( "-" ).append( "\r\n" );
+					innerCount++;
+				}
+
+				buf.append( "=" ).append( "\r\n" );
+				innerCount++;
+
+				innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
+			}
+			first = false;
+		}
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// TODO?  // lines: 2 + children's content lines + (N children)-1 dividers
+		int innerCount = 0;
+
+		UHSNode hintNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " hint" ).append( "\r\n" );
+		contentLines = splitContentLines( hintNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		boolean first = true;
+		for ( UHSNode tmpNode : hintNode.getChildren( "HintData", UHSNode.class ) ) {
+			if ( !first ) {
+				buf.append( "-" ).append( "\r\n" );  // Divider between successive children.
+				innerCount++;
+			}
+			contentLines = splitContentLines( tmpNode, -1 );
+			innerCount += contentLines.length;
+			encryptContentLines( context, ENCRYPT_HINT, contentLines );
+			appendLines( buf, true, contentLines );
+
+			first = false;
+		}
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeCommentNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + content lines
+		int innerCount = 0;
+
+		UHSNode commentNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " comment" ).append( "\r\n" );
+		contentLines = splitContentLines( commentNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		UHSNode dataNode = commentNode.getFirstChild( "CommentData", UHSNode.class );
+		if ( dataNode == null ) {/* Throw an error */}
+
+		contentLines = splitContentLines( dataNode, -1 );
+		innerCount += contentLines.length;
+		appendLines( buf, true, contentLines );
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeCreditNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + content lines
+		int innerCount = 0;
+
+		UHSNode creditNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " credit" ).append( "\r\n" );
+		contentLines = splitContentLines( creditNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		UHSNode dataNode = creditNode.getFirstChild( "CreditData", UHSNode.class );
+		if ( dataNode == null ) {/* Throw an error */}
+
+		contentLines = splitContentLines( dataNode, -1 );
+		innerCount += contentLines.length;
+		appendLines( buf, true, contentLines );
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeTextNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 3
+		int innerCount = 0;
+
+		UHSNode textNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " text" ).append( "\r\n" );
+		contentLines = splitContentLines( textNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		UHSNode dataNode = textNode.getFirstChild( "TextData", UHSNode.class );
+		if ( dataNode == null ) {/* Throw an error */}
+		contentLines = splitContentLines( dataNode, -1 );
+		encryptContentLines( context, ENCRYPT_TEXT, contentLines );
+		StringBuffer dataBuf = new StringBuffer();
+		appendLines( dataBuf, false, contentLines );
+
+		CharsetEncoder asciiEncoder = Charset.forName( "US-ASCII" ).newEncoder();
+		asciiEncoder.onMalformedInput( CodingErrorAction.REPORT );
+		asciiEncoder.onUnmappableCharacter( CodingErrorAction.REPORT );
+
+		byte[] tmpBytes = asciiEncoder.encode( CharBuffer.wrap( dataBuf ) ).array();
+
+		int bytesOffset = context.getNextBinaryOffset();
+		if ( context.isPhaseOne() || context.isPhaseTwo() ) {
+			context.registerBinarySection( tmpBytes.length );
+		}
+		else if ( context.isPhaseThree() ) {
+			context.getBinaryHunkOutputStream().write( tmpBytes, 0, tmpBytes.length );
+		}
+
+		String offsetString = zeroPad( bytesOffset, context.getOffsetNumberWidth() );
+		String lengthString = zeroPad( tmpBytes.length, context.getLengthNumberWidth() );
+		buf.append( "000000 0 " ).append( offsetString ).append( " " ).append( lengthString );
+		buf.append( "\r\n" );
+		innerCount++;
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeLinkNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 3
+		int innerCount = 0;
+
+		UHSNode linkNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " link" ).append( "\r\n" );
+		contentLines = splitContentLines( linkNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		if ( context.isPhaseOne() ) {
+			// Can't resolve a link target's line number yet.
+		}
+		else if ( context.isPhaseTwo() || context.isPhaseThree() ) {
+			int targetLine = context.getLine( linkNode.getLinkTarget() );
+			buf.append( targetLine );
+		}
+		buf.append( "\r\n" );
+		innerCount++;
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeHotSpotNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// TODO?  // lines: 2 + 1 + ugh
+		int innerCount = 0;
+
+		if ( currentNode instanceof UHSHotSpotNode == false ) return 0;
+		UHSHotSpotNode hotspotNode = (UHSHotSpotNode)currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		// Current node has the title AND the main image.
+
+		buf.append( " " );
+		if ( "Hyperpng".equals( hotspotNode.getType() ) ) {
+			buf.append( "hyperpng" );
+		}
+		else if ( "Hypergif".equals( hotspotNode.getType() ) ) {
+			buf.append( "gifa" );
+		}
+		else {
+			throw new UHSGenerationException( String.format( "Unexpected type of HotSpot node: %s", hotspotNode.getType() ) );
+		}
+		buf.append( "\r\n" );
+		innerCount++;
+
+		contentLines = splitContentLines( hotspotNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount++;
+
+		byte[] mainImageBytes = hotspotNode.getRawImageContent();
+
+		int mainBytesOffset = context.getNextBinaryOffset();
+		if ( context.isPhaseOne() || context.isPhaseTwo() ) {
+			// TODO: main id vs main image id? Possibly register the other id here?
+
+			context.registerBinarySection( mainImageBytes.length );
+		}
+		else if ( context.isPhaseThree() ) {
+			context.getBinaryHunkOutputStream().write( mainImageBytes, 0, mainImageBytes.length );
+		}
+
+		String offsetString = zeroPad( mainBytesOffset, context.getOffsetNumberWidth() );
+		String lengthString = zeroPad( mainImageBytes.length, context.getLengthNumberWidth() );
+		buf.append( "000000 " ).append( offsetString ).append( " " ).append( lengthString );
+		buf.append( "\r\n" );
+		innerCount++;
+
+		for ( int i=0; i < hotspotNode.getChildCount(); i++ ) {
+			UHSNode tmpNode = hotspotNode.getChild( i );
+
+			HotSpot spot = hotspotNode.getSpot( tmpNode );
+			buf.append( zeroPad( spot.zoneX+1, 4 ) );  // X and Y need plus 1.
+			buf.append( " " );
+			buf.append( zeroPad( spot.zoneY+1, 4 ) );
+			buf.append( " " );
+			buf.append( zeroPad( spot.zoneX+1+spot.zoneW, 4 ) );
+			buf.append( " " );
+			buf.append( zeroPad( spot.zoneY+1+spot.zoneH, 4 ) );
+			buf.append( "\r\n" );
+			innerCount++;
+
+			if ( "Overlay".equals( tmpNode.getType() ) ) {  // lines: 3 (Technically it was preceeded by a zone in HyperImage.)
+				// Overlays need the zone's x/y, so don't recurse.
+
+				if ( tmpNode instanceof UHSImageNode == false ) {/* Throw an error */}
+				UHSImageNode overlayNode = (UHSImageNode)tmpNode;
+
+				if ( context.isPhaseOne() && overlayNode.getId() != -1 ) {
+					context.putLine( overlayNode.getId(), startIndex + innerCount - 1 );  // Fudge the line map to point to zone.
+				}
+
+				StringBuffer oBuf = new StringBuffer();
+				oBuf.append( /* lineCount */ " overlay" ).append( "\r\n" );
+				contentLines = splitContentLines( overlayNode, 1 );
+				appendLines( oBuf, true, contentLines );
+				innerCount += 2;
+
+				byte[] overlayImageBytes = overlayNode.getRawImageContent();
+
+				int overlayBytesOffset = context.getNextBinaryOffset();
+				if ( context.isPhaseOne() || context.isPhaseTwo() ) {
+					context.registerBinarySection( overlayImageBytes.length );
+				}
+				else if ( context.isPhaseThree() ) {
+					context.getBinaryHunkOutputStream().write( overlayImageBytes, 0, overlayImageBytes.length );
+				}
+				String oOffsetString = zeroPad( overlayBytesOffset, context.getOffsetNumberWidth() );
+				String oLengthString = zeroPad( overlayImageBytes.length, context.getLengthNumberWidth() );
+				oBuf.append( "000000 " ).append( oOffsetString ).append( " " ).append( oLengthString );
+				oBuf.append( " " );
+				oBuf.append( zeroPad( spot.x+1, 4 ) );  // X and Y need plus 1.
+				oBuf.append( " " );
+				oBuf.append( zeroPad( spot.y+1, 4 ) );
+				oBuf.append( "\r\n" );
+				innerCount++;
+
+				oBuf.insert( 0, 3 );  // Insert innerCount at the beginning.
+				buf.append( oBuf );
+			}
+			else {
+				innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
+
+				if ( context.isPhaseOne() ) {
+					// Fudge the line map to point one line earlier, to zone.
+					int badLine = context.getLine( tmpNode.getId() );
+					context.putLine( tmpNode.getId(), badLine-1 );
+
+					// TODO: No recursive id shifting is done.
+				}
+			}
+		}
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeSoundNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 3
+		int innerCount = 0;
+
+		if ( currentNode instanceof UHSAudioNode == false ) return 0;
+		UHSAudioNode soundNode = (UHSAudioNode)currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " sound" ).append( "\r\n" );
+		contentLines = splitContentLines( soundNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		byte[] tmpBytes = soundNode.getRawAudioContent();
+
+		int bytesOffset = context.getNextBinaryOffset();
+		if ( context.isPhaseOne() || context.isPhaseTwo() ) {
+			context.registerBinarySection( tmpBytes.length );
+		}
+		else if ( context.isPhaseThree() ) {
+			context.getBinaryHunkOutputStream().write( tmpBytes, 0, tmpBytes.length );
+		}
+
+		String offsetString = zeroPad( bytesOffset, context.getOffsetNumberWidth() );
+		String lengthString = zeroPad( tmpBytes.length, context.getLengthNumberWidth() );
+		buf.append( "000000 " ).append( offsetString ).append( " " ).append( lengthString );
+		buf.append( "\r\n" );
+		innerCount++;
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeBlankNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2
+		int innerCount = 0;
+
+		UHSNode blankNode = currentNode;
+
+		if ( "--=File Info=--".equals( blankNode.getRawStringContent() ) ) {
+			return 0;  // Meta: nested info node.
+		}
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " blank" ).append( "\r\n" );
+		buf.append( "-" ).append( "\r\n" );
+		innerCount += 2;
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeVersionNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + content lines
+		int innerCount = 0;
+
+		UHSNode versionNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " version" ).append( "\r\n" );
+		contentLines = splitContentLines( versionNode, 1 );
+		appendLines( buf, true, contentLines );
+		innerCount += 2;
+
+		UHSNode dataNode = versionNode.getFirstChild( "VersionData", UHSNode.class );
+		if ( dataNode == null ) {/* Throw an error */}
+
+		contentLines = splitContentLines( dataNode, -1 );
+		innerCount += contentLines.length;
+		appendLines( buf, true, contentLines );
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeInfoNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + content lines
+		int innerCount = 0;
+
+		UHSNode infoNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " info" ).append( "\r\n" );
+		buf.append( "-" ).append( "\r\n" );
+		innerCount += 2;
+
+		UHSNode dataNode = infoNode.getFirstChild( "InfoData", UHSNode.class );
+		if ( dataNode == null ) {/* Throw an error */}
+
+		contentLines = splitContentLines( dataNode, -1 );
+		innerCount += contentLines.length;
+		appendLines( buf, true, contentLines );
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
+	public int writeIncentiveNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + content lines
+		int innerCount = 0;
+
+		UHSNode incentiveNode = currentNode;
+		String[] contentLines = null;
+
+		StringBuffer buf = new StringBuffer();
+		buf.append( /* lineCount */ " incentive" ).append( "\r\n" );
+		buf.append( "-" ).append( "\r\n" );
+		innerCount += 2;
+
+		UHSNode dataNode = incentiveNode.getFirstChild( "IncentiveData", UHSNode.class );
+		if ( dataNode == null ) {/* Throw an error */}
+
+		contentLines = splitContentLines( dataNode, -1 );
+		innerCount += contentLines.length;
+		encryptContentLines( context, ENCRYPT_NEST, contentLines );
+		appendLines( buf, true, contentLines );
+
+		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
+		parentBuf.append( buf );
+		return innerCount;
+	}
+
 
 	/**
 	 * Adds zeroes to a number intil it has a minimum number of characters.
@@ -897,43 +1088,71 @@ public class UHSWriter {
 		return ( padBuf.toString() );
 	}
 
-	private int crlfCount( String s ) {
+	/**
+	 * Returns the nimber of CRLF line breaks present in a string.
+	 */
+	private int crlfCount( CharSequence s ) {
 		Matcher m = crlfPtn.matcher( s );
 		int lineCount = 0;
 		while ( m.find() ) lineCount++;
 		return lineCount;
 	}
 
-	/**
-	 * Encrypts the multiline string content of a node.
-	 *
-	 * <p>Linebreaks will be converted from "^break^" to "\r\n".</p>
-	 */
-	private String getEncryptedText( UHSNode currentNode, UHS9xInfo info, int encryption ) throws UHSGenerationException {
 
-		String tmpString = currentNode.getRawStringContent();
-		tmpString = tmpString.replaceAll( "\\^break\\^", "\r\n" );
-		if ( encryption == ENCRYPT_HINT ) {
-			tmpString = encryptString( tmpString );
+	/**
+	 * Returns the raw string content of a UHSNode, split into individual lines.
+	 *
+	 * <p>This will split on both "^break^" and CRLF.</p>
+	 *
+	 * @param currentNode  the node to get string content from
+	 * @param maxCount  a maximum number of lines to allow, or -1 for no limit
+	 * @return an array of lines
+	 */
+	private String[] splitContentLines( UHSNode currentNode, int maxCount ) throws UHSGenerationException {
+		String[] result = currentNode.getRawStringContent().split( "\\^break\\^|\r\n", -1 );
+		if ( maxCount != -1 && result.length > maxCount ) {
+			throw new UHSGenerationException( String.format( "Node content exceeded max line count (%d): %s", maxCount, currentNode.getRawStringContent() ) );
 		}
-		else if ( encryption == ENCRYPT_NEST || encryption == ENCRYPT_TEXT ) {
-			if ( info.encryptionKey == null ) {
-				throw new UHSGenerationException( "Attempted to encrypt before a key was set" );
-			}
-			StringBuffer buf = new StringBuffer( tmpString.length() );
-			String[] lines = tmpString.split( "\r\n" );
-			for ( int i=0; i < lines.length; i++ ) {
-				if ( i > 0 ) buf.append( "\r\n" );
-				if ( encryption == ENCRYPT_NEST ) {
-					buf.append( encryptNestString( lines[i], info.encryptionKey ) );
-				}
-				else if ( encryption == ENCRYPT_TEXT ) {
-					buf.append( encryptTextHunk( lines[i], info.encryptionKey ) );
-				}
-			}
-			tmpString = buf.toString();
+		return result;
+	}
+
+	/**
+	 * Applies an encryption algorithm to an array of lines (modifying in-place).
+	 *
+	 * @param context  a context providing an encryption key, if needed
+	 * @param encryption  one of: ENCRYPT_HINT, ENCRYPT_NEST, or ENCRYPT_TEXT
+	 * @param lines  an arary of lines to encrypt
+	 */
+	private void encryptContentLines( UHSGenerationContext context, int encryption, String[] lines ) throws UHSGenerationException {
+		if ( context.getEncryptionKey() == null ) {
+			throw new UHSGenerationException( "Attempted to encrypt before a key was set in the generation context" );
 		}
-		return tmpString;
+
+		for ( int i=lines.length-1; i >= 0; i-- ) {
+			if ( encryption == ENCRYPT_HINT ) {
+				lines[i] = encryptString( lines[i] );
+			}
+			else if ( encryption == ENCRYPT_NEST ) {
+				lines[i] = encryptNestString( lines[i], context.getEncryptionKey() );
+			}
+			else if ( encryption == ENCRYPT_TEXT ) {
+				lines[i] = encryptTextHunk( lines[i], context.getEncryptionKey() );
+			}
+		}
+	}
+
+	/**
+	 * Appends lines to a buffer, adding a line break between each.
+	 *
+	 * @param buf  the buffer
+	 * @param terminate  true to add a line break after the final line, false otherwise
+	 * @param lines  an array of lines to append
+	 */
+	private void appendLines( StringBuffer buf, boolean terminate, String[] lines ) {
+		for ( int i=0; i < lines.length; i++ ) {
+			buf.append( lines[i] );
+			if ( i < lines.length-1 || terminate ) buf.append( "\r\n" );
+		}
 	}
 
 
@@ -1058,83 +1277,4 @@ public class UHSWriter {
 
 		return buf.toString();
 	}
-
-
-	private byte[] encodeAsciiBytes( String s ) throws CharacterCodingException, UnsupportedEncodingException {
-		CharsetEncoder asciiEncoder = Charset.forName( "ISO-8859-1" ).newEncoder();
-			asciiEncoder.onMalformedInput( CodingErrorAction.REPLACE );
-			asciiEncoder.onUnmappableCharacter( CodingErrorAction.REPORT );
-			asciiEncoder.replaceWith("!".getBytes( "ISO-8859-1" ));
-		CharBuffer sBuf = CharBuffer.wrap( s );
-		ByteBuffer bBuf = asciiEncoder.encode( sBuf );
-		return bBuf.array();
-	}
-
-
-	// An object to pass args around while recursively writing a 9x file.
-	private class UHS9xInfo {
-		// Pass 1
-		public int line = -1;
-		private Map<Integer, Integer> idToLineMap = new HashMap<Integer, Integer>();
-		private int binHighestOffset = 0;
-		private int binLength = 0;
-
-		public int[] encryptionKey = null;
-		public int phase = 1;
-
-		// Pass 2
-		private int offsetNumberWidth = 6;  // Might grow to 7 if binary hunk's too large
-		private int lengthNumberWidth = 6;
-
-		public ByteArrayOutputStream binStream = new ByteArrayOutputStream();
-
-		public int getLine( int id ) {
-			Integer resolvedLine = idToLineMap.get( new Integer( id ) );
-			if ( resolvedLine != null ) {
-				return resolvedLine.intValue();
-			}
-			else if ( phase == 2 ) {
-				throw new NullPointerException( "No line was registered for node id: "+ id );
-			}
-			else {
-				return -1;
-			}
-		}
-
-		public void putLine( int id, int pendingLine ) {
-			idToLineMap.put( new Integer( id ), new Integer( pendingLine ) );
-		}
-
-		public void registerBinarySection( int sectionLength ) {
-			binHighestOffset = binLength;
-			binLength += sectionLength;
-		}
-
-		/**
-		 * Returns the amount of zero-padding needed for binary segment offsets.
-		 *
-		 * The default is 6, although it may be 7 when the binary hunk is large.
-		 */
-		public int getOffsetNumberWidth() {
-			if ( offsetNumberWidth == -1 ) {
-				int highestOffsetWidth = Integer.toString( binHighestOffset ).length();
-				offsetNumberWidth = Math.max( highestOffsetWidth, 6 );
-			}
-			return offsetNumberWidth;
-		}
-
-		/**
-		 * Returns the amount of zero-padding needed for binary segment lengths.
-		 *
-		 * The default is 6, although it may be 7 when the binary hunk is large.
-		 */
-		public int getLengthNumberWidth() {
-			if ( lengthNumberWidth == -1 ) {
-				int lengthWidth = Integer.toString( binLength ).length();
-				lengthNumberWidth = Math.max( lengthWidth, 6 );
-			}
-			return lengthNumberWidth;
-		}
-	}
-
 }

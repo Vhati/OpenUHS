@@ -15,6 +15,7 @@
  - Fixed NestHints not revealing in batches, as the official reader does.
  - Added CatalogParser and DownloadableUHS to the core library.
  - Added UHSBatchNode to the core library, for NestHint chunks.
+ - Fixed incomplete parsing of incentive hunks.
 
 ## [0.6.7]  (Unreleased)
  - Moved printNode() from the parser to become a method in UHSNode objects.

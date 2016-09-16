@@ -26,6 +26,7 @@ import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.markup.Version9xCommentDecorator;
 import net.vhati.openuhs.core.markup.Version9xCreditDecorator;
 import net.vhati.openuhs.core.markup.Version9xHintDecorator;
+import net.vhati.openuhs.core.markup.Version9xIncentiveDecorator;
 import net.vhati.openuhs.core.markup.Version9xInfoDecorator;
 import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 import net.vhati.openuhs.core.markup.Version9xTextDecorator;
@@ -264,12 +265,14 @@ public class UHSParser {
 		// In 88a files, this would e the end.
 		// In 9x files, index should be right after "** END OF 88A FORMAT **".
 
-		if ( !force88a && context.getRootNode().isLegacy() ) {
+		if ( !force88a && rootNode.isLegacy() ) {
 			// That was a fake 88a format message, now comes the 9x format.
+			UHSRootNode legacyRootNode = rootNode;
 
 			context.setLineFudge( index-1 );  // Ignore all lines so far. Treat that END line as 0.
 
 			rootNode = parse9xFormat( context, auxStyle );
+			rootNode.setLegacyRootNode( legacyRootNode );
 
 			long storedSum = readChecksum( binHunk );
 			long calcSum = calcChecksum( f );
@@ -526,7 +529,7 @@ public class UHSParser {
 
 			String title = context.getLine( 2 ); // This is the title of the master subject node
 			int[] key = generate9xKey( title );
-			context.setKey( key );
+			context.setEncryptionKey( key );
 
 			int index = 1;
 			index += buildNodes( context, rootNode, index );
@@ -784,7 +787,7 @@ public class UHSParser {
 			else {
 				// Accumulate hint content.
 				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
-				tmpContent.append( decryptNestString( context.getLine( index+j ), context.getKey() ) );
+				tmpContent.append( decryptNestString( context.getLine( index+j ), context.getEncryptionKey() ) );
 			}
 
 			if ( j == innerCount-1 && tmpContent.length() > 0 ) {
@@ -1025,7 +1028,7 @@ public class UHSParser {
 		String[] lines = tmp.split( "(\r\n)|\r|\n", -1 );
 		for ( int i=0; i < lines.length; i++ ) {
 			if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
-			tmpContent.append( decryptTextHunk( lines[i], context.getKey() ) );
+			tmpContent.append( decryptTextHunk( lines[i], context.getEncryptionKey() ) );
 		}
 		newNode.setRawStringContent( tmpContent.toString() );
 		newNode.setStringContentDecorator( new Version9xTextDecorator() );
@@ -1122,6 +1125,10 @@ public class UHSParser {
 	 * <p>Offset is counted from the beginning of the file.</p>
 	 *
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
+	 *
+	 * <p>The zone (x, y, x+w, y+h) and overlay (x, y) numbers are zero-padded
+	 * to 4 digits. Both x's and y's seem to be 1-based, which also affects
+	 * the sums.</p>
 	 *
 	 * <p>A gifa has the same structure, but might not officially contain
 	 * regions.</p>
@@ -1381,6 +1388,8 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
+	 * <p>The title is the version, like "96a". The sentences describe the compiler.</p>
+	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>Frankenstein: Through the Eyes of the Monster</i> (blank version)</li>
 	 * <li>Illustrative UHS: <i>Kingdom O' Magic</i> (blank version)</li>
@@ -1405,7 +1414,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode versionNode = new UHSNode( "Version" );
-			versionNode.setRawStringContent( "Version: "+ context.getLine( index ) );
+			versionNode.setRawStringContent( context.getLine( index ) );
 			versionNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			versionNode.setId( startIndex );
 			currentNode.addChild( versionNode );
@@ -1498,23 +1507,26 @@ public class UHSParser {
 	 *
 	 * <p>This node lists ids to show/block if the reader is unregistered.</p>
 	 *
-	 * <p>The list is a space-separated string of numbers, each with 'Z' or 'A' appended.
-	 * 'Z' means the node is a nag message that should be hidden from registered readers.
-	 * 'A' means only registered readers can see the node's children or link target.
-	 * In some files, there is no list, and this node only occupies 2 lines.</p>
+	 * <p>The list is a space-separated string of numbers, each with 'Z' or
+	 * 'A' appended. 'Z' means the node is a nag message that should be hidden
+	 * from registered readers. 'A' means only registered readers can see the
+	 * node's children or link target. In some files, there is no list, and
+	 * this node only occupies 2 lines.</p>
 	 *
 	 * <blockquote><pre>
 	 * {@code
 	 * # incentive
 	 * -
 	 * ID list (encrypted)
+	 * More ids
+	 * More ids
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * <p>Upon parsing this node, all referenced ids will be
-	 * looked up by calling getLink(id) on the rootNode. The nodes
-	 * will have their restriction attribute set, but it is up to
-	 * readers to actually honor them.</p>
+	 * <p>Upon parsing this node, all referenced ids will be looked up by
+	 * calling getLink(id) on the rootNode. The nodes will have their
+	 * restriction attribute set, but it is up to readers to actually honor
+	 * them.</p>
 	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>AGON</i> (no IDs)</li>
@@ -1526,6 +1538,8 @@ public class UHSParser {
 	 * @return the number of lines consumed from the file in parsing children
 	 */
 	public int parseIncentiveNode( UHSParseContext context, UHSNode currentNode, int startIndex ) {
+		String breakChar = "^break^";
+
 		int index = startIndex;
 		String tmp = context.getLine( index );
 		index++;
@@ -1540,15 +1554,23 @@ public class UHSParser {
 		innerCount--;
 
 		if ( innerCount > 0 ) {
-			tmp = decryptNestString( context.getLine( index ), context.getKey() );
-			index++;
-			UHSNode newNode = new UHSNode( "IncentiveData" );
-				newNode.setRawStringContent( tmp );
-				incentiveNode.addChild( newNode );
+			StringBuffer tmpContent = new StringBuffer();
 
-			applyRestrictions( context.getRootNode(), tmp );
+			UHSNode newNode = new UHSNode( "IncentiveData" );
+
+			for ( int j=0; j < innerCount; j++ ) {
+				tmp = decryptNestString( context.getLine( index+j ), context.getEncryptionKey() );
+				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
+				tmpContent.append( tmp );
+			}
+			newNode.setRawStringContent( tmpContent.toString() );
+			newNode.setStringContentDecorator( new Version9xIncentiveDecorator() );
+			incentiveNode.addChild( newNode );
+
+			applyRestrictions( context.getRootNode(), newNode.getDecoratedStringContent() );
 		}
 
+		index += innerCount;
 		return index-startIndex;
 	}
 
