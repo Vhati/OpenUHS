@@ -39,15 +39,6 @@ import net.vhati.openuhs.core.markup.Version88CreditDecorator;
  * A parser for 88a format and 9x format UHS files.
  */
 public class UHSParser {
-	/** Honor the actual UHS file structure for version 9x auxiliary nodes */
-	public static final int AUX_NORMAL = 0;
-
-	/** Drop version 9x auxiliary nodes */
-	public static final int AUX_IGNORE = 1;
-
-	/** Move version 9x auxiliary nodes to within the master subject node and make that the new root */
-	public static final int AUX_NEST = 2;
-
 
 	private final Logger logger = LoggerFactory.getLogger( UHSParser.class );
 
@@ -182,16 +173,11 @@ public class UHSParser {
 	 * <p>This is likely the only method you'll need.</p>
 	 *
 	 * @param f  a file to read
-	 * @param auxStyle  option for 9x files: AUX_NORMAL, AUX_IGNORE, or AUX_NEST
 	 * @return the root of a tree of nodes representing the hint file
 	 * @see #parse88Format(UHSParseContext)
-	 * @see #parse9xFormat(UHSParseContext, int)
+	 * @see #parse9xFormat(UHSParseContext)
 	 */
-	public UHSRootNode parseFile( File f, int auxStyle ) throws IOException, UHSParseException {
-		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
-			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
-		};
-
+	public UHSRootNode parseFile( File f ) throws IOException, UHSParseException {
 		int index = -1;  // Increment before reads, and this will be the last read 0-based index.
 		String tmp = "";
 
@@ -271,7 +257,7 @@ public class UHSParser {
 
 			context.setLineFudge( index-1 );  // Ignore all lines so far. Treat that END line as 0.
 
-			rootNode = parse9xFormat( context, auxStyle );
+			rootNode = parse9xFormat( context );
 			rootNode.setLegacyRootNode( legacyRootNode );
 
 			long storedSum = readChecksum( binHunk );
@@ -356,8 +342,12 @@ public class UHSParser {
 			int headerLastHint = Integer.parseInt( context.getLine( index++ ) );
 
 			UHSRootNode rootNode = new UHSRootNode();
-				rootNode.setRawStringContent( title );
+				rootNode.setRawStringContent( "Root" );
 			context.setRootNode( rootNode );
+
+			UHSNode masterSubjectNode = new UHSNode( "Subject" );
+				masterSubjectNode.setRawStringContent( title );
+				rootNode.addChild( masterSubjectNode );
 
 			// Reset, ignoring 3 of those 4 lines, to make the next line (first subject) be 1.
 			fudged = index-1;
@@ -370,11 +360,11 @@ public class UHSParser {
 			List<UHSNode> subjectNodes = new ArrayList<UHSNode>();
 			List<Integer> subjectsFirstQuestion = new ArrayList<Integer>();
 
-			// Collect all subjects at once, while adding them to the root node along the way.
+			// Collect all subjects at once, while adding them to the master subject node along the way.
 			while ( firstSubject || index < questionSectionStart ) {
 				UHSNode currentSubject = new UHSNode( "Subject" );
 					currentSubject.setRawStringContent( decryptString( context.getLine( index++ ) ) );
-					rootNode.addChild( currentSubject );
+					masterSubjectNode.addChild( currentSubject );
 					subjectNodes.add( currentSubject );
 
 				int firstQuestion = Integer.parseInt( context.getLine( index++ ) );
@@ -423,10 +413,7 @@ public class UHSParser {
 
 			// Index should be at the end credit lines now.
 
-			UHSNode blankNode = new UHSNode( "Blank" );
-				blankNode.setRawStringContent( "--=File Info=--" );
-				rootNode.addChild( blankNode );
-
+			// Build auxiliary nodes.
 			UHSNode fauxVersionNode = new UHSNode( "Version" );
 				fauxVersionNode.setRawStringContent( "Version: 88a" );
 				rootNode.addChild( fauxVersionNode );
@@ -501,27 +488,25 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * <p>The root node would normally contain up to four children.
+	 * <p>The root node will normally contain up to four children.
 	 * <ul>
-	 * <li>A 'subject', containing all the subjects, hints, etc., that users care about.</li>
+	 * <li>A 'subject', containing all the subjects, hints, etc., that users
+	 * care about. Official readers will begin inside this node.</li>
 	 * <li>A 'version', mentioning the UHS compiler that made the file.</li>
 	 * <li>An 'info', mentioning the author, publisher, etc.</li>
-	 * <li>And an 'incentive', listing nodes to show/block if the reader is unregistered.</li>
+	 * <li>And an 'incentive', listing nodes to show/block if the reader is
+	 * unregistered.</li>
 	 * </ul></p>
 	 *
-	 * <p>For convenience, these auxiliary nodes can be treated differently.</p>
+	 * <p>Official readers merge the content of the auxiliary nodes to appear
+	 * together as "Credits and File Information".</p>
 	 *
 	 * @param context  the parse context
-	 * @param auxStyle  AUX_NORMAL (canon), AUX_IGNORE (omit), or AUX_NEST (move inside the master subject and make that the new root).
 	 * @return the root of a tree of nodes
 	 * @see #buildNodes(UHSParseContext, UHSNode, int)
 	 * @see #calcChecksum(File)
 	 */
-	public UHSRootNode parse9xFormat( UHSParseContext context, int auxStyle ) throws UHSParseException {
-		if ( auxStyle != AUX_NORMAL && auxStyle != AUX_IGNORE && auxStyle != AUX_NEST ) {
-			throw new IllegalArgumentException( String.format( "Invalid auxStyle: %d", auxStyle ) );
-		}
-
+	public UHSRootNode parse9xFormat( UHSParseContext context ) throws UHSParseException {
 		try {
 			UHSRootNode rootNode = new UHSRootNode();
 				rootNode.setRawStringContent( "Root" );
@@ -532,27 +517,18 @@ public class UHSParser {
 			context.setEncryptionKey( key );
 
 			int index = 1;
+			// Build the master subject node.
 			index += buildNodes( context, rootNode, index );
 
 			if ( rootNode.getChildCount() == 0 ) {
 				throw new UHSParseException( String.format( "No nodes were parsed!? Started from this line: %s", context.getLine( 1 ) ) );
 			}
 
-			if ( auxStyle != AUX_IGNORE ) {
-				if ( auxStyle == AUX_NEST ) {
-					UHSNode tmpChildNode = rootNode.getChild( 0 );
-						rootNode.setChildren( tmpChildNode.getChildren() );
-						rootNode.setRawStringContent( title );
-						rootNode.setStringContentDecorator( new Version9xTitleDecorator() );
-
-					UHSNode blankNode = new UHSNode( "Blank" );
-						blankNode.setRawStringContent( "--=File Info=--" );
-						rootNode.addChild( blankNode );
-				}
-				while ( context.hasLine( index ) ) {
-					index += buildNodes( context, rootNode, index );
-				}
+			// Build auxiliary nodes: version, info, incentive.
+			while ( context.hasLine( index ) ) {
+				index += buildNodes( context, rootNode, index );
 			}
+
 			return rootNode;
 		}
 		catch ( NumberFormatException e ) {
@@ -1473,7 +1449,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode infoNode = new UHSNode( "Info" );
-			infoNode.setRawStringContent( "Info: "+ context.getLine( index ) );
+			infoNode.setRawStringContent( context.getLine( index ) );
 			infoNode.setStringContentDecorator( new Version9xTitleDecorator() );
 			infoNode.setId( startIndex );
 			currentNode.addChild( infoNode );
@@ -1546,7 +1522,7 @@ public class UHSParser {
 		int innerCount = Integer.parseInt( tmp.substring( 0, tmp.indexOf( " " ) ) ) - 1;
 
 		UHSNode incentiveNode = new UHSNode( "Incentive" );
-			incentiveNode.setRawStringContent( "Incentive: "+ context.getLine( index ) );
+			incentiveNode.setRawStringContent( context.getLine( index ) );
 			incentiveNode.setId( startIndex );
 			currentNode.addChild( incentiveNode );
 			context.getRootNode().addLink( incentiveNode );

@@ -165,27 +165,27 @@ public class UHSWriter {
 	 * <p>The rootNode must contain...
 	 * <blockquote><pre>
 	 * {@code
-	 * 0-or-more Subjects, containing:
+	 * A master Subject node, with 0-or-more Subjects, containing:
 	 * - 1-or-more Questions, containing:
 	 * - - 1-or-more Hints
-	 * 1 Credit, containing a text node
+	 * 1 Credit node, containing a CreditData node
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * <p>All the nodes' content must be strings.</p>
-	 * <p>Newlines are not part of 88a, and will be stripped.</p>
-	 * <p>Accented and exotic characters will be asciified.</p>
-	 * <p>Markup within text will be stripped.</p>
-	 * <p>Version and Blank nodes will be omitted.</p>
+	 * <p>The 88a format is pretty limited...
+	 * <ul>
+	 * <li>All nodes' content must be strings.</li>
+	 * <li>Newlines are not part of 88a, and will need to be stripped.</li>
+	 * <li>Accented and exotic characters will need to be asciified.</li>
+	 * <li>Markup within text will need to be stripped.</li>
+	 * </ul></p>
 	 *
 	 * @param rootNode  an existing root node
 	 */
 	public boolean isValid88Format( UHSRootNode rootNode ) {
-		boolean hasCredit = false;
-
 		if ( !rootNode.isGroup() ) return false;
 
-		List<UHSNode> levelOne = rootNode.getChildren();
+		List<UHSNode> levelOne = rootNode.getMasterSubjectNode().getChildren();
 		for ( int o=0; o < levelOne.size(); o++ ) {
 			UHSNode oNode = levelOne.get( o );
 			String oType = oNode.getType();
@@ -195,7 +195,7 @@ public class UHSWriter {
 				// Check Question nodes
 				List<UHSNode> levelTwo = oNode.getChildren();
 				for ( int t=0; t < levelTwo.size(); t++ ) {
-					UHSNode tNode = levelTwo.get(t);
+					UHSNode tNode = levelTwo.get( t );
 					if ( !tNode.isGroup() ) return false;
 
 					// Check Hint nodes
@@ -206,20 +206,14 @@ public class UHSWriter {
 					}
 				}
 			}
-			else if ( "Blank".equals( oType ) ) {
-			}
-			else if ( "Version".equals( oType ) ) {
-			}
-			else if ( "Credit".equals( oType ) ) {
-				if ( hasCredit ) return false;
-				hasCredit = true;
-				if ( oNode.getChildCount() != 1 ) return false;
-				// Check CreditData node
-				if ( oNode.getChild( 0 ).isGroup() ) return false;
-			}
 			else return false;
 		}
-		if ( !hasCredit ) return false;
+
+		UHSNode creditNode = rootNode.getFirstChild( "Credit", UHSNode.class );
+		if ( creditNode == null || creditNode.getFirstChild( "CreditData", UHSNode.class ) == null ) {
+			return false;
+		}
+
 		return true;
 	}
 
@@ -237,7 +231,7 @@ public class UHSWriter {
 	/**
 	 * Writes the tree of a UHSRootnode in 88a format.
 	 *
-	 * <p>TODO: This method is broken and needs to be made decorator-aware.</p>
+	 * <p>TODO: This method needs to be made decorator-aware.</p>
 	 *
 	 * <p>Newlines and "^break^" are replaced by " ".</p>
 	 *
@@ -252,7 +246,7 @@ public class UHSWriter {
 		StringBuffer buf = new StringBuffer();
 
 		String tmp = null;
-		List<UHSNode> subjectNodes = rootNode.getChildren( "Subject", UHSNode.class );
+		List<UHSNode> subjectNodes = rootNode.getMasterSubjectNode().getChildren( "Subject", UHSNode.class );
 		List<UHSNode> questionNodes = new ArrayList<UHSNode>();
 		List<UHSNode> hintNodes = new ArrayList<UHSNode>();
 		for ( int s=0; s < subjectNodes.size(); s++ ) {
@@ -273,8 +267,7 @@ public class UHSWriter {
 
 		buf.append( "UHS\r\n" );
 
-		String title = "";
-		title = escapeText( rootNode, true );
+		String title = rootNode.getUHSTitle();
 		buf.append( title ).append( "\r\n" );
 		buf.append( firstH ).append( "\r\n" );
 		buf.append( lastH ).append( "\r\n" );
@@ -283,7 +276,7 @@ public class UHSWriter {
 		for ( int s=0; s < subjectNodes.size(); s++ ) {
 			UHSNode tmpSubject = subjectNodes.get( s );
 			tmp = escapeText( tmpSubject, true );
-				tmp = tmp.replaceAll( "\\^break\\^", " " );  // 88a doesn't support newlines
+				tmp = tmp.replaceAll( "\\^break\\^", " " );  // 88a doesn't support newlines.
 				tmp = encryptString( tmp );
 			int n = ( qSize * questionNodes.indexOf( tmpSubject.getChild( 0 ) ) ) + firstQ;
 			buf.append( tmp ).append( "\r\n" ).append( n ).append( "\r\n" );
@@ -293,7 +286,7 @@ public class UHSWriter {
 			UHSNode tmpQuestion = questionNodes.get( q );
 			tmp = escapeText( tmpQuestion, true );
 				if ( tmp.endsWith( "?" ) ) tmp = tmp.substring( 0, tmp.length()-1 );
-				tmp = tmp.replaceAll( "\\^break\\^", " " );  // 88a doesn't support newlines
+				tmp = tmp.replaceAll( "\\^break\\^", " " );  // 88a doesn't support newlines.
 				tmp = encryptString( tmp );
 			int n = ( hSize * hintNodes.indexOf( tmpQuestion.getChild( 0 ) ) ) + firstH;
 			buf.append( tmp ).append( "\r\n" ).append( n ).append( "\r\n" );
@@ -512,9 +505,13 @@ public class UHSWriter {
 		rootNode.setRawStringContent( "Important Message!" );
 		rootNode.setLegacy( true );
 
+		UHSNode masterSubjectNode = new UHSNode( "Subject" );
+		masterSubjectNode.setRawStringContent( "" );
+		rootNode.addChild( masterSubjectNode );
+
 		UHSNode subjectNode = new UHSNode( "Subject" );
 		subjectNode.setRawStringContent( "Important!" );
-		rootNode.addChild( subjectNode );
+		masterSubjectNode.addChild( subjectNode );
 
 		UHSNode ignoreNode = new UHSNode( "Question" );
 		ignoreNode.setRawStringContent( "Ignore this!" );
@@ -562,27 +559,12 @@ public class UHSWriter {
 		UHSRootNode rootNode = (UHSRootNode)currentNode;
 
 		int innerCount = 0;
-		String[] contentLines = null;
 		StringBuffer buf = new StringBuffer();
-
-		// Act like a Subject node.
-		innerCount = 0;
-		StringBuffer sBuf = new StringBuffer();
-
-		sBuf.append( /* lineCount */ " subject" ).append( "\r\n" );
-		contentLines = splitContentLines( rootNode, 1 );
-		appendLines( sBuf, true, contentLines );
-		innerCount += 2;
 
 		for ( int i=0; i < rootNode.getChildCount(); i++ ) {
 			UHSNode tmpNode = rootNode.getChild( i );
-			innerCount += getLinesAndBinData( context, tmpNode, sBuf, startIndex + innerCount );  // Recurse.
+			innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
 		}
-
-		sBuf.insert( 0, innerCount );  // Insert innerCount at the beginning.
-		buf.append( sBuf );
-
-		// TODO: Deal with aux nodes. =/
 
 		parentBuf.append( buf );
 	}

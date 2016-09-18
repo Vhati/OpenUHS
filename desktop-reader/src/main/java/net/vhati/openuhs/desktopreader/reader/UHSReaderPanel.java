@@ -344,11 +344,11 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 				try {
 					if ( f.getName().matches( "(?i).*[.]uhs$" ) ) {
 						UHSParser uhsParser = new UHSParser();
-						rootNode = uhsParser.parseFile( f, UHSParser.AUX_NEST );
+						rootNode = uhsParser.parseFile( f );
 					}
 					else if ( f.getName().matches( "(?i).*[.]puhs" ) ) {
 						Proto4xUHSParser protoParser = new Proto4xUHSParser();
-						rootNode = protoParser.parseFile( f, Proto4xUHSParser.AUX_NEST );
+						rootNode = protoParser.parseFile( f );
 					}
 				}
 				catch ( IOException e ) {
@@ -386,6 +386,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		rootNode = newRootNode;
 		findBtn.setEnabled( true );
 		setReaderNode( rootNode );
+		setReaderNode( rootNode.getMasterSubjectNode() );
 
 		String title = rootNode.getUHSTitle();
 		setReaderTitle( (( title != null ) ? title : "") );

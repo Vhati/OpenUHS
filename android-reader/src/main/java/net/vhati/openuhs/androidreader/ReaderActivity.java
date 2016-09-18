@@ -233,7 +233,7 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 			logger.info( "Reader opened \"{}\"", f.getName() );
 
 			UHSParser uhsParser = new UHSParser();
-			newRootNode = uhsParser.parseFile( f, UHSParser.AUX_NEST );
+			newRootNode = uhsParser.parseFile( f );
 		}
 		catch ( Exception e ) {
 			Toast.makeText( this, "Parsing failed.", Toast.LENGTH_LONG ).show();
@@ -258,6 +258,7 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 		rootNode = newRootNode;
 		//findBtn.setEnabled( true );
 		setReaderNode( rootNode );
+		setReaderNode( rootNode.getMasterSubjectNode() );
 
 		String title = rootNode.getUHSTitle();
 		setReaderTitle( (( title != null ) ? title : "") );

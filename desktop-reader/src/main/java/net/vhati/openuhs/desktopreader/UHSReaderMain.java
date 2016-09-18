@@ -113,6 +113,7 @@ public class UHSReaderMain {
 
 				for ( File f : scanDir.listFiles() ) {
 					try {
+						UHSRootNode tmpRootNode = null;
 						if ( f.getName().matches( "(?i).*[.]uhs$" ) ) {
 							logger.info( "Scanning \"{}\"", f.getName() );
 							UHSParser uhsParser = new UHSParser();
@@ -120,13 +121,13 @@ public class UHSReaderMain {
 							if ( options.has( optionForce88a ) ) {
 								uhsParser.setForce88a( true );
 							}
-							uhsParser.parseFile( f, UHSParser.AUX_NEST );
+							tmpRootNode = uhsParser.parseFile( f );
 						}
 						else if ( f.getName().matches( "(?i).*[.]puhs" ) ) {
 							logger.info( "Scanning \"{}\"", f.getName() );
 							Proto4xUHSParser protoParser = new Proto4xUHSParser();
 
-							protoParser.parseFile( f, Proto4xUHSParser.AUX_NEST );
+							tmpRootNode = protoParser.parseFile( f );
 						}
 					}
 					catch ( Exception e ) {
@@ -143,12 +144,12 @@ public class UHSReaderMain {
 						if ( options.has( optionForce88a ) ) {
 							uhsParser.setForce88a( true );
 						}
-						rootNode = uhsParser.parseFile( etcFile, UHSParser.AUX_NEST );
+						rootNode = uhsParser.parseFile( etcFile );
 					}
 					else if ( etcFile.getName().matches( "(?i).*[.]puhs" ) ) {
 						Proto4xUHSParser protoParser = new Proto4xUHSParser();
 
-						rootNode = protoParser.parseFile( etcFile, Proto4xUHSParser.AUX_NEST );
+						rootNode = protoParser.parseFile( etcFile );
 					}
 				}
 				catch ( Exception e ) {
@@ -248,7 +249,7 @@ public class UHSReaderMain {
 				fileAppender.setEncoder( encoder );
 				fileAppender.start();
 
-				lc.getLogger( "net.vhati.openuhs.desktopreader" ).addAppender( fileAppender );
+				lc.getLogger( "net.vhati.openuhs" ).addAppender( fileAppender );
 
 				// Log a welcome message.
 				logger.debug( "Started: {}", (new Date()) );

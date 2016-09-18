@@ -11,6 +11,7 @@
  - Incorporated SLF4J into the core library for standardized logging.
  - Incorporated Logback for logging on the desktop reader.
  - Changed all UHSNodes to have string content. Subclasses may have image/audio, too.
+ - Top-level children of root nodes are: a master subject and the auxiliary nodes.
  - Changed the reader to allow registering handlers for UHSNode subclasses.
  - Fixed NestHints not revealing in batches, as the official reader does.
  - Added CatalogParser and DownloadableUHS to the core library.

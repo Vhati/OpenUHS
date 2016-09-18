@@ -17,6 +17,7 @@ import net.vhati.openuhs.core.UHSNode;
 public class UHSRootNode extends UHSNode {
 	private boolean legacy = false;
 	private UHSRootNode legacyRootNode = null;
+
 	private Map<String, UHSNode> linkMap = new HashMap<String, UHSNode>();
 
 
@@ -183,27 +184,30 @@ public class UHSRootNode extends UHSNode {
 
 
 	/**
+	 * Returns the master Subject node containing the table of contents.
+	 *
+	 * <p>This is equivalent to getting the first Subject child.</p>
+	 */
+	public UHSNode getMasterSubjectNode() {
+		return this.getFirstChild( "Subject", UHSNode.class );
+	}
+
+
+	/**
 	 * Returns the title of this hint tree.
 	 *
-	 * <p>It may be the root's content, or the content of the
-	 * first child, if it's a Subject node with String content.</p>
+	 * <p>This is the string content of the master Subject node.</p>
 	 *
 	 * @return the title of the hint file, or null if absent or blank
+	 * @see #getMasterSubjectNode()
 	 */
 	public String getUHSTitle() {
 		String result = null;
 
-		String tmp = this.getDecoratedStringContent();
-		if ( !"Root".equals( tmp ) ) {
-			result = tmp;
+		UHSNode masterSubjectNode = getMasterSubjectNode();
+		if ( masterSubjectNode != null ) {
+			result = masterSubjectNode.getDecoratedStringContent();
 		}
-		else if ( this.getChildCount() > 0 ) {
-			UHSNode subjectNode = this.getFirstChild( "Subject", UHSNode.class );
-			if ( subjectNode != null ) {
-				result = subjectNode.getDecoratedStringContent();
-			}
-		}
-
 		if ( result != null && result.length() == 0 ) result = null;
 
 		return result;
@@ -230,7 +234,6 @@ public class UHSRootNode extends UHSNode {
 		}
 
 		if ( result != null ) {
-			if ( result.startsWith( "Version: " ) ) result = result.substring( 9 );
 			if ( result.length() == 0 ) result = null;
 		}
 		return result;
