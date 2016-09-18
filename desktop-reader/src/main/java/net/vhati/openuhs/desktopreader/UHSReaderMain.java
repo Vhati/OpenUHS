@@ -129,6 +129,8 @@ public class UHSReaderMain {
 
 							tmpRootNode = protoParser.parseFile( f );
 						}
+
+						validateNode( tmpRootNode, tmpRootNode );
 					}
 					catch ( Exception e ) {
 						logger.error( "Parsing \"{}\" failed", f.getName(), e );
@@ -306,6 +308,38 @@ public class UHSReaderMain {
 		}
 		catch( ClassNotFoundException e ) {
 			logger.error( "Could not cache JFileChooser", e );
+		}
+	}
+
+
+	/**
+	 * Recursively scans a node and its descendents for log-worthy problems.
+	 *
+	 * <p>This method doesn't return anything. It just calls methods not
+	 * encountered during basic parsing to give loggers a chance to complain.</p>
+	 *
+	 * <p><ul>
+	 * <li>String content decorators may complain about markup.</li>
+	 * <li>Nodes may have link target ids which have not been registered.</li>
+	 * </ul></p>
+	 */
+	public static void validateNode( UHSRootNode rootNode, UHSNode currentNode ) {
+		if ( currentNode.getStringContentDecorator() != null ) {
+			currentNode.getDecoratedStringFragments();
+		}
+
+		int linkTarget = currentNode.getLinkTarget();
+		if ( linkTarget != -1 ) {
+			if ( rootNode.getNodeByLinkId( linkTarget ) == null ) {
+				logger.warn( "Node has an unresolvable link target id: {}", linkTarget );
+			}
+		}
+		else {
+			if ( currentNode.getChildren() != null ) {
+				for ( UHSNode tmpNode : currentNode.getChildren() ) {
+					validateNode( rootNode, tmpNode );
+				}
+			}
 		}
 	}
 
