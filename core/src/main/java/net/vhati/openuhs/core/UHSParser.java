@@ -909,6 +909,13 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
+	 * <p>Unlike the 88a format's credits, 9x format credit hunks appear under
+	 * a Subject. They are not auxiliary nodes.</p>
+	 *
+	 * <p><ul>
+	 * <li>Illustrative UHS: <i>Alone in the Dark</i>: About this UHS File, Who wrote this file?</li>
+	 * </ul></p>
+	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
 	 * @param startIndex  the line number to start parsing from
