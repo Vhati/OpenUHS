@@ -64,7 +64,7 @@ public class DefaultNodePanel extends NodePanel {
 
 	@Override
 	public boolean accept( UHSNode node ) {
-		if ( node.isGroup() ) return true;
+		if ( node != null && node.isGroup() ) return true;
 		return false;
 	}
 
@@ -88,7 +88,7 @@ public class DefaultNodePanel extends NodePanel {
 
 		boolean allClickable = true;
 		for ( int i=0; i < mainNode.getChildCount(); i++ ) {
-			UHSNode tmpNode = node.getChild( i );
+			UHSNode tmpNode = mainNode.getChild( i );
 
 			UHSTextArea tmpUHSArea = new UHSTextArea();
 				tmpUHSArea.setNode( tmpNode, this.getNavCtrl().isNodeVisitable( tmpNode ) );

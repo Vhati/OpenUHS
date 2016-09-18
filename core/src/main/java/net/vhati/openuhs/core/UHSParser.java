@@ -415,7 +415,7 @@ public class UHSParser {
 
 			// Build auxiliary nodes.
 			UHSNode fauxVersionNode = new UHSNode( "Version" );
-				fauxVersionNode.setRawStringContent( "Version: 88a" );
+				fauxVersionNode.setRawStringContent( "88a" );
 				rootNode.addChild( fauxVersionNode );
 
 			UHSNode fauxVersionDataNode = new UHSNode( "VersionData" );
@@ -423,7 +423,7 @@ public class UHSParser {
 				fauxVersionNode.addChild( fauxVersionDataNode );
 
 			UHSNode creditNode = new UHSNode( "Credit" );
-				creditNode.setRawStringContent( "Credits" );
+				creditNode.setRawStringContent( "-" );
 				rootNode.addChild( creditNode );
 
 			String breakChar = "^break^";

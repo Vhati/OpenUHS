@@ -24,6 +24,7 @@ import net.vhati.openuhs.desktopreader.reader.AudioNodePanel;
 import net.vhati.openuhs.desktopreader.reader.DefaultNodePanel;
 import net.vhati.openuhs.desktopreader.reader.HotSpotNodePanel;
 import net.vhati.openuhs.desktopreader.reader.ImageNodePanel;
+import net.vhati.openuhs.desktopreader.reader.RootNodePanel;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
@@ -48,6 +49,7 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 		readerPanel.registerNodePanel( new AudioNodePanel() );
 		readerPanel.registerNodePanel( new ImageNodePanel() );
 		readerPanel.registerNodePanel( new HotSpotNodePanel() );
+		readerPanel.registerNodePanel( new RootNodePanel() );
 		tabbedPane.add( readerPanel, "Reader" );
 
 		downloaderPanel.setHintsDir( hintsDir );

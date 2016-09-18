@@ -36,6 +36,7 @@ public class UHSTextArea extends JTextPane {
 	private StyledDocument doc = null;
 	private UHSNode node = null;
 	private boolean visitable = false;
+	private String overrideText = null;
 
 
 	/**
@@ -66,7 +67,7 @@ public class UHSTextArea extends JTextPane {
 	public void setNode( UHSNode node, boolean visitable ) {
 		this.node = node;
 		this.visitable = visitable;
-		updateContent();
+		contentChanged();
 	}
 
 	/**
@@ -76,64 +77,79 @@ public class UHSTextArea extends JTextPane {
 		if ( visitable == b ) return;
 
 		visitable = b;
-		updateContent();
+		contentChanged();
 	}
 
 	public boolean isVisitable() {
 		return visitable;
 	}
 
+	/**
+	 * Sets a string to display instead of a UHSNode's content.
+	 *
+	 * <p>The string will be styled /as if/ that were the node's content.</p>
+	 *
+	 * @param s  the text, or null for none
+	 */
+	public void setOverrideText( String s ) {
+		overrideText = s;
+		contentChanged();
+	}
+
+	public String getOverrideText() {
+		return overrideText;
+	}
+
 
 	/**
-	 * Inserts the node's styled text into the document based on markup.
+	 * Clears and inserts styled text into the document based on node content.
 	 */
-	public void updateContent() {
+	public void contentChanged() {
 		try {doc.remove( 0, doc.getLength() );}
 		catch ( BadLocationException e ) {}
-
-		if ( node == null ) return;
 
 		String normStyleName = null;
 		if ( isVisitable() ) {
 			normStyleName = STYLE_NAME_VISITABLE;
 		}
-		else if ( node.isLink() ) {
+		else if ( node != null && node.isLink() ) {
 			normStyleName = STYLE_NAME_LINK;
 		}
 		else {
 			normStyleName = STYLE_NAME_REGULAR;
 		}
 
-		if (node.getStringContentDecorator() != null) {
-			DecoratedFragment[] fragments = node.getDecoratedStringFragments();
-			for ( int i=0; i < fragments.length; i++ ) {
-				String styleName = normStyleName;
-				for ( int a=0; a < fragments[i].attributes.length; a++ ) {
-					if ( fragments[i].attributes[a].equals( "Monospaced" ) ) {
-						styleName = STYLE_NAME_MONOSPACED;
-						break;
-					}
-					else if ( fragments[i].attributes[a].equals( "Hyperlink" ) ) {
-						styleName = STYLE_NAME_HYPERLINK;
-						break;
-					}
-				}
+		try {
+			if ( overrideText != null ) {
+				doc.insertString( doc.getLength(), overrideText, doc.getStyle( normStyleName ) );
+			}
+			else if ( node != null ) {
+				DecoratedFragment[] fragments = node.getDecoratedStringFragments();
 
-				try {
-					doc.insertString( doc.getLength(), fragments[i].fragment, doc.getStyle( styleName ) );
+				if ( fragments != null ) {
+					for ( int i=0; i < fragments.length; i++ ) {
+						String styleName = normStyleName;
+						for ( int a=0; a < fragments[i].attributes.length; a++ ) {
+							if ( fragments[i].attributes[a].equals( "Monospaced" ) ) {
+								styleName = STYLE_NAME_MONOSPACED;
+								break;
+							}
+							else if ( fragments[i].attributes[a].equals( "Hyperlink" ) ) {
+								styleName = STYLE_NAME_HYPERLINK;
+								break;
+							}
+						}
+
+						doc.insertString( doc.getLength(), fragments[i].fragment, doc.getStyle( styleName ) );
+					}
 				}
-				catch ( BadLocationException e ) {
-					logger.error( "Error updating text", e );
+				else {
+					doc.insertString( doc.getLength(), node.getRawStringContent(), doc.getStyle( normStyleName ) );
 				}
 			}
 		}
-		else {
-			try {
-				doc.insertString( doc.getLength(), node.getRawStringContent(), doc.getStyle( normStyleName ) );
-			}
-			catch ( BadLocationException e ) {
-				logger.error( "Error updating text", e );
-			}
+		catch ( BadLocationException e ) {
+			logger.error( "Error updating text", e );
 		}
 
 		this.validate();

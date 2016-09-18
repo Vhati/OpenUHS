@@ -41,10 +41,6 @@ import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.desktopreader.AppliablePanel;
 import net.vhati.openuhs.desktopreader.Nerfable;
-import net.vhati.openuhs.desktopreader.reader.AudioNodePanel;
-import net.vhati.openuhs.desktopreader.reader.DefaultNodePanel;
-import net.vhati.openuhs.desktopreader.reader.HotSpotNodePanel;
-import net.vhati.openuhs.desktopreader.reader.ImageNodePanel;
 import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
 import net.vhati.openuhs.desktopreader.reader.NodePanel;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
@@ -386,7 +382,6 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		rootNode = newRootNode;
 		findBtn.setEnabled( true );
 		setReaderNode( rootNode );
-		setReaderNode( rootNode.getMasterSubjectNode() );
 
 		String title = rootNode.getUHSTitle();
 		setReaderTitle( (( title != null ) ? title : "") );

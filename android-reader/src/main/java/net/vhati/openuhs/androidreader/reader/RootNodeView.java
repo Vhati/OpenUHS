@@ -1,5 +1,8 @@
 package net.vhati.openuhs.androidreader.reader;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,18 +18,19 @@ import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSRootNode;
 
 
-public class DefaultNodeView extends NodeView {
+public class RootNodeView extends NodeView {
 	public static final int SCROLL_TO_TOP = 0;
 	public static final int SCROLL_TO_BOTTOM = 1;
 	public static final int SCROLL_IF_INCOMPLETE = 2;
 
-	protected UHSNode mainNode = null;
+	protected UHSRootNode rootNode = null;
+	protected List<UHSNode> nodeList = new ArrayList<UHSNode>();
 	private BaseAdapter listAdapter = null;
 	private OnItemClickListener listClickListener = null;
 	private ListView listView = null;
 
 
-	public DefaultNodeView( Context context ) {
+	public RootNodeView( Context context ) {
 		super( context );
 		this.setClickable( false );
 		this.setFocusable( false );
@@ -34,14 +38,14 @@ public class DefaultNodeView extends NodeView {
 		listAdapter = new BaseAdapter() {
 			@Override
 			public int getCount() {
-				if ( mainNode == null ) return 0;
+				if ( rootNode == null ) return 0;
 
-				return DefaultNodeView.this.getCurrentReveal();
+				return nodeList.size();
 			}
 
 			@Override
 			public Object getItem( int position ) {
-				return mainNode.getChild( position );
+				return nodeList.get( position );
 			}
 
 			@Override
@@ -82,11 +86,28 @@ public class DefaultNodeView extends NodeView {
 				if ( true ) {  // No if-else for alternate node types.
 					if ( convertView instanceof UHSTextView ) {
 						childView = convertView;
-					} else {
-						childView = new UHSTextView( DefaultNodeView.this.getContext() );
 					}
-					UHSNode childNode = mainNode.getChild( position );
-					((UHSTextView)childView).setNode( childNode, DefaultNodeView.this.getNavCtrl().isNodeVisitable( childNode ) );
+					else {
+						childView = new UHSTextView( RootNodeView.this.getContext() );
+					}
+					UHSNode childNode = nodeList.get( position );
+					((UHSTextView)childView).setNode( childNode, RootNodeView.this.getNavCtrl().isNodeVisitable( childNode ) );
+
+					if ( "Version".equals( childNode.getType() ) ) {
+						((UHSTextView)childView).setOverrideText( String.format( "%s: %s", childNode.getType(), childNode.getRawStringContent() ) );
+					}
+					else if ( "Incentive".equals( childNode.getType() ) ) {
+						((UHSTextView)childView).setOverrideText( String.format( "%s: %s", childNode.getType(), childNode.getRawStringContent() ) );
+					}
+					else if ( "Info".equals( childNode.getType() ) ) {
+						((UHSTextView)childView).setOverrideText( String.format( "%s: %s", childNode.getType(), childNode.getRawStringContent() ) );
+					}
+					else if ( "Credit".equals( childNode.getType() ) ) {
+						((UHSTextView)childView).setOverrideText( String.format( "%s: %s", childNode.getType(), childNode.getRawStringContent() ) );
+					}
+					else {
+						((UHSTextView)childView).setOverrideText( null );
+					}
 				}
 
 				return childView;
@@ -105,10 +126,10 @@ public class DefaultNodeView extends NodeView {
 				UHSNode childNode = (UHSNode)o;
 				if ( childNode.isLink() ) {
 					int targetIndex = childNode.getLinkTarget();
-					DefaultNodeView.this.getNavCtrl().setReaderNode( targetIndex );
+					RootNodeView.this.getNavCtrl().setReaderNode( targetIndex );
 				}
-				else if ( DefaultNodeView.this.getNavCtrl().isNodeVisitable( childNode ) ) {
-					DefaultNodeView.this.getNavCtrl().setReaderNode( childNode );
+				else if ( RootNodeView.this.getNavCtrl().isNodeVisitable( childNode ) ) {
+					RootNodeView.this.getNavCtrl().setReaderNode( childNode );
 				}
 			}
 		};
@@ -126,7 +147,7 @@ public class DefaultNodeView extends NodeView {
 
 	@Override
 	public boolean accept( UHSNode node ) {
-		if ( node != null && node.isGroup() ) return true;
+		if ( node instanceof UHSRootNode ) return true;
 		return false;
 	}
 
@@ -135,64 +156,55 @@ public class DefaultNodeView extends NodeView {
 		reset();
 		if ( !accept( node ) ) return;
 
-		if ( node instanceof UHSRootNode ) showAll = true;
-
 		super.setNode( node, showAll );
-		mainNode = node;
+		rootNode = (UHSRootNode)node;
 
-		boolean allClickable = true;
-		for ( int i=0; i < mainNode.getChildCount(); i++ ) {
-			UHSNode tmpNode = mainNode.getChild( i );
+		// Collect master Subject node's children.
+		UHSNode masterSubjectNode = rootNode.getMasterSubjectNode();
+		if ( masterSubjectNode != null ) {
+			for ( int i=0; i < masterSubjectNode.getChildCount(); i++ ) {
+				UHSNode tmpNode = masterSubjectNode.getChild( i );
+				nodeList.add( tmpNode );
+			}
+		}
 
-			if ( tmpNode.isLink() || this.getNavCtrl().isNodeVisitable( tmpNode ) ) {
+		// Divider.
+		UHSNode blankNode = new UHSNode( "Blank" );
+		blankNode.setRawStringContent( "--=File Info=--" );
+		nodeList.add( blankNode );
+
+		// Collect auxiliary nodes.
+		for ( int i=0; i < rootNode.getChildCount(); i++ ) {
+			UHSNode tmpNode = rootNode.getChild( i );
+			if ( tmpNode.equals( masterSubjectNode ) ) continue;
+
+			nodeList.add( tmpNode );
+		}
+
+		//for ( UHSNode tmpNode : nodeList ) {
+		//	if ( tmpNode.isLink() || this.getNavCtrl().isNodeVisitable( tmpNode ) ) {
 				// Clickable.
-			}
-			else if ( "Blank".equals( tmpNode.getType() ) == false ) {
-				allClickable = false;
-			}
-		}
+		//	}
+		//}
 
-		if ( allClickable || showAll ) {
-			mainNode.setCurrentReveal( mainNode.getMaximumReveal() );
-		}
-		else if ( mainNode.getCurrentReveal() == 0 ) {  // Reveal at least one hint.
-			mainNode.setCurrentReveal( Math.min( 1, mainNode.getMaximumReveal() ) );
-		}
+		// Reveal isn't used, but setting it regardless.
+		rootNode.setCurrentReveal( rootNode.getMaximumReveal() );
 
 		listAdapter.notifyDataSetChanged();
-		scrollTo( SCROLL_IF_INCOMPLETE );
+		scrollTo( SCROLL_TO_TOP );
 	}
 
 	@Override
 	public String getTitle() {
-		if ( mainNode instanceof UHSRootNode ) {
-			return "";
-		} else {
-			return super.getTitle();
-		}
+		return "";
 	}
 
 	@Override
 	public void reset() {
-		mainNode = null;
+		rootNode = null;
+		nodeList.clear();
 		super.reset();
 		listAdapter.notifyDataSetChanged();
-	}
-
-
-	@Override
-	public boolean isRevealSupported() {
-		return true;
-	}
-
-	@Override
-	public void revealNext() {
-		if ( isComplete() ) return;
-		mainNode.setCurrentReveal( mainNode.getCurrentReveal()+1 );
-		int revealValue = mainNode.getCurrentReveal();
-
-		listAdapter.notifyDataSetChanged();
-		scrollTo( SCROLL_TO_BOTTOM );
 	}
 
 

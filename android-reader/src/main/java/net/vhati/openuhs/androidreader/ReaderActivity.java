@@ -34,6 +34,7 @@ import net.vhati.openuhs.androidreader.reader.DefaultNodeView;
 import net.vhati.openuhs.androidreader.reader.HotSpotNodeView;
 import net.vhati.openuhs.androidreader.reader.ImageNodeView;
 import net.vhati.openuhs.androidreader.reader.NodeView;
+import net.vhati.openuhs.androidreader.reader.RootNodeView;
 import net.vhati.openuhs.androidreader.reader.UHSReaderNavCtrl;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSNode;
@@ -99,6 +100,7 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 		registerNodeView( new ImageNodeView( this ) );
 		registerNodeView( new AudioNodeView( this ) );
 		registerNodeView( new HotSpotNodeView( this ) );
+		registerNodeView( new RootNodeView( this ) );
 
 		reset();
 
@@ -258,7 +260,6 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 		rootNode = newRootNode;
 		//findBtn.setEnabled( true );
 		setReaderNode( rootNode );
-		setReaderNode( rootNode.getMasterSubjectNode() );
 
 		String title = rootNode.getUHSTitle();
 		setReaderTitle( (( title != null ) ? title : "") );
