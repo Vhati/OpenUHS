@@ -202,12 +202,13 @@ public class UHSReaderMain {
 						throw new ExitException();
 					}
 				}
-				if ( options.has( optionSaveBin ) ) {
+				if ( options.has( optionSave88a ) ) {
 					UHSWriter uhsWriter = new UHSWriter();
 					String basename = etcFile.getName().replaceAll( "[.][^.]*$", "" );
+					File outFile = new File( "./"+ basename +".uhs" );
 					FileOutputStream fos = null;
 					try {
-						fos = new FileOutputStream( "./"+ basename +".uhs" );
+						fos = new FileOutputStream( outFile );
 						uhsWriter.write88Format( rootNode, fos );
 					}
 					catch ( IOException e ) {
