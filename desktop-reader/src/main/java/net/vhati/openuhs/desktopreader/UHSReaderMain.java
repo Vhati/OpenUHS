@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
 import javax.swing.JFrame;
@@ -19,10 +20,15 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import joptsimple.util.RegexMatcher;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.filter.ThresholdFilter;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
+import ch.qos.logback.core.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,32 +88,51 @@ public class UHSReaderMain {
 				System.exit( 0 );
 			}
 
-			File etcFile = options.valueOf( optionEtc );  // Assume one.
+			File etcFile = options.valueOf( optionEtc );  // Assume a single value, not a list.
 			UHSRootNode rootNode = null;
 
 			if ( options.has( optionLoglevel ) ) {
-				ch.qos.logback.classic.Logger classicUHSLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger( "net.vhati.openuhs" );
+				Level newLevel = null;
 
 				if ( "off".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
-					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.OFF );
+					newLevel = Level.OFF;
 				}
 				else if ( "error".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
-					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.ERROR );
+					newLevel = Level.ERROR;
 				}
 				else if ( "warn".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
-					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.WARN );
+					newLevel = Level.WARN;
 				}
 				else if ( "info".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
-					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.INFO );
+					newLevel = Level.INFO;
 				}
 				else if ( "debug".equalsIgnoreCase( options.valueOf( optionLoglevel ) ) ) {
-					classicUHSLogger.setLevel( ch.qos.logback.classic.Level.DEBUG );
+					newLevel = Level.DEBUG;
+				}
+				if ( newLevel != null ) {
+					ch.qos.logback.classic.Logger classicRootLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
+
+					// Find the console's threshold filter.
+					Iterator<Appender<ILoggingEvent>> appIt = classicRootLogger.iteratorForAppenders();
+					boolean done = false;
+					while ( appIt.hasNext() && !done ) {
+						Appender<ILoggingEvent> appender = appIt.next();
+
+						if ( appender instanceof ConsoleAppender ) {
+
+							for ( Filter f : appender.getCopyOfAttachedFiltersList() ) {
+								if ( f instanceof ThresholdFilter ) {
+									((ThresholdFilter)f).setLevel( newLevel.toString() );
+									done = true;
+									break;
+								}
+							}
+						}
+					}
 				}
 			}
 
 			// Scan  an entire dir for parse errors, discard rootNodes.
-			// TODO: Validate link targets.
-			// TODO: Valdate all the markup that was delegated to decorators.
 			if ( options.has( optionScanDir ) ) {
 				File scanDir = options.valueOf( optionScanDir );
 
