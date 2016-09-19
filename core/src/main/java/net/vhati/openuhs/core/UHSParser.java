@@ -1636,27 +1636,6 @@ public class UHSParser {
 				crc.update( tmpBytes, 0, count );
 			}
 			result = crc.getValue();
-
-			// I'm not sure what's going on below...
-			// Values past the half-way point for short (32768),
-			// must add 1+FF. Java's dealing with a wider
-			// numeric type than short, so it's oblivious to the
-			// sign bit, if any. The 1 might make sense as part
-			// of twos complement sign-flipping, but not the FF.
-			// It might be sign-flipping the most significant
-			// byte alone (adding 1*256) but that seems weird
-			// too.
-			// In any case, my hex editor's reported unsigned
-			// values for high numbers stored in files always
-			// disagree with the calc'd CRC by 256. So the
-			// problem is here and not in parsing the stored
-			// expected CRC.
-			// Since adding's happening, the AND truncates
-			// a potential overflowing 17th bit.
-			// <li>Illustrative UHS: <i>Star Trek: Borg</i> (low)</li>
-			// <li>Illustrative UHS: <i>Rent-A-Hero</i> (high)</li>
-			// <li>Illustrative UHS: <i>Azrael's Tear</i> (overflow)</li>
-			if ( result >= 0x8000 ) result = (result + 0x0100) & 0xFFFF;
 		}
 		catch ( IOException e ) {
 			throw new IOException( "Could not calculate checksum", e );

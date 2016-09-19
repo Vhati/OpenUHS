@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -21,10 +22,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.CheckedOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.CRC16;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSAudioNode;
 import net.vhati.openuhs.core.UHSGenerationContext;
@@ -391,18 +394,24 @@ public class UHSWriter {
 		FileOutputStream fos = null;
 		try {
 			fos = new FileOutputStream( outFile );
+			CheckedOutputStream crcStream = new CheckedOutputStream( fos, new CRC16() );
 
 			// Docs recommends wrapping with a BufferedWriter. Already got a buffer.
-			textStream.writeTo( fos );
-			fos.flush();
+			textStream.writeTo( crcStream );
+			crcStream.flush();
 
-			fos.write( (byte)0x1a );
-			fos.flush();
+			crcStream.write( (byte)0x1a );
+			crcStream.flush();
 
-			context.getBinaryHunkOutputStream().writeTo( fos );
-			fos.flush();
+			context.getBinaryHunkOutputStream().writeTo( crcStream );
+			crcStream.flush();
 
-			// TODO: CRC. Maybe CheckedOutputStream( fos, crc16 )?
+			long crcResult = crcStream.getChecksum().getValue();
+
+			ByteBuffer crcBuf = ByteBuffer.allocate( 2 );
+			crcBuf.order( ByteOrder.LITTLE_ENDIAN );
+			crcBuf.putShort( (short)crcResult );
+			fos.write( crcBuf.array() );
 		}
 		finally {
 			try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
@@ -605,8 +614,6 @@ public class UHSWriter {
 		contentLines = splitContentLines( nestNode, 1 );
 		appendLines( buf, true, contentLines );
 		innerCount += 2;
-
-		// TODO: Use nestNode.isAddon().
 
 		boolean first = true;
 		for ( int i=0; i < nestNode.getChildCount(); i++ ) {
