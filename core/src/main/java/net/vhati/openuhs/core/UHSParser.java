@@ -503,7 +503,7 @@ public class UHSParser {
 	 *
 	 * @param context  the parse context
 	 * @return the root of a tree of nodes
-	 * @see #buildNodes(UHSParseContext, UHSNode, int)
+	 * @see #parseNode(UHSParseContext, UHSNode, int)
 	 * @see #calcChecksum(File)
 	 */
 	public UHSRootNode parse9xFormat( UHSParseContext context ) throws UHSParseException {
@@ -518,7 +518,7 @@ public class UHSParser {
 
 			int index = 1;
 			// Build the master subject node.
-			index += buildNodes( context, rootNode, index );
+			index += parseNode( context, rootNode, index );
 
 			if ( rootNode.getChildCount() == 0 ) {
 				throw new UHSParseException( String.format( "No nodes were parsed!? Started from this line: %s", context.getLine( 1 ) ) );
@@ -526,7 +526,7 @@ public class UHSParser {
 
 			// Build auxiliary nodes: version, info, incentive.
 			while ( context.hasLine( index ) ) {
-				index += buildNodes( context, rootNode, index );
+				index += parseNode( context, rootNode, index );
 			}
 
 			return rootNode;
@@ -549,7 +549,7 @@ public class UHSParser {
 	 * @param startIndex  the line number to start parsing from
 	 * @return the number of lines consumed from the file in parsing children
 	 */
-	public int buildNodes( UHSParseContext context, UHSNode currentNode, int startIndex ) {
+	public int parseNode( UHSParseContext context, UHSNode currentNode, int startIndex ) {
 		int index = startIndex;
 
 		String tmp = context.getLine( index );
@@ -642,7 +642,7 @@ public class UHSParser {
 		innerCount--;
 
 		for ( int j=0; j < innerCount; ) {
-			j += buildNodes( context, newNode, index+j );
+			j += parseNode( context, newNode, index+j );
 		}
 
 		index += innerCount;
@@ -747,7 +747,7 @@ public class UHSParser {
 
 				int childrenBefore = hintNode.getChildCount();
 
-				j += buildNodes( context, hintNode, index+j+1 );
+				j += parseNode( context, hintNode, index+j+1 );
 
 				if ( hintNode.getChildCount() == childrenBefore+1 ) {
 					UHSNode thatNode = hintNode.getChild( hintNode.getChildCount()-1 );
@@ -1057,7 +1057,7 @@ public class UHSParser {
 		index++;
 
 		// Removed since it ran endlessly when nodes link in both directions.
-		// buildNodes( context, newNode, targetIndex );
+		// parseNode( context, newNode, targetIndex );
 
 		return index-startIndex;
 	}
@@ -1241,7 +1241,7 @@ public class UHSParser {
 				else if ( tmp.endsWith( " link" ) || tmp.endsWith( " hyperpng" ) || tmp.endsWith( " text" ) || tmp.endsWith( " hint" ) ) {
 					int childrenBefore = hotspotNode.getChildCount();
 					j--;  // Back up to the hunk type line.
-					j += buildNodes( context, hotspotNode, index+j );
+					j += parseNode( context, hotspotNode, index+j );
 					if ( hotspotNode.getChildCount() == childrenBefore+1 ) {
 						UHSNode newNode = hotspotNode.getChild( hotspotNode.getChildCount()-1 );
 						newNode.shiftId( -1, context.getRootNode() );

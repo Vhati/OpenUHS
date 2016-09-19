@@ -380,11 +380,11 @@ public class UHSWriter {
 			write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
 			textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
 
-			getLinesAndBinData( context, rootNode, buf, 1 );
+			writeNode( context, rootNode, buf, 1 );
 			textWriter.append( buf );
 			textWriter.close();
 
-			logger.debug( "Phase {}, binHunk offset: {}", phase, textStream.size()+1 );
+			//logger.debug( "Writing 9x Phase {}, binHunk offset: {}", phase, textStream.size()+1 );
 			context.setBinaryHunkOffset( textStream.size() + 1 );  // Include the indicator byte.
 		}
 
@@ -426,7 +426,7 @@ public class UHSWriter {
 	 * @param startIndex  the line number this hunk is expected to appear at (1-based)
 	 * @see #write9xFormat(UHSRootNode, OutputStream)
 	 */
-	private int getLinesAndBinData( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	private int writeNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		String type = currentNode.getType();
 
 		if ( context.isPhaseOne() ) {
@@ -552,7 +552,7 @@ public class UHSWriter {
 
 		for ( int i=0; i < rootNode.getChildCount(); i++ ) {
 			UHSNode tmpNode = rootNode.getChild( i );
-			innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
+			innerCount += writeNode( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
 		}
 
 		parentBuf.append( buf );
@@ -573,7 +573,7 @@ public class UHSWriter {
 
 		for ( int i=0; i < subjectNode.getChildCount(); i++ ) {
 			UHSNode tmpNode = subjectNode.getChild( i );
-			innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
+			innerCount += writeNode( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
 		}
 
 		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
@@ -632,7 +632,7 @@ public class UHSWriter {
 				buf.append( "=" ).append( "\r\n" );
 				innerCount++;
 
-				innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
+				innerCount += writeNode( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
 			}
 			first = false;
 		}
@@ -891,7 +891,7 @@ public class UHSWriter {
 				buf.append( oBuf );
 			}
 			else {
-				innerCount += getLinesAndBinData( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
+				innerCount += writeNode( context, tmpNode, buf, startIndex + innerCount );  // Recurse.
 
 				if ( context.isPhaseOne() ) {
 					// Fudge the line map to point one line earlier, to zone.
