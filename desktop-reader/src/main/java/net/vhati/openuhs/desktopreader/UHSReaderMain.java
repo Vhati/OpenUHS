@@ -222,13 +222,17 @@ public class UHSReaderMain {
 					UHSWriter uhsWriter = new UHSWriter();
 					String basename = etcFile.getName().replaceAll( "[.][^.]*$", "" );
 					File outFile = new File( "./"+ basename +".uhs" );
-
+					FileOutputStream fos = null;
 					try {
-						uhsWriter.write9xFormat( rootNode, outFile );
+						fos = new FileOutputStream( outFile );
+						uhsWriter.write9xFormat( rootNode, fos );
 					}
 					catch ( IOException e ) {
 						logger.error( "Exporting to 9x format failed", e );
 						throw new ExitException();
+					}
+					finally {
+						try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
 					}
 				}
 			}

@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 
 
 /**
@@ -25,22 +24,24 @@ public class UHSGenerationContext {
 
 	private int phase = 1;
 
-	// Pass 1
+	// Phase 1.
 	private Map<Integer, Integer> idToLineMap = new HashMap<Integer, Integer>();
-	private int binHunkOffset = 0;
 
 	private int highestBinSectionOffset = 0;
 	private int highestBinSectionLength = 0;
 
-	// Pass 2
+	private int binHunkOffset = 0;
+
+	// Phase 2.
 	private int offsetNumberWidth = -1;
 	private int lengthNumberWidth = -1;
 
-	private Writer textWriter = null;
+	// Phase 3.
 	private ByteArrayOutputStream binStream = new ByteArrayOutputStream();
 
 
 	public UHSGenerationContext() {
+		setPhase( 1 );
 	}
 
 
@@ -48,6 +49,12 @@ public class UHSGenerationContext {
 		phase = n;
 
 		currentBinHunkLength = 0;
+
+		int highestOffsetWidth = Integer.toString( binHunkOffset + highestBinSectionOffset ).length();
+		offsetNumberWidth = Math.max( highestOffsetWidth, DEFAULT_OFFSET_NUMBER_WIDTH );
+
+		int lengthWidth = Integer.toString( highestBinSectionLength ).length();
+		lengthNumberWidth = Math.max( lengthWidth, DEFAULT_LENGTH_NUMBER_WIDTH );
 	}
 
 	public boolean isPhaseOne() {
@@ -100,26 +107,17 @@ public class UHSGenerationContext {
 		if ( resolvedLine != null ) {
 			return resolvedLine.intValue();
 		}
-		else if ( phase == 2 ) {
-			throw new NullPointerException( "No line was registered for node id: "+ id );
-		}
-		else {
+		else if ( isPhaseOne() ) {
 			return -1;
 		}
+		else {
+			throw new NullPointerException( "No line was registered for node id: "+ id );
+		}
 	}
 
-	public void setTextWriter( Writer textWriter ) {
-		this.textWriter = textWriter;
-	}
-
-	public Writer getTextWriter() {
-		return textWriter;
-	}
 
 	public int getNextBinaryOffset() {
-		if ( isPhaseOne() || isPhaseTwo() ) return binHunkOffset + currentBinHunkLength;
-
-		return binHunkOffset + binStream.size();
+		return binHunkOffset + currentBinHunkLength;
 	}
 
 	public void registerBinarySection( int sectionLength ) {
@@ -129,13 +127,14 @@ public class UHSGenerationContext {
 		currentBinHunkLength += sectionLength;
 	}
 
-	public ByteArrayOutputStream getBinaryHunkOutputStream() {
-		return binStream;
-	}
-
 
 	public void setBinaryHunkOffset( int binHunkOffset ) {
 		this.binHunkOffset = binHunkOffset;
+	}
+
+
+	public ByteArrayOutputStream getBinaryHunkOutputStream() {
+		return binStream;
 	}
 
 
@@ -145,12 +144,6 @@ public class UHSGenerationContext {
 	 * The default is 6, although it may be 7 when the total text+binary is large.
 	 */
 	public int getOffsetNumberWidth() {
-		if ( isPhaseOne() ) return DEFAULT_OFFSET_NUMBER_WIDTH;
-
-		if ( offsetNumberWidth == -1 ) {
-			int highestOffsetWidth = Integer.toString( binHunkOffset + highestBinSectionOffset ).length();
-			offsetNumberWidth = Math.max( highestOffsetWidth, DEFAULT_OFFSET_NUMBER_WIDTH );
-		}
 		return offsetNumberWidth;
 	}
 
@@ -160,12 +153,6 @@ public class UHSGenerationContext {
 	 * The default is 6, although it may be 7 when the binary hunk is large.
 	 */
 	public int getLengthNumberWidth() {
-		if ( isPhaseOne() ) return DEFAULT_LENGTH_NUMBER_WIDTH;
-
-		if ( lengthNumberWidth == -1 ) {
-			int lengthWidth = Integer.toString( highestBinSectionLength ).length();
-			lengthNumberWidth = Math.max( lengthWidth, DEFAULT_LENGTH_NUMBER_WIDTH );
-		}
 		return lengthNumberWidth;
 	}
 }

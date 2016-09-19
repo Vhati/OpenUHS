@@ -89,7 +89,7 @@ public class UHSWriter {
 	 * @return the encrypted text
 	 */
 	public String encryptString( CharSequence input ) {
-		StringBuffer tmp = new StringBuffer( input.length() );
+		StringBuilder tmp = new StringBuilder( input.length() );
 
 		for ( int i=0; i < input.length(); i++ ) {
 			int mychar = (int)input.charAt( i );
@@ -120,7 +120,7 @@ public class UHSWriter {
 	 * @return the encrypted text
 	 */
 	public String encryptNestString( CharSequence input, int[] key ) {
-		StringBuffer tmp = new StringBuffer( input.length() );
+		StringBuilder tmp = new StringBuilder( input.length() );
 		int tmpChar = 0;
 
 		for ( int i=0; i < input.length(); i++ ) {
@@ -146,7 +146,7 @@ public class UHSWriter {
 	 * @return the encrypted text
 	 */
 	public String encryptTextHunk( CharSequence input, int[] key ) {
-		StringBuffer tmp = new StringBuffer( input.length() );
+		StringBuilder tmp = new StringBuilder( input.length() );
 		int tmpChar = 0;
 
 		for ( int i=0; i < input.length(); i++ ) {
@@ -246,7 +246,7 @@ public class UHSWriter {
 		if ( !isValid88Format( rootNode ) ) {
 			throw new UHSGenerationException( "The node tree cannot be expressed in the 88a format" );
 		}
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 
 		String tmp = null;
 		List<UHSNode> subjectNodes = rootNode.getMasterSubjectNode().getChildren( "Subject", UHSNode.class );
@@ -303,7 +303,7 @@ public class UHSWriter {
 			buf.append( tmp ).append( "\r\n" );
 		}
 
-		// TODO: Check for nulls.
+		// TODO: Check for null nodes.
 		UHSNode creditNode = rootNode.getFirstChild( "Credit", UHSNode.class );
 		tmp = creditNode.getFirstChild( "CreditData", UHSNode.class ).getRawStringContent();
 		tmp = tmp.replaceAll( "\\^break\\^", "\r\n" );
@@ -316,19 +316,50 @@ public class UHSWriter {
 	/**
 	 * Writes the tree of a UHSRootnode in 9x format.
 	 *
-	 * <p>TODO: This method it not yet functional.</p>
+	 * <p>Writing the 9x format is not straightforward because the text
+	 * depends on already knowing what text will be written. Hunk references
+	 * are based on line numbers. Binary segment offsets include the exact
+	 * byte count of all encoded text.</p>
+	 *
+	 * <p>Phase 1:
+	 * <ul>
+	 * <li>Dry-run text encoding. (Critical information will be missing.)</li>
+	 * <li>Count text lines, and build an ID-to-line map, for resolving link
+	 * targets later.</li>
+	 * <li>Count the total bytes of nodes' binary content, without collecting
+	 * it. (for zero-padding offsets/lengths to a minimum width)</li>
+	 * <li>Use total bytes of encoded text to roughly estimate the binary
+	 * hunk's offset.</li>
+	 * </ul></p>
+	 *
+	 * <p>Phase 2:
+	 * <ul>
+	 * <li>Another dry-run encoding.</li>
+	 * <li>Use the ID-to-Line map to resolve links.</li>
+	 * <li>Use total bytes of encoded text to re-estimate the binary hunk's
+	 * offset.</li>
+	 * </ul></p>
+	 *
+	 * <p>Phase 3:
+	 * <ul>
+	 * <li>Final encoding. All missing info should be ready now.</li>
+	 * <li>Collect binary content.</li>
+	 * </ul></p>
+	 *
+	 * <p>After phase 3, bytes are sent to the output stream: encoded text,
+	 * the 0x1a binary hink indicator, the binary hunk, and a CRC16 checksum.</p>
 	 *
 	 * @param rootNode  an existing root node
-	 * @param outFile  a file to write
+	 * @param os  a stream to write into
 	 */
-	public void write9xFormat( UHSRootNode rootNode, File outFile ) throws IOException, UHSGenerationException {
+	public void write9xFormat( UHSRootNode rootNode, OutputStream os ) throws IOException, UHSGenerationException {
 		CharsetEncoder asciiEncoder = Charset.forName( "US-ASCII" ).newEncoder();
 		asciiEncoder.onMalformedInput( CodingErrorAction.REPORT );
 		asciiEncoder.onUnmappableCharacter( CodingErrorAction.REPORT );
 
-		ByteArrayOutputStream textStream;
-		Writer textWriter;
-		StringBuffer buf = new StringBuffer();
+		ByteArrayOutputStream textStream = new ByteArrayOutputStream();
+		Writer textWriter = null;
+		StringBuilder buf = new StringBuilder();
 
 		UHSGenerationContext context = new UHSGenerationContext();
 		context.setEncryptionKey( generate9xKey( rootNode.getUHSTitle() ) );
@@ -339,114 +370,63 @@ public class UHSWriter {
 			context.setLegacyRootNode( createDefaultLegacyRootNode() );
 		}
 
-		// Phase One.
-		textStream = new ByteArrayOutputStream();
-		textWriter = new OutputStreamWriter( textStream, asciiEncoder );
+		for ( int phase=1; phase <= 3; phase++ ) {
+			context.setPhase( phase );
+			buf.setLength( 0 );  // Null out the buffer's content, but the backing array's capacity remains.
+			textStream.reset();  // Null out the stream's content, but the backing array's capacity remains.
+			asciiEncoder.reset();
+			textWriter = new OutputStreamWriter( textStream, asciiEncoder );
 
-		write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
-		textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
+			write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
+			textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
 
-		getLinesAndBinData( context, rootNode, buf, 1 );
-		textWriter.append( buf );
-		textWriter.close();
+			getLinesAndBinData( context, rootNode, buf, 1 );
+			textWriter.append( buf );
+			textWriter.close();
 
-		logger.debug( "Phase 1, binHunk offset: {}", textStream.size()+1 );
-		context.setBinaryHunkOffset( textStream.size() + 1 );  // Include the indicator byte.
-
-		// Phase Two.
-		context.setPhase( 2 );
-		buf.setLength( 0 );  // Null out the buffer's content, but the backing array's capacity remains.
-		textStream.reset();  // Null out the stream's content, but the backing array's capacity remains.
-		asciiEncoder.reset();
-		textWriter = new OutputStreamWriter( textStream, asciiEncoder );
-
-		write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
-		textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
-
-		getLinesAndBinData( context, rootNode, buf, 1 );
-		textWriter.append( buf );
-		textWriter.close();
-
-		logger.debug( "Phase 2, binHunk offset: {}", textStream.size()+1 );
-		context.setBinaryHunkOffset( textStream.size() + 1 );  // Re-estimate the text byte count.
-
-		context.setPhase( 3 );
-		buf.setLength( 0 );
-		textStream.reset();
-		asciiEncoder.reset();
-		textWriter = new OutputStreamWriter( textStream, asciiEncoder );
-
-		write88Format( context.getLegacyRootNode(), textWriter );  // Fake 88a section.
-		textWriter.append( "** END OF 88A FORMAT **" + "\r\n" );
-
-		getLinesAndBinData( context, rootNode, buf, 1 );
-		textWriter.append( buf );
-		textWriter.close();
-
-		logger.debug( "Phase 3, binHunk offset: {}", textStream.size()+1 );
-
-
-		// Write encoded text bytes. Flush.
-		// Write the binary indicator byte. Flush?
-		// Write binary. Flush.
-		// Write CRC. Flush.
-
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream( outFile );
-			CheckedOutputStream crcStream = new CheckedOutputStream( fos, new CRC16() );
-
-			// Docs recommends wrapping with a BufferedWriter. Already got a buffer.
-			textStream.writeTo( crcStream );
-			crcStream.flush();
-
-			crcStream.write( (byte)0x1a );
-			crcStream.flush();
-
-			context.getBinaryHunkOutputStream().writeTo( crcStream );
-			crcStream.flush();
-
-			long crcResult = crcStream.getChecksum().getValue();
-
-			ByteBuffer crcBuf = ByteBuffer.allocate( 2 );
-			crcBuf.order( ByteOrder.LITTLE_ENDIAN );
-			crcBuf.putShort( (short)crcResult );
-			fos.write( crcBuf.array() );
+			logger.debug( "Phase {}, binHunk offset: {}", phase, textStream.size()+1 );
+			context.setBinaryHunkOffset( textStream.size() + 1 );  // Include the indicator byte.
 		}
-		finally {
-			try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
-		}
+
+		// Write encoded text bytes.
+		// Write the binary indicator byte.
+		// Write binary.
+		// Write CRC.
+
+		CheckedOutputStream crcStream = new CheckedOutputStream( os, new CRC16() );
+
+		// Docs recommend wrapping with a BufferedWriter. Already got a buffer.
+		textStream.writeTo( crcStream );
+		crcStream.flush();
+
+		crcStream.write( (byte)0x1a );
+		crcStream.flush();
+
+		context.getBinaryHunkOutputStream().writeTo( crcStream );
+		crcStream.flush();
+
+		long crcResult = crcStream.getChecksum().getValue();
+
+		ByteBuffer crcBuf = ByteBuffer.allocate( 2 );
+		crcBuf.order( ByteOrder.LITTLE_ENDIAN );
+		crcBuf.putShort( (short)crcResult );
+		os.write( crcBuf.array() );
+		os.flush();
 	}
 
 	/**
-	 * ...
+	 * Recursively collects nodes' content in the 9x format.
 	 *
-	 * <p>TODO: This method it not yet functional.</p>
+	 * <p>Each nested call inserts text into the parent buffer. Then the
+	 * parent prepends a total line count to itself.</p>
 	 *
-	 * <p>This method recursively collects nested nodes' text in buffers,
-	 * appended to the parent's buffer. Then the parent prepends a total line
-	 * count to itself.</p>
-	 *
-	 * <p>Phase 1:
-	 * <ul>
-	 * <li>Dry-run text encoding. (Critical information will be missing.)</li>
-	 * <li>Count text lines, and build an ID-to-line map, for resolving link
-	 * targets later.</li>
-	 * <li>Count the total bytes of nodes' binary content, without collecting
-	 * it. (for zero-padded character width of offsets/lengths)</li>
-	 * <li>Use total bytes of encoded text to estimate the binary hunk's
-	 * offset.</li>
-	 * </ul></p>
-	 *
-	 * <p>Phase 2:
-	 * <ul>
-	 * <li>Another dry-run encoding.</li>
-	 * <li>Use the ID-to-Line map to resolve links.</li>
-	 * <li>Collect binary content (the growing size will resolve offsets)</li>
-	 * <li>Write out all the binsry at the end.</li>
-	 * </ul></p>
+	 * @param context  the generation context
+	 * @param currentNode  an existing node to collect content from
+	 * @param parentBuf  a buffer to send text into (e.g., the parent node's buffer)
+	 * @param startIndex  the line number this hunk is expected to appear at (1-based)
+	 * @see #write9xFormat(UHSRootNode, OutputStream)
 	 */
-	private int getLinesAndBinData( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	private int getLinesAndBinData( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		String type = currentNode.getType();
 
 		if ( context.isPhaseOne() ) {
@@ -563,12 +543,12 @@ public class UHSWriter {
 		return rootNode;
 	}
 
-	public void writeRootNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public void writeRootNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		if ( currentNode instanceof UHSRootNode == false ) return;
 		UHSRootNode rootNode = (UHSRootNode)currentNode;
 
 		int innerCount = 0;
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 
 		for ( int i=0; i < rootNode.getChildCount(); i++ ) {
 			UHSNode tmpNode = rootNode.getChild( i );
@@ -578,14 +558,14 @@ public class UHSWriter {
 		parentBuf.append( buf );
 	}
 
-	public int writeSubjectNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeSubjectNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + various children's lines
 		int innerCount = 0;
 
 		UHSNode subjectNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " subject" ).append( "\r\n" );
 		contentLines = splitContentLines( subjectNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -601,15 +581,15 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeNestHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
-		// TODO?  // lines: 2 + ugh
+	public int writeNestHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + ugh
 		int innerCount = 0;
 
 		if ( currentNode instanceof UHSBatchNode == false ) return 0;
 		UHSBatchNode nestNode = (UHSBatchNode)currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " nesthint" ).append( "\r\n" );
 		contentLines = splitContentLines( nestNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -662,14 +642,14 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
-		// TODO?  // lines: 2 + children's content lines + (N children)-1 dividers
+	public int writeHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + children's content lines + (N children)-1 dividers
 		int innerCount = 0;
 
 		UHSNode hintNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " hint" ).append( "\r\n" );
 		contentLines = splitContentLines( hintNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -694,14 +674,14 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeCommentNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeCommentNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + content lines
 		int innerCount = 0;
 
 		UHSNode commentNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " comment" ).append( "\r\n" );
 		contentLines = splitContentLines( commentNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -719,14 +699,14 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeCreditNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeCreditNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + content lines
 		int innerCount = 0;
 
 		UHSNode creditNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " credit" ).append( "\r\n" );
 		contentLines = splitContentLines( creditNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -744,14 +724,14 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeTextNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeTextNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 3
 		int innerCount = 0;
 
 		UHSNode textNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " text" ).append( "\r\n" );
 		contentLines = splitContentLines( textNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -761,7 +741,7 @@ public class UHSWriter {
 		if ( dataNode == null ) {/* Throw an error */}
 		contentLines = splitContentLines( dataNode, -1 );
 		encryptContentLines( context, ENCRYPT_TEXT, contentLines );
-		StringBuffer dataBuf = new StringBuffer();
+		StringBuilder dataBuf = new StringBuilder();
 		appendLines( dataBuf, false, contentLines );
 
 		CharsetEncoder asciiEncoder = Charset.forName( "US-ASCII" ).newEncoder();
@@ -771,10 +751,9 @@ public class UHSWriter {
 		byte[] tmpBytes = asciiEncoder.encode( CharBuffer.wrap( dataBuf ) ).array();
 
 		int bytesOffset = context.getNextBinaryOffset();
-		if ( context.isPhaseOne() || context.isPhaseTwo() ) {
-			context.registerBinarySection( tmpBytes.length );
-		}
-		else if ( context.isPhaseThree() ) {
+		context.registerBinarySection( tmpBytes.length );
+
+		if ( context.isPhaseThree() ) {
 			context.getBinaryHunkOutputStream().write( tmpBytes, 0, tmpBytes.length );
 		}
 
@@ -789,23 +768,20 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeLinkNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeLinkNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 3
 		int innerCount = 0;
 
 		UHSNode linkNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " link" ).append( "\r\n" );
 		contentLines = splitContentLines( linkNode, 1 );
 		appendLines( buf, true, contentLines );
 		innerCount += 2;
 
-		if ( context.isPhaseOne() ) {
-			// Can't resolve a link target's line number yet.
-		}
-		else if ( context.isPhaseTwo() || context.isPhaseThree() ) {
+		if ( !context.isPhaseOne() ) {  // Can't resolve link targets in phase one.
 			int targetLine = context.getLine( linkNode.getLinkTarget() );
 			buf.append( targetLine );
 		}
@@ -817,15 +793,15 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeHotSpotNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
-		// TODO?  // lines: 2 + 1 + ugh
+	public int writeHotSpotNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+		// lines: 2 + 1 + ugh
 		int innerCount = 0;
 
 		if ( currentNode instanceof UHSHotSpotNode == false ) return 0;
 		UHSHotSpotNode hotspotNode = (UHSHotSpotNode)currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		// Current node has the title AND the main image.
 
 		buf.append( " " );
@@ -845,15 +821,14 @@ public class UHSWriter {
 		appendLines( buf, true, contentLines );
 		innerCount++;
 
+		// TODO: main id vs main image id? Possibly register the other id in phase one?
+
 		byte[] mainImageBytes = hotspotNode.getRawImageContent();
 
 		int mainBytesOffset = context.getNextBinaryOffset();
-		if ( context.isPhaseOne() || context.isPhaseTwo() ) {
-			// TODO: main id vs main image id? Possibly register the other id here?
+		context.registerBinarySection( mainImageBytes.length );
 
-			context.registerBinarySection( mainImageBytes.length );
-		}
-		else if ( context.isPhaseThree() ) {
+		if ( context.isPhaseThree() ) {
 			context.getBinaryHunkOutputStream().write( mainImageBytes, 0, mainImageBytes.length );
 		}
 
@@ -887,7 +862,7 @@ public class UHSWriter {
 					context.putLine( overlayNode.getId(), startIndex + innerCount - 1 );  // Fudge the line map to point to zone.
 				}
 
-				StringBuffer oBuf = new StringBuffer();
+				StringBuilder oBuf = new StringBuilder();
 				oBuf.append( /* lineCount */ " overlay" ).append( "\r\n" );
 				contentLines = splitContentLines( overlayNode, 1 );
 				appendLines( oBuf, true, contentLines );
@@ -896,12 +871,12 @@ public class UHSWriter {
 				byte[] overlayImageBytes = overlayNode.getRawImageContent();
 
 				int overlayBytesOffset = context.getNextBinaryOffset();
-				if ( context.isPhaseOne() || context.isPhaseTwo() ) {
-					context.registerBinarySection( overlayImageBytes.length );
-				}
-				else if ( context.isPhaseThree() ) {
+				context.registerBinarySection( overlayImageBytes.length );
+
+				if ( context.isPhaseThree() ) {
 					context.getBinaryHunkOutputStream().write( overlayImageBytes, 0, overlayImageBytes.length );
 				}
+
 				String oOffsetString = zeroPad( overlayBytesOffset, context.getOffsetNumberWidth() );
 				String oLengthString = zeroPad( overlayImageBytes.length, context.getLengthNumberWidth() );
 				oBuf.append( "000000 " ).append( oOffsetString ).append( " " ).append( oLengthString );
@@ -933,7 +908,7 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeSoundNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeSoundNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 3
 		int innerCount = 0;
 
@@ -941,7 +916,7 @@ public class UHSWriter {
 		UHSAudioNode soundNode = (UHSAudioNode)currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " sound" ).append( "\r\n" );
 		contentLines = splitContentLines( soundNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -950,10 +925,9 @@ public class UHSWriter {
 		byte[] tmpBytes = soundNode.getRawAudioContent();
 
 		int bytesOffset = context.getNextBinaryOffset();
-		if ( context.isPhaseOne() || context.isPhaseTwo() ) {
-			context.registerBinarySection( tmpBytes.length );
-		}
-		else if ( context.isPhaseThree() ) {
+		context.registerBinarySection( tmpBytes.length );
+
+		if ( context.isPhaseThree() ) {
 			context.getBinaryHunkOutputStream().write( tmpBytes, 0, tmpBytes.length );
 		}
 
@@ -968,7 +942,7 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeBlankNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeBlankNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2
 		int innerCount = 0;
 
@@ -978,7 +952,7 @@ public class UHSWriter {
 			return 0;  // Meta: nested info node.
 		}
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " blank" ).append( "\r\n" );
 		buf.append( "-" ).append( "\r\n" );
 		innerCount += 2;
@@ -988,14 +962,14 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeVersionNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeVersionNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + content lines
 		int innerCount = 0;
 
 		UHSNode versionNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " version" ).append( "\r\n" );
 		contentLines = splitContentLines( versionNode, 1 );
 		appendLines( buf, true, contentLines );
@@ -1013,14 +987,14 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeInfoNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeInfoNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + content lines
 		int innerCount = 0;
 
 		UHSNode infoNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " info" ).append( "\r\n" );
 		buf.append( "-" ).append( "\r\n" );
 		innerCount += 2;
@@ -1037,14 +1011,14 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeIncentiveNode( UHSGenerationContext context, UHSNode currentNode, StringBuffer parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeIncentiveNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + content lines
 		int innerCount = 0;
 
 		UHSNode incentiveNode = currentNode;
 		String[] contentLines = null;
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		buf.append( /* lineCount */ " incentive" ).append( "\r\n" );
 		buf.append( "-" ).append( "\r\n" );
 		innerCount += 2;
@@ -1137,7 +1111,7 @@ public class UHSWriter {
 	 * @param terminate  true to add a line break after the final line, false otherwise
 	 * @param lines  an array of lines to append
 	 */
-	private void appendLines( StringBuffer buf, boolean terminate, String[] lines ) {
+	private void appendLines( StringBuilder buf, boolean terminate, String[] lines ) {
 		for ( int i=0; i < lines.length; i++ ) {
 			buf.append( lines[i] );
 			if ( i < lines.length-1 || terminate ) buf.append( "\r\n" );
@@ -1215,7 +1189,7 @@ public class UHSWriter {
 			{graveMarkup, graveAccent, graveNormal}
 		};
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder buf = new StringBuilder();
 		char[] tmp = currentNode.getRawStringContent().toCharArray();
 		for ( int c=0; c < tmp.length; c++ ) {
 			boolean escaped = false;

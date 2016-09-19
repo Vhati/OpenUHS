@@ -124,7 +124,7 @@ public class CRC16 implements Checksum {
 
 	@Override
 	public void update( int n ) {
-		sum = a[(int) ((sum >> 8) & 0xFF)] ^ ((sum & 0xFF) << 8) ^ b[n & 0xFF];
+		sum = a[((sum >> 8) & 0xFF)] ^ ((sum & 0xFF) << 8) ^ b[n & 0xFF];
 		sum &= 0xFFFF;
 	}
 }
