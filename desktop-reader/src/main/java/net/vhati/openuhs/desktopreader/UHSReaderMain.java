@@ -139,6 +139,7 @@ public class UHSReaderMain {
 				for ( File f : scanDir.listFiles() ) {
 					try {
 						UHSRootNode tmpRootNode = null;
+
 						if ( f.getName().matches( "(?i).*[.]uhs$" ) ) {
 							logger.info( "Scanning \"{}\"", f.getName() );
 							UHSParser uhsParser = new UHSParser();
@@ -155,10 +156,10 @@ public class UHSReaderMain {
 							tmpRootNode = protoParser.parseFile( f );
 						}
 
-						validateNode( tmpRootNode, tmpRootNode );
+						if ( tmpRootNode != null ) validateNode( tmpRootNode, tmpRootNode );
 					}
 					catch ( Exception e ) {
-						logger.error( "Parsing \"{}\" failed", f.getName(), e );
+						logger.error( "Parsing/validating \"{}\" failed", f.getName(), e );
 					}
 				}
 			}
