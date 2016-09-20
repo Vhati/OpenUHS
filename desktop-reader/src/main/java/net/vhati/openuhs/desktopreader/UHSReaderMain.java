@@ -136,6 +136,8 @@ public class UHSReaderMain {
 			if ( options.has( optionScanDir ) ) {
 				File scanDir = options.valueOf( optionScanDir );
 
+				long scanStartNano = System.nanoTime();
+
 				for ( File f : scanDir.listFiles() ) {
 					try {
 						UHSRootNode tmpRootNode = null;
@@ -162,6 +164,9 @@ public class UHSReaderMain {
 						logger.error( "Parsing/validating \"{}\" failed", f.getName(), e );
 					}
 				}
+
+				long scanDurationNano = System.nanoTime() - scanStartNano;
+				logger.info( "Dir scan completed ({} seconds)", String.format( "%.2f", ((double)scanDurationNano / 1000000000) ) );
 			}
 
 			if ( etcFile != null ) {

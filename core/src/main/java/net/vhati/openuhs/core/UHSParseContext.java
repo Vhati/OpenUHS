@@ -1,6 +1,8 @@
 package net.vhati.openuhs.core;
 
 import java.io.File;
+import java.nio.ByteOrder;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import net.vhati.openuhs.core.UHSRootNode;
@@ -133,6 +135,25 @@ public class UHSParseContext {
 		byte[] result = new byte[length];
 		System.arraycopy( binHunk, (int)offset, result, 0, length );
 
+		return result;
+	}
+
+	/**
+	 * Returns the unsigned checksum value stored at the end of the file.
+	 *
+	 * <p>The last two bytes of a 9x format file are a little-endian 16-bit
+	 * unsigned short CRC16 of the entire file, excluding those last two
+	 * bytes.</p>
+	 *
+	 * <p>Java doesn't have unsigned types, so the return value is a masked
+	 * int.</p>
+	 */
+	public int readStoredChecksumValue() {
+		ByteBuffer crcBuf = ByteBuffer.allocate( 2 );
+		crcBuf.order( ByteOrder.LITTLE_ENDIAN );
+		crcBuf.put( binHunk, binHunk.length-2, 2 );
+		crcBuf.flip();
+		int result = crcBuf.getShort() & 0xFFFF;
 		return result;
 	}
 

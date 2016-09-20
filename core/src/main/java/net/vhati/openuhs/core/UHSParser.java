@@ -1,12 +1,19 @@
 package net.vhati.openuhs.core;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -167,17 +174,15 @@ public class UHSParser {
 
 
 	/**
-	 * Reads a UHS file into a List of text lines and an array of bytes (for binary content).
-	 * Then calls an appropriate parser to construct a UHSRootNode and a tree of UHSNodes.
+	 * Creates a parse context using a RandomAccessFile.
 	 *
-	 * <p>This is likely the only method you'll need.</p>
+	 * <p>This method is unbuffered and thus inefficient. It is also somewhat
+	 * reckless in decoding bytes into characters. On the plus side, the code
+	 * is uncomplicated.</p>
 	 *
-	 * @param f  a file to read
-	 * @return the root of a tree of nodes representing the hint file
-	 * @see #parse88Format(UHSParseContext)
-	 * @see #parse9xFormat(UHSParseContext)
+	 * @see #createParseContextFromStream(File)
 	 */
-	public UHSRootNode parseFile( File f ) throws IOException, UHSParseException {
+	private UHSParseContext createParseContextFromRAF( File f ) throws IOException, UHSParseException {
 		int index = -1;  // Increment before reads, and this will be the last read 0-based index.
 		String tmp = "";
 
@@ -211,9 +216,9 @@ public class UHSParser {
 				raf.getChannel().position( raf.getChannel().position()-1 );  // Unread that byte.
 				index++;
 				tmp = raf.readLine();                 // RandomAccessFile sort of reads as ASCII/UTF-8?
-				if ( tmp.indexOf( "\\x00" ) >= 0 ) {
+				if ( tmp.indexOf( "\0" ) >= 0 ) {
 					logger.warn( "Pruned extraneous null bytes from text" );
-					tmp = tmp.replaceAll( "\\x00", "" );
+					tmp = tmp.replaceAll( "\0", "" );
 				}
 				allLines.add( tmp );
 			}
@@ -229,21 +234,198 @@ public class UHSParser {
 				binOffset = -1;
 			}
 		}
-		catch ( NumberFormatException e ) {
-			UHSParseException pe = new UHSParseException( String.format( "Could not parse header (last parsed line: %d)", index+1 ), e );
-			throw pe;
-		}
 		finally {
 			try {if ( raf != null ) raf.close();} catch ( IOException e ) {}
 		}
-
-		index = 0;  // Now increment after getting lines, and this will be the pending 0-based index.
 
 		UHSParseContext context = new UHSParseContext();
 		context.setFile( f );
 		context.setAllLines( allLines );
 		context.setBinaryHunk( binHunk );
 		context.setBinaryHunkOffset( binOffset );
+
+		return context;
+	}
+
+	/**
+	 * Cuts CRLF terminated strings out of a StringBuilder.
+	 *
+	 * <p>Afterward, the StringBuilder will contain only the remaining
+	 * unterminated characters.</p>
+	 *
+	 * @param buf  a source buffer to remove substrings from
+	 * @param results  a list to add collected strings into
+	 */
+	private void carveLines( StringBuilder buf, List<String> results ) {
+		String sep = "\r\n";
+		int sepLen = sep.length();
+		int lastBreak = -sep.length();
+		int nextBreak = -sep.length();
+		while ( (nextBreak=buf.indexOf( sep, (lastBreak + sepLen) )) >= 0 ) {
+			results.add( buf.substring( (lastBreak + sepLen), nextBreak ) );
+			lastBreak = nextBreak;
+		}
+		if ( lastBreak > 0 ) buf.delete( 0, (lastBreak + sepLen) );
+	}
+
+	/**
+	 * Creates a parse context using an InputStream, a CharsetDecoder, and buffers.
+	 *
+	 * <p>Bytes are read from the file a little at a time. Any bytes prior to
+	 * the 9x format binary indicator byte (0x1a), if present, are decoded to
+	 * characters. Everything after that is collected as bytes.</p>
+	 *
+	 * <p>This method is elborate, but in an informal benchmark, it was over
+	 * six times faster than RandomAccessFile at parsing a directory of every
+	 * UHS file.</p>
+	 *
+	 * @see #createParseContextFromRAF(File)
+	 */
+	private UHSParseContext createParseContextFromStream( File f ) throws IOException, UHSParseException {
+		CharsetDecoder decoder = Charset.forName( "US-ASCII" ).newDecoder();
+		decoder.onMalformedInput( CodingErrorAction.REPORT );
+		decoder.onUnmappableCharacter( CodingErrorAction.REPORT );
+
+		ByteBuffer bb = ByteBuffer.allocate( 8192 );
+		CharBuffer cb = CharBuffer.allocate( 8192 );
+		StringBuilder builder = new StringBuilder();
+		List<String> carvedLines = new ArrayList<String>();
+		ByteArrayOutputStream binStream = new ByteArrayOutputStream();
+		boolean binFound = false;
+		boolean eofFound = false;
+		CoderResult decodeResult = null;
+		int binPos = -1;  // Intra-buffer position of binary hunk.
+		long binHunkOffset = -1;  // Offset from beginnint of file to the byte after 0x1a.
+		boolean prunedNulls = false;
+
+		FileInputStream fin = null;
+		try {
+			fin = new FileInputStream( f );
+			FileChannel fChan = fin.getChannel();
+			int count;
+			while ( !binFound && !eofFound ) {
+				int readStartedAt = bb.position();  // Possibly appending to leftover bytes from last loop.
+				count = fChan.read( bb );
+				eofFound = ( count == -1 );
+				bb.flip();  // Set limit at current pos, set new pos to 0.
+
+				// Peek ahead for binary.
+				while ( !binFound && bb.hasRemaining() ) {
+					if ( bb.get() == 0x1a ) {
+						binPos = bb.position();
+						binHunkOffset = (fChan.position() - count) + (binPos - readStartedAt);
+						binFound = true;
+
+						//logger.debug( "Binary hunk found: {}", binHunkOffset );
+
+						while ( bb.hasRemaining() ) {  // Dump the binary part.
+							binStream.write( bb.get() );
+						}
+						bb.limit( binPos );            // Prepare to decode just the text part.
+					}
+				}
+				bb.rewind();  // Back to 0, where we were after flipping.
+
+				cb.clear();
+				decodeResult = decoder.decode( bb, cb, (binFound || eofFound) );
+
+				if ( decodeResult.isError() ) decodeResult.throwException();  // Bad byte.
+				cb.flip();
+				builder.append( cb );
+				for ( int n; (n=builder.lastIndexOf( "\0" )) >= 0; ) {
+					prunedNulls = true;
+					builder.deleteCharAt( n );
+				}
+				carveLines( builder, carvedLines );
+
+				while ( decodeResult.isOverflow() ) {  // cb filled.
+					cb.clear();
+					decodeResult = decoder.decode( bb, cb, (binFound || eofFound) );
+
+					if ( decodeResult.isError() ) decodeResult.throwException();
+					cb.flip();
+					builder.append( cb );
+					for ( int n; (n=builder.lastIndexOf( "\0" )) >= 0; ) {
+						prunedNulls = true;
+						builder.deleteCharAt( n );
+					}
+					carveLines( builder, carvedLines );
+				}
+
+				// Slide any leftover bytes to the beginning,
+				// with position set to just after them, so the next read appends.
+				if ( !binFound ) bb.compact();
+			}
+
+			//logger.debug( "File channel finished reading text" );
+
+			// Collect any characters lingering in the decoder.
+			cb.clear();
+			while ( (decodeResult = decoder.flush( cb )).isOverflow() ) {
+				cb.flip();
+				builder.append( cb );
+				for ( int n; (n=builder.lastIndexOf( "\0" )) >= 0; ) {
+					prunedNulls = true;
+					builder.deleteCharAt( n );
+				}
+				carveLines( builder, carvedLines );
+
+				cb.clear();
+			}
+
+			// Collect the final unterminated line, if any.
+			if ( builder.length() > 0 ) carvedLines.add( builder.toString() );
+
+			if ( prunedNulls ) logger.warn( "Pruned extraneous null bytes from text" );
+
+			//logger.debug( "Decoder flushed, lines: {}, final line: {}", carvedLines.size(), carvedLines.get(carvedLines.size()-1) );
+
+			// Collect the rest of the binary lingering in the file.
+			if ( binFound ) {
+				while ( !eofFound ) {
+					bb.clear();
+					eofFound = ( (count=fChan.read( bb )) == -1 );
+					bb.flip();
+
+					while ( bb.hasRemaining() ) {
+						binStream.write( bb.get() );
+					}
+				}
+			}
+
+			//logger.debug( "File channel finished reading binary, binHunk length: {}", binStream.size() );
+
+			//for ( int i=0; i < 20; i++ ) logger.debug( "Line {}: {}", i, carvedLines.get( i ) );
+
+			UHSParseContext context = new UHSParseContext();
+			context.setFile( f );
+			context.setAllLines( carvedLines );
+			context.setBinaryHunk( binStream.toByteArray() );
+			context.setBinaryHunkOffset( binHunkOffset );
+
+			return context;
+		}
+		finally {
+			try {if ( fin != null ) fin.close();} catch ( IOException e ) {}
+		}
+	}
+
+
+	/**
+	 * Reads a UHS file into a List of text lines and an array of bytes (for binary content).
+	 * Then calls an appropriate parser to construct a UHSRootNode and a tree of UHSNodes.
+	 *
+	 * <p>This is likely the only method you'll need.</p>
+	 *
+	 * @param f  a file to read
+	 * @return the root of a tree of nodes representing the hint file
+	 * @see #parse88Format(UHSParseContext)
+	 * @see #parse9xFormat(UHSParseContext)
+	 */
+	public UHSRootNode parseFile( File f ) throws IOException, UHSParseException {
+		int index = 0;  // Increment after getting lines, and this will be the pending 0-based index.
+
+		UHSParseContext context = createParseContextFromStream( f );
 
 		index += parse88Format( context );
 		UHSRootNode rootNode = context.getRootNode();
@@ -260,15 +442,10 @@ public class UHSParser {
 			rootNode = parse9xFormat( context );
 			rootNode.setLegacyRootNode( legacyRootNode );
 
-			long storedSum = readChecksum( binHunk );
-			long calcSum = calcChecksum( f );
-			if ( storedSum == -1 ) {
-				logger.warn( "Could not read the stored security checksum from this file" );
-			}
-			else if ( calcSum == -1 ) {
-				logger.warn( "Could not calculate the security checksum for this file" );
-			}
-			else if ( storedSum != calcSum ) {
+			int storedSum = context.readStoredChecksumValue();
+			int calcSum = calcChecksum( f );
+
+			if ( storedSum != calcSum ) {
 				logger.warn( "Calculated CRC differs from CRC stored in file: {} vs {} (off by: {})", calcSum, storedSum, (storedSum - calcSum) );
 			}
 		}
@@ -1616,8 +1793,8 @@ public class UHSParser {
 	 * <p>It's a CRC16 of the entire file (read as unsigned bytes),
 	 * minus the last two bytes.</p>
 	 */
-	public long calcChecksum( File f ) throws IOException {
-		long result = -1;
+	public int calcChecksum( File f ) throws IOException {
+		int result = -1;
 
 		CRC16 crc = new CRC16();
 		RandomAccessFile raf = null;
@@ -1635,7 +1812,7 @@ public class UHSParser {
 				// Let the CRC class clear out the signedness
 				crc.update( tmpBytes, 0, count );
 			}
-			result = crc.getValue();
+			result = (int)crc.getValue();
 		}
 		catch ( IOException e ) {
 			throw new IOException( "Could not calculate checksum", e );
@@ -1650,7 +1827,7 @@ public class UHSParser {
 	/**
 	 * Reads the security checksum stored in a UHS file.
 	 */
-	private long readChecksum( File f ) throws IOException {
+	private int readChecksum( File f ) throws IOException {
 		int result = -1;
 
 		RandomAccessFile raf = null;
@@ -1667,13 +1844,12 @@ public class UHSParser {
 					result = mostByte << 8 | leastByte;
 				}
 */
-				ByteBuffer tmpBytes = ByteBuffer.allocate( 4 );
-				tmpBytes.order( ByteOrder.LITTLE_ENDIAN );
-				while ( raf.getChannel().read( tmpBytes ) != -1 ) {
-					if ( tmpBytes.position() == 2 ) {
-						tmpBytes.put( (byte)0 ).put( (byte)0 );
-						result = tmpBytes.getInt( 0 );
-						result &= 0xFFFF;
+				ByteBuffer crcBuf = ByteBuffer.allocate( 2 );
+				crcBuf.order( ByteOrder.LITTLE_ENDIAN );
+				while ( raf.getChannel().read( crcBuf ) != -1 ) {
+					if ( crcBuf.position() == 2 ) {
+						crcBuf.flip();
+						result = crcBuf.getShort( 0 ) & 0xFFFF;
 						break;
 					}
 				}
@@ -1681,7 +1857,7 @@ public class UHSParser {
 			}
 		}
 		catch ( IOException e ) {
-			throw new IOException( String.format("Couldn't read stored checksum from: ", f.getAbsolutePath()) );
+			throw new IOException( String.format( "Couldn't read stored checksum from: ", f.getAbsolutePath() ) );
 		}
 		finally {
 			try {if ( raf != null ) raf.close();} catch ( IOException e ) {}
@@ -1700,7 +1876,7 @@ public class UHSParser {
 	 *
 	 * @param a  any byte array that includes the end of a UHS file
 	 */
-	public long readChecksum( byte[] a ) {
+	public int readChecksum( byte[] a ) {
 		if ( a.length < 2 ) return -1;
 
 		// Strip the signedness, if any
