@@ -3,13 +3,12 @@ package net.vhati.openuhs.desktopreader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.regex.Pattern;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -48,6 +47,8 @@ public class UHSReaderMain {
 
 	private static final Logger logger = LoggerFactory.getLogger( UHSReaderMain.class );
 
+	private static File appDir = new File( "./" );
+
 
 	public static void main( String[] args ) {
 		OptionParser parser = new OptionParser();
@@ -65,6 +66,9 @@ public class UHSReaderMain {
 		OptionSpec<Void> optionPrint = parser.acceptsAll( Arrays.asList( "p", "print" ), "print the hint file's content as indented text" );
 		OptionSpec<File> optionScanDir = parser.accepts( "scan-dir", "scan all files in a dir for parse errors" ).withRequiredArg().describedAs( "dir" ).ofType( File.class );
 		OptionSpec<File> optionEtc = parser.nonOptions().ofType( File.class );
+
+		File jarDir = getJarDir( UHSReaderMain.class );
+		if ( jarDir != null ) appDir = jarDir.getParentFile();
 
 		try {
 			OptionSet options = parser.parse( args );
@@ -293,6 +297,7 @@ public class UHSReaderMain {
 				logger.debug( "Started: {}", (new Date()) );
 				logger.debug( "OS: {} {}", System.getProperty( "os.name" ), System.getProperty( "os.version" ) );
 				logger.debug( "VM: {}, {}, {}", System.getProperty( "java.vm.name" ), System.getProperty( "java.version" ), System.getProperty( "os.arch" ) );
+				logger.debug( "App Dir: {}", appDir.getAbsolutePath() );
 
 				// Set a Swing Look and Feel.
 				try {
@@ -333,6 +338,10 @@ public class UHSReaderMain {
 		frame.setSize( 400, 400 );
 		frame.setLocationRelativeTo( null );
 		frame.setVisible( true );
+
+		frame.setAppDir( appDir );
+		frame.setAppDataDir( appDir );
+		frame.setUserDataDir( appDir );
 
 		if ( rootNode != null ) {
 			frame.getUHSReaderPanel().setReaderRootNode( rootNode );
@@ -436,6 +445,38 @@ public class UHSReaderMain {
 		}
 
 		return n;
+	}
+
+	/**
+	 * Returns the parent dir of the jar containing a given class, or null.
+	 */
+	public static File getJarDir( Class c ) {
+		try {
+			File jarFile = null;
+
+			CodeSource codeSource = c.getProtectionDomain().getCodeSource();
+			if ( codeSource.getLocation() != null ) {
+				jarFile = new File( codeSource.getLocation().toURI() );
+			}
+			else {
+				String cPath = c.getResource( c.getSimpleName() +".class" ).getPath();
+				int colonIndex = cPath.indexOf(":");
+				int bangIndex = cPath.indexOf("!");
+				if ( colonIndex >= 0 && colonIndex + 1 < bangIndex ) {
+					String jarPath = cPath.substring( colonIndex + 1, bangIndex );
+					jarFile = new File( jarPath );
+				}
+			}
+			if ( jarFile != null ) return jarFile.getParentFile();
+		}
+		catch ( SecurityException e ) {
+			logger.error( "Error locating jar file", e );
+		}
+		catch ( URISyntaxException e ) {
+			logger.error( "Error locating jar file", e );
+		}
+
+		return null;
 	}
 
 

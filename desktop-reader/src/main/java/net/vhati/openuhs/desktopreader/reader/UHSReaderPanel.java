@@ -98,7 +98,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	private JButton revealNextBtn = null;
 	private JCheckBox showAllBox = null;
 
-	private File hintsDir = new File( "." );
+	private File hintsDir = new File( "./" );
 
 
 	public UHSReaderPanel() {

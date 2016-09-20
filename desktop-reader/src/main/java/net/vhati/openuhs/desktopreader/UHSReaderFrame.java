@@ -29,7 +29,10 @@ import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
 public class UHSReaderFrame extends JFrame implements Nerfable {
-	private File hintsDir = null;
+	private File appDir = new File( "./" );
+	private File appDataDir = new File( "./" );
+	private File userDataDir = new File( "./" );
+	private File hintsDir = new File( userDataDir, "hints" );
 
 	private String titlePrefix = "";
 	private UHSReaderPanel readerPanel = new UHSReaderPanel();
@@ -39,7 +42,6 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 
 	public UHSReaderFrame() {
 		super();
-		hintsDir = new File( "./hints" );
 
 		JPanel pane = new JPanel( new BorderLayout() );
 
@@ -143,6 +145,34 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 
 		pane.add( tabbedPane, BorderLayout.CENTER );
 		this.setContentPane( pane );
+	}
+
+
+	public void setAppDir( File d ) {
+		appDir = d;
+	}
+
+	public File getAppDir() {
+		return appDir;
+	}
+
+	public void setAppDataDir( File d ) {
+		appDataDir = d;
+	}
+
+	public File getAppDataDir() {
+		return appDataDir;
+	}
+
+	public void setUserDataDir( File d ) {
+		userDataDir = d;
+		hintsDir = new File( userDataDir, "hints" );
+		readerPanel.setHintsDir( hintsDir );
+		downloaderPanel.setHintsDir( hintsDir );
+	}
+
+	public File getUserDataDir() {
+		return userDataDir;
 	}
 
 

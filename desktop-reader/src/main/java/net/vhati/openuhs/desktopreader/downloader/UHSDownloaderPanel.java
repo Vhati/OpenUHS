@@ -78,7 +78,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	private UHSReaderPanel readerPanel = null;
 	private MouseListener readerClickListener = null;
 
-	private File hintsDir = new File( "." );
+	private File hintsDir = new File( "./" );
 
 	private StringFetchTask catalogFetchTask = null;
 	private UHSFetchTask uhsFetchTask = null;
