@@ -7,6 +7,7 @@
  - Added a tar distribution for OSX/Linux with launcher scripts.
  - License changed to GPLv3.
  - Fixed the downloader's broken find button.
+ - Added a config file.
  - Changed how commandline options work.
  - Incorporated SLF4J into the core library for standardized logging.
  - Incorporated Logback for logging on the desktop reader.

@@ -8,6 +8,10 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
@@ -15,9 +19,13 @@ import javax.swing.JTable;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.desktopreader.Nerfable;
-import net.vhati.openuhs.desktopreader.SettingsPanel;
+import net.vhati.openuhs.desktopreader.UHSReaderConfig;
+import net.vhati.openuhs.desktopreader.UHSReaderConfigPanel;
 import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
 import net.vhati.openuhs.desktopreader.downloader.UHSDownloaderPanel;
 import net.vhati.openuhs.desktopreader.reader.AudioNodePanel;
@@ -29,19 +37,25 @@ import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
 public class UHSReaderFrame extends JFrame implements Nerfable {
+
+	private final Logger logger = LoggerFactory.getLogger( UHSReaderFrame.class );
+
 	private File appDir = new File( "./" );
 	private File appDataDir = new File( "./" );
 	private File userDataDir = new File( "./" );
 	private File hintsDir = new File( userDataDir, "hints" );
 
+	private UHSReaderConfig appConfig = null;
+
 	private String titlePrefix = "";
 	private UHSReaderPanel readerPanel = new UHSReaderPanel();
 	private UHSDownloaderPanel downloaderPanel = new UHSDownloaderPanel();
-	private SettingsPanel settingsPanel = new SettingsPanel();
+	private UHSReaderConfigPanel configPanel = new UHSReaderConfigPanel();
 
 
-	public UHSReaderFrame() {
+	public UHSReaderFrame( UHSReaderConfig appConfig ) {
 		super();
+		this.appConfig = appConfig;
 
 		JPanel pane = new JPanel( new BorderLayout() );
 
@@ -57,7 +71,7 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 		downloaderPanel.setHintsDir( hintsDir );
 		tabbedPane.add( downloaderPanel, "Downloader" );
 
-		tabbedPane.add( settingsPanel, "Settings" );
+		tabbedPane.add( configPanel, "Settings" );
 
 		readerPanel.addAncestorListener(new AncestorListener() {
 			@Override
@@ -94,12 +108,10 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 			}
 		});
 
-		settingsPanel.addAncestorListener(new AncestorListener() {
+		configPanel.addAncestorListener(new AncestorListener() {
 			@Override
 			public void ancestorAdded( AncestorEvent event ) {
-				settingsPanel.clear();
-				settingsPanel.addSection( "Reader", readerPanel.getSettingsPanel() );
-				settingsPanel.addSection( "Downloader", downloaderPanel.getSettingsPanel() );
+				configPanel.setConfig( UHSReaderFrame.this.appConfig );
 			}
 
 			@Override
@@ -108,11 +120,24 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 
 			@Override
 			public void ancestorRemoved( AncestorEvent event ) {
-				settingsPanel.clear();
+				configPanel.setConfig( null );
 			}
 		});
 
-		//Prep the glasspane to nerf this window later
+		configPanel.setApplyCallback(new Runnable() {
+			@Override
+			public void run() {
+				configChanged();
+				try {
+					UHSReaderFrame.this.appConfig.store();
+				}
+				catch ( IOException e ) {
+					logger.error( "Error storing config", e );
+				}
+			}
+		});
+
+		// Prep the glasspane to nerf this window later.
 		this.getGlassPane().setCursor(Cursor.getPredefinedCursor( Cursor.WAIT_CURSOR ));
 		this.getGlassPane().setFocusTraversalKeysEnabled( false );
 		this.getGlassPane().addMouseListener(new MouseAdapter() {
@@ -145,6 +170,42 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 
 		pane.add( tabbedPane, BorderLayout.CENTER );
 		this.setContentPane( pane );
+	}
+
+	/**
+	 * Does extra initialization after the constructor.
+	 *
+	 * <p>This must be called on the Swing event thread (use invokeLater()).</p>
+	 */
+	public void init() {
+		configChanged();
+
+		// Get the JFileChooser cached.
+		try {
+			Class.forName( "javax.swing.JFileChooser" );
+		}
+		catch( ClassNotFoundException e ) {
+			logger.error( "Could not cache the JFileChooser class", e );
+		}
+	}
+
+
+	public void configChanged() {
+		int newFontSize = appConfig.getPropertyAsInt( "font_size", 0 );
+		if ( newFontSize > 0 ) readerPanel.setFontSize( newFontSize );
+
+		Pattern hostPortPtn = Pattern.compile( "^([a-z\\d](?:[a-z\\d\\-]{0,61}[a-z\\d])?(\\.[a-z\\d](?:[a-z\\d\\-]{0,61}‌​[a-z\\d])?)*):([0-9]+)$" );
+		Matcher m = null;
+
+		Properties sysProp = System.getProperties();
+		if ( (m=hostPortPtn.matcher( appConfig.getProperty( "http_proxy", "" ) )).matches() ) {
+			sysProp.setProperty( "http.proxyHost", m.group( 1 ) );
+			sysProp.setProperty( "http.proxyPort", m.group( 2 ) );
+		}
+		if ( (m=hostPortPtn.matcher( appConfig.getProperty( "socks_proxy", "" ) )).matches() ) {
+			sysProp.setProperty( "socks.proxyHost", m.group( 1 ) );
+			sysProp.setProperty( "socks.proxyPort", m.group( 2 ) );
+		}
 	}
 
 
@@ -184,8 +245,8 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 		return downloaderPanel;
 	}
 
-	public SettingsPanel getSettingsPanel() {
-		return settingsPanel;
+	public UHSReaderConfigPanel getConfigPanel() {
+		return configPanel;
 	}
 
 

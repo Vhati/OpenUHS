@@ -38,16 +38,21 @@ import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.core.UHSWriter;
+import net.vhati.openuhs.desktopreader.UHSReaderConfig;
 import net.vhati.openuhs.desktopreader.UHSReaderFrame;
 import net.vhati.openuhs.desktopreader.UHSXML;
 
 
 public class UHSReaderMain {
-	public static final String VERSION = "0.7.0";
+	public static final String APP_NAME = "OpenUHS";
+	public static final String APP_VERSION = "0.7.0";
+	public static final String APP_AUTHOR = "David Millis";
 
 	private static final Logger logger = LoggerFactory.getLogger( UHSReaderMain.class );
 
 	private static File appDir = new File( "./" );
+	private static File appDataDir = new File( "./" );
+	private static File userDataDir = new File( "./" );
 
 
 	public static void main( String[] args ) {
@@ -68,7 +73,11 @@ public class UHSReaderMain {
 		OptionSpec<File> optionEtc = parser.nonOptions().ofType( File.class );
 
 		File jarDir = getJarDir( UHSReaderMain.class );
-		if ( jarDir != null ) appDir = jarDir.getParentFile();
+		if ( jarDir != null ) {
+			appDir = jarDir.getParentFile();
+			appDataDir = appDir;
+			userDataDir = appDir;
+		}
 
 		try {
 			OptionSet options = parser.parse( args );
@@ -295,9 +304,32 @@ public class UHSReaderMain {
 
 				// Log a welcome message.
 				logger.debug( "Started: {}", (new Date()) );
+				logger.debug( "{} v{}", APP_NAME, APP_VERSION );
 				logger.debug( "OS: {} {}", System.getProperty( "os.name" ), System.getProperty( "os.version" ) );
 				logger.debug( "VM: {}, {}, {}", System.getProperty( "java.vm.name" ), System.getProperty( "java.version" ), System.getProperty( "os.arch" ) );
 				logger.debug( "App Dir: {}", appDir.getAbsolutePath() );
+				logger.debug( "App data Dir: {}", appDataDir.getAbsolutePath() );
+				logger.debug( "User data Dir: {}", userDataDir.getAbsolutePath() );
+
+				// Config.
+				File configFile = new File( appDataDir, "openuhs.cfg" );
+
+				boolean writeConfig = false;
+				UHSReaderConfig appConfig = new UHSReaderConfig( configFile );
+				appConfig.setProperty( "font_size", "12" );
+
+				// Read the config file.
+				if ( configFile.exists() ) {
+					logger.debug( "Loading config from \"{}\"", configFile.getAbsolutePath() );
+					try {
+						appConfig.load();
+					}
+					catch ( IOException e ) {
+						logger.error( "Error loading config", e );
+					}
+				} else {
+					writeConfig = true; // Create a new cfg, but only if necessary.
+				}
 
 				// Set a Swing Look and Feel.
 				try {
@@ -316,11 +348,21 @@ public class UHSReaderMain {
 					throw new ExitException();
 				}
 
+				if ( writeConfig ) {
+					try {
+						appConfig.store();
+					}
+					catch ( IOException e ) {
+						logger.error( "Error storing config at \"{}\"", configFile.getAbsolutePath() );
+					}
+				}
+
+				final UHSReaderConfig finalAppConfig = appConfig;
 				final UHSRootNode finalRootNode = rootNode;  // May be null.
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
-						guiInit( finalRootNode );
+						guiInit( finalAppConfig, finalRootNode );
 					}
 				});
 			}
@@ -330,9 +372,9 @@ public class UHSReaderMain {
 		}
 	}
 
-	private static void guiInit( UHSRootNode rootNode ) {
-		UHSReaderFrame frame = new UHSReaderFrame();
-		frame.setTitlePrefix( "OpenUHS "+ UHSReaderMain.VERSION );
+	private static void guiInit( UHSReaderConfig appConfig, UHSRootNode rootNode ) {
+		UHSReaderFrame frame = new UHSReaderFrame( appConfig );
+		frame.setTitlePrefix( APP_NAME +" "+ APP_VERSION );
 		frame.setTitle( null );
 		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 		frame.setSize( 400, 400 );
@@ -340,19 +382,12 @@ public class UHSReaderMain {
 		frame.setVisible( true );
 
 		frame.setAppDir( appDir );
-		frame.setAppDataDir( appDir );
-		frame.setUserDataDir( appDir );
+		frame.setAppDataDir( appDataDir );
+		frame.setUserDataDir( userDataDir );
+		frame.init();
 
 		if ( rootNode != null ) {
 			frame.getUHSReaderPanel().setReaderRootNode( rootNode );
-		}
-
-		// Get the JFileChooser cached.
-		try {
-			Class.forName( "javax.swing.JFileChooser" );
-		}
-		catch( ClassNotFoundException e ) {
-			logger.error( "Could not cache JFileChooser", e );
 		}
 	}
 
@@ -460,6 +495,9 @@ public class UHSReaderMain {
 			}
 			else {
 				String cPath = c.getResource( c.getSimpleName() +".class" ).getPath();
+				// If the class is not in a jar, cPath will be "file:c:\grr\arg.class"
+				// If the class is inside a jar, cPath will be "file:c:\grr\app.jar!/pkg/arg.class"
+
 				int colonIndex = cPath.indexOf(":");
 				int bangIndex = cPath.indexOf("!");
 				if ( colonIndex >= 0 && colonIndex + 1 < bangIndex ) {
@@ -481,8 +519,8 @@ public class UHSReaderMain {
 
 
 	public static void showVersion() {
-		System.out.println( "OpenUHS "+ UHSReaderMain.VERSION );
-		System.out.println( "Copyright (C) 2007-2009, 2011, 2012, 2016 David Millis" );
+		System.out.println( APP_NAME +" "+ APP_VERSION );
+		System.out.println( "Copyright (C) 2007-2009, 2011, 2012, 2016 "+ APP_AUTHOR );
 		System.out.println( "" );
 		System.out.println( "This program is free software; you can redistribute it and/or modify" );
 		System.out.println( "it under the terms of the GNU General Public License as published by" );

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -52,7 +51,6 @@ import org.slf4j.LoggerFactory;
 import net.vhati.openuhs.core.downloader.CatalogParser;
 import net.vhati.openuhs.core.downloader.DownloadableUHS;
 import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
-import net.vhati.openuhs.desktopreader.AppliablePanel;
 import net.vhati.openuhs.desktopreader.Nerfable;
 import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
 import net.vhati.openuhs.desktopreader.downloader.StringFetchTask;
@@ -529,188 +527,6 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	 */
 	public JTable getUHSTable() {
 		return uhsTable;
-	}
-
-
-	public AppliablePanel getSettingsPanel() {
-		GridBagConstraints gridC = new GridBagConstraints();
-		Insets defaultInsets = new Insets( 0, 0, 0, 0 );
-		Insets labelInsets = new Insets( 0, 10, 0, 5 );
-
-		AppliablePanel result = new AppliablePanel( new GridBagLayout() );
-			gridC.gridy = 0;
-			gridC.gridx = 0;
-			gridC.gridwidth = GridBagConstraints.REMAINDER;
-			gridC.weightx = 1.0;
-			gridC.fill = GridBagConstraints.NONE;
-			gridC.anchor = GridBagConstraints.WEST;
-			gridC.insets = labelInsets;
-			JLabel proxySepLbl = new JLabel( "Proxy" );
-				proxySepLbl.setAlignmentX( Component.CENTER_ALIGNMENT );
-				result.add( proxySepLbl, gridC );
-
-			// Http proxy.
-
-			gridC.gridy++;
-			gridC.gridx = 0;
-			gridC.gridwidth = 1;
-			gridC.weightx = 0.0;
-			gridC.fill = GridBagConstraints.HORIZONTAL;
-			gridC.anchor = GridBagConstraints.WEST;
-			gridC.insets = defaultInsets;
-			final JCheckBox httpBox = new JCheckBox( "http", false );
-				result.add( httpBox, gridC );
-
-			gridC.gridx++;
-			gridC.weightx = 0.0;
-			gridC.fill = GridBagConstraints.NONE;
-			gridC.anchor = GridBagConstraints.EAST;
-			gridC.insets = labelInsets;
-			JLabel httpHostLbl = new JLabel( "Host" );
-				result.add( httpHostLbl, gridC );
-			gridC.gridx++;
-			gridC.weightx = 1.0;
-			gridC.fill = GridBagConstraints.HORIZONTAL;
-			gridC.anchor = GridBagConstraints.WEST;
-			gridC.insets = defaultInsets;
-			final JTextField httpHostField = new JTextField( "255.255.255.255 " );
-				httpHostField.setPreferredSize( httpHostField.getPreferredSize() );
-				httpHostField.setText( "" );
-				httpHostField.setEnabled( false );
-				result.add( httpHostField, gridC );
-
-			gridC.gridx++;
-			gridC.weightx = 0.0;
-			gridC.fill = GridBagConstraints.NONE;
-			gridC.anchor = GridBagConstraints.EAST;
-			gridC.insets = labelInsets;
-			JLabel httpPortLbl = new JLabel( "Port" );
-				result.add( httpPortLbl, gridC );
-			gridC.gridx++;
-			gridC.weightx = 0.1;
-			gridC.fill = GridBagConstraints.HORIZONTAL;
-			gridC.anchor = GridBagConstraints.WEST;
-			gridC.insets = defaultInsets;
-			final JTextField httpPortField = new JTextField( "65536 " );
-				httpPortField.setPreferredSize( httpPortField.getPreferredSize() );
-				httpPortField.setText( "" );
-				httpPortField.setEnabled( false );
-				result.add( httpPortField, gridC );
-
-			// Socks proxy.
-
-			gridC.gridy++;
-			gridC.gridx = 0;
-			gridC.gridwidth = 1;
-			gridC.weightx = 0.0;
-			gridC.fill = GridBagConstraints.HORIZONTAL;
-			gridC.anchor = GridBagConstraints.WEST;
-			gridC.insets = defaultInsets;
-			final JCheckBox socksBox = new JCheckBox( "socks", false );
-				result.add( socksBox, gridC );
-
-			gridC.gridx++;
-			gridC.weightx = 0.0;
-			gridC.fill = GridBagConstraints.NONE;
-			gridC.anchor = GridBagConstraints.EAST;
-			gridC.insets = labelInsets;
-			JLabel socksHostLbl = new JLabel( "Host" );
-				result.add( socksHostLbl, gridC );
-			gridC.gridx++;
-			gridC.weightx = 1.0;
-			gridC.fill = GridBagConstraints.HORIZONTAL;
-			gridC.anchor = GridBagConstraints.WEST;
-			gridC.insets = defaultInsets;
-			final JTextField socksHostField = new JTextField( "255.255.255.255 " );
-				socksHostField.setPreferredSize( socksHostField.getPreferredSize() );
-				socksHostField.setText( "" );
-				socksHostField.setEnabled( false );
-				result.add( socksHostField, gridC );
-
-			gridC.gridx++;
-			gridC.weightx = 0.0;
-			gridC.fill = GridBagConstraints.NONE;
-			gridC.anchor = GridBagConstraints.EAST;
-			gridC.insets = labelInsets;
-			JLabel socksPortLbl = new JLabel( "Port" );
-				result.add( socksPortLbl, gridC );
-			gridC.gridx++;
-			gridC.weightx = 0.1;
-			gridC.fill = GridBagConstraints.HORIZONTAL;
-			gridC.anchor = GridBagConstraints.WEST;
-			gridC.insets = defaultInsets;
-			final JTextField socksPortField = new JTextField( "65536 " );
-				socksPortField.setPreferredSize( socksPortField.getPreferredSize() );
-				socksPortField.setText( "" );
-				socksPortField.setEnabled( false );
-				result.add( socksPortField, gridC );
-
-		ActionListener settingsListener = new ActionListener() {
-			@Override
-			public void actionPerformed( ActionEvent e ) {
-				Object source = e.getSource();
-				if ( source == httpBox ) {
-					boolean state = httpBox.isSelected();
-					httpHostField.setEnabled( state );
-					httpPortField.setEnabled( state );
-				}
-				else if ( source == socksBox ) {
-					boolean state = socksBox.isSelected();
-					socksHostField.setEnabled( state );
-					socksPortField.setEnabled( state );
-				}
-			}
-		};
-		httpBox.addActionListener( settingsListener );
-		socksBox.addActionListener( settingsListener );
-
-		Properties prop = System.getProperties();
-		String httpHost = prop.getProperty( "http.proxyHost" );
-		String httpPort = prop.getProperty( "http.proxyPort" );
-		if ( httpHost != null ) httpHostField.setText( httpHost );
-		if ( httpPort != null ) httpPortField.setText( httpPort );
-		if ( httpHost != null && httpPort != null ) {
-			if ( httpHost.length() > 0 && httpPort.length() > 0 ) {
-				httpBox.doClick();
-			}
-		}
-		String socksHost = prop.getProperty( "socks.proxyHost" );
-		String socksPort = prop.getProperty( "socks.proxyPort" );
-		if ( socksHost != null ) socksHostField.setText( socksHost );
-		if ( socksPort != null ) socksPortField.setText( socksPort );
-		if ( socksHost != null && socksPort != null ) {
-			if ( socksHost.length() > 0 && socksPort.length() > 0 ) {
-				socksBox.doClick();
-			}
-		}
-
-		Runnable applyAction = new Runnable() {
-			@Override
-			public void run() {
-				Properties prop = System.getProperties();
-				String httpHost = httpHostField.getText();
-				String httpPort = httpPortField.getText();
-				if ( httpBox.isSelected() && httpHost.length() > 0 && httpPort.length() > 0 ) {
-					prop.setProperty( "http.proxyHost", httpHost );
-					prop.setProperty( "http.proxyPort", httpPort );
-				} else {
-					prop.setProperty( "http.proxyHost", "" );
-					prop.setProperty( "http.proxyPort", "" );
-				}
-				String socksHost = socksHostField.getText();
-				String socksPort = socksPortField.getText();
-				if ( socksBox.isSelected() && socksHost.length() > 0 && socksPort.length() > 0 ) {
-					prop.setProperty( "socks.proxyHost", socksHost );
-					prop.setProperty( "socks.proxyPort", socksPort );
-				} else {
-					prop.setProperty( "socks.proxyHost", "" );
-					prop.setProperty( "socks.proxyPort", "" );
-				}
-			}
-		};
-		result.setApplyAction( applyAction );
-
-		return result;
 	}
 
 

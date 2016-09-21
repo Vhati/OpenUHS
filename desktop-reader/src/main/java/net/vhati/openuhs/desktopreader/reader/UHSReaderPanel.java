@@ -39,7 +39,6 @@ import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
-import net.vhati.openuhs.desktopreader.AppliablePanel;
 import net.vhati.openuhs.desktopreader.Nerfable;
 import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
 import net.vhati.openuhs.desktopreader.reader.NodePanel;
@@ -613,53 +612,14 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	}
 
 
-	public AppliablePanel getSettingsPanel() {
-		GridBagConstraints gridC = new GridBagConstraints();
+	/**
+	 * Sets the font size for all UHSTextAreas.
+	 */
+	public void setFontSize( int newSize ) {
+		if ( newSize <= 0 ) throw new IllegalArgumentException( String.format( "Invalid font size: %d", newSize ) );
 
-		AppliablePanel result = new AppliablePanel( new GridBagLayout() );
-
-			gridC.gridy = 0;
-			gridC.gridx = 0;
-			gridC.gridwidth = 1;
-			gridC.weightx = 0.0;
-			gridC.fill = GridBagConstraints.NONE;
-			gridC.anchor = GridBagConstraints.WEST;
-			JLabel textSizeLbl = new JLabel( "Text Size" );
-				result.add( textSizeLbl, gridC );
-			gridC.gridx++;
-			gridC.gridwidth = GridBagConstraints.REMAINDER;
-			gridC.weightx = 1.0;
-			gridC.fill = GridBagConstraints.NONE;
-			gridC.anchor = GridBagConstraints.EAST;
-			final JTextField textSizeField = new JTextField( "222" );
-				textSizeField.setHorizontalAlignment( JTextField.RIGHT );
-				textSizeField.setPreferredSize( textSizeField.getPreferredSize() );
-				textSizeField.setText( "" );
-				result.add( textSizeField, gridC );
-
-		Style regularStyle = UHSTextArea.DEFAULT_STYLES.getStyle( "regular" );
-		if ( regularStyle != null ) {
-			textSizeField.setText( StyleConstants.getFontSize( regularStyle ) +"" );
-		} else {
-			textSizeField.setText( "" );
-		}
-
-		Runnable applyAction = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					int newSize = Integer.parseInt( textSizeField.getText() );
-					if ( newSize > 0 ) {
-						Style baseStyle = UHSTextArea.DEFAULT_STYLES.getStyle( "base" );
-						StyleConstants.setFontSize( baseStyle, newSize );
-					}
-				}
-				catch ( NumberFormatException e ) {}
-			}
-		};
-		result.setApplyAction( applyAction );
-
-		return result;
+		Style baseStyle = UHSTextArea.DEFAULT_STYLES.getStyle( "base" );
+		StyleConstants.setFontSize( baseStyle, newSize );
 	}
 
 
