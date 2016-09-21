@@ -1,7 +1,12 @@
 package net.vhati.openuhs.desktopreader.reader;
 
+import java.awt.Dimension;
+import java.awt.Rectangle;
+import javax.swing.JPanel;
+import javax.swing.Scrollable;
+import javax.swing.SwingConstants;
+
 import net.vhati.openuhs.core.UHSNode;
-import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
 
 
@@ -10,7 +15,7 @@ import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
  *
  * @see net.vhati.openuhs.core.UHSNode
  */
-public abstract class NodePanel extends JScrollablePanel {
+public abstract class NodePanel extends JPanel implements Scrollable {
 
 	private UHSNode node = null;
 	private UHSReaderNavCtrl navCtrl = null;
@@ -142,5 +147,47 @@ public abstract class NodePanel extends JScrollablePanel {
 		else {
 			return false;
 		}
+	}
+
+
+	@Override
+	public Dimension getPreferredScrollableViewportSize() {
+		return new Dimension( 1, 1 );
+	}
+
+	/**
+	 * Returns a unit increment that scrolls 25 pixels.
+	 */
+	@Override
+	public int getScrollableUnitIncrement( Rectangle visibleRect, int orientation, int direction ) {
+		return 25;
+	}
+
+	/**
+	 * Returns a block increment that scrolls through half the visible rectangle.
+	 */
+	@Override
+	public int getScrollableBlockIncrement( Rectangle visibleRect, int orientation, int direction ) {
+		if ( orientation == SwingConstants.VERTICAL ) {
+			return visibleRect.height / 2;
+		} else {
+			return visibleRect.width / 2;
+		}
+	}
+
+	/**
+	 * Returns false, meaning the panel's height is unconstrained by its viewport (vertical scrolling enabled).
+	 */
+	@Override
+	public boolean getScrollableTracksViewportHeight() {
+		return false;
+	}
+
+	/**
+	 * Returns true, meaning the panel's width will match its viewport (horizontal scrolling disabled).
+	 */
+	@Override
+	public boolean getScrollableTracksViewportWidth() {
+		return true;
 	}
 }

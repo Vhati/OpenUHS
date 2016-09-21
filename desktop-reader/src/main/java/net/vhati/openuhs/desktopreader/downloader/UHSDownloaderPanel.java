@@ -275,7 +275,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 			CatalogItem catItem = catalogTableModel.getUHS( rows[i] );
 			if ( catItem.getName().length() == 0 ) continue;
 
-			if ( Arrays.binarySearch( hintNames, catItem.getName()) >= 0 ) {
+			if ( Arrays.binarySearch( hintNames, catItem.getName() ) >= 0 ) {
 				existingItems.add( catItem );
 			}
 			wantedItems.add( catItem );

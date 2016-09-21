@@ -67,4 +67,13 @@ public class ImageNodePanel extends NodePanel {
 		this.revalidate();
 		this.repaint();
 	}
+
+
+	/**
+	 * Returns false, meaning the panel's width is unconstrained by its viewport (horizontal scrolling enabled).
+	 */
+	@Override
+	public boolean getScrollableTracksViewportWidth() {
+		return false;
+	}
 }

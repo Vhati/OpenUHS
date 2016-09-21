@@ -40,7 +40,6 @@ import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParser;
 import net.vhati.openuhs.core.UHSRootNode;
 import net.vhati.openuhs.desktopreader.Nerfable;
-import net.vhati.openuhs.desktopreader.reader.JScrollablePanel;
 import net.vhati.openuhs.desktopreader.reader.NodePanel;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderNavCtrl;
 import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
@@ -83,7 +82,6 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	private NodePanel currentNodePanel = null;
 
 	private JScrollPane centerScroll = null;
-	private JScrollablePanel centerScrollView = new JScrollablePanel( new BorderLayout() );
 
 	private List<UHSNode> historyArray = new ArrayList<UHSNode>();
 	private List<UHSNode> futureArray = new ArrayList<UHSNode>();
@@ -148,14 +146,11 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 					nodeTitlePanel.add( nodeTitleLbl );
 				topPanel.add( nodeTitlePanel, BorderLayout.SOUTH );
 
-
 		JPanel centerPanel = new JPanel( new BorderLayout() );
-			centerScroll = new JScrollPane( centerScrollView, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER );
-				//The default scroll speed is too slow
-				centerScroll.getHorizontalScrollBar().setUnitIncrement( 25 );
-				centerScroll.getVerticalScrollBar().setUnitIncrement( 25 );
+			centerScroll = new JScrollPane();
+				centerScroll.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS );
+				centerScroll.setHorizontalScrollBarPolicy( JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED );
 				centerPanel.add( centerScroll );
-
 
 		JPanel revealPanel = new JPanel( new GridLayout( 0, 3 ) );
 			revealedLbl = new JLabel( "" );
@@ -315,7 +310,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		rootNode = null;
 		currentNode = null;
 
-		centerScrollView.removeAll();
+		centerScroll.setViewportView( null );
 		if ( currentNodePanel != null ) currentNodePanel.reset();
 		currentNodePanel = null;
 
@@ -444,11 +439,9 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 		if ( currentNodePanel != null ) currentNodePanel.reset();
 
 		if ( currentNodePanel != newNodePanel ) {
-			centerScrollView.removeAll();
-
 			currentNodePanel = newNodePanel;
 			currentNodePanel.setNavCtrl( this );
-			centerScrollView.add( currentNodePanel );
+			centerScroll.setViewportView( currentNodePanel );
 		}
 		currentNodePanel.setNode( currentNode, showAll );
 
@@ -570,11 +563,11 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 	/**
 	 * Scrolls to the top/bottom of the visible hints.
 	 *
-	 * <p>This enqueues a thread to do the scrolling at the next opportunity.</p>
+	 * <p>This schedules a Runnable to do the scrolling at the next opportunity.</p>
 	 *
 	 * <p>SCROLL_IF_INCOMPLETE option defers completeness checking until the thread runs: top if true, bottom otherwise.</p>
 	 *
-	 * <p>The threading and yielding is a workaround for JScrollPane goofiness when the content grows.</p>
+	 * <p>The thread yielding is a workaround for JScrollPane goofiness when the content grows.</p>
 	 *
 	 * @param position  one of: SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
 	 * @see SwingUtilities#invokeLater(Runnable)
@@ -592,7 +585,7 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 			SwingUtilities.invokeLater( new Runnable() {
 				@Override
 				public void run() {
-					centerScroll.getViewport().setViewPosition( new Point(0, 0) );
+					centerScroll.getViewport().setViewPosition( new Point( 0, 0 ) );
 				}
 			});
 		}
@@ -602,10 +595,11 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 				public void run() {
 					// Wait some more.
 					Thread.yield();
-					int areaHeight = centerScrollView.getPreferredSize().height;
-					int viewHeight = centerScroll.getViewport().getExtentSize().height;
-					if (areaHeight > viewHeight)
-					centerScroll.getViewport().setViewPosition( new Point( 0, areaHeight-viewHeight ) );
+					int viewHeight = centerScroll.getViewport().getViewSize().height;
+					int visibleHeight = centerScroll.getViewport().getExtentSize().height;
+					if ( viewHeight > visibleHeight ) {
+						centerScroll.getViewport().setViewPosition( new Point( 0, viewHeight-visibleHeight ) );
+					}
 				}
 			});
 		}
