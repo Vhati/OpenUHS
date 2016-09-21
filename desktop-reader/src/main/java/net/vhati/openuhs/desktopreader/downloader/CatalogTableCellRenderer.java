@@ -5,18 +5,18 @@ import java.awt.Component;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
+import net.vhati.openuhs.core.downloader.CatalogItem;
+import net.vhati.openuhs.desktopreader.downloader.CatalogTableModel;
 
 
-public class UHSTableCellRenderer extends DefaultTableCellRenderer {
+public class CatalogTableCellRenderer extends DefaultTableCellRenderer {
 	private Color localColor = new Color( 225, 225, 225 );
 	private Color newerColor = new Color( 255, 255, 200 );
 
 	Color normalUnselColor = null;
 
 
-	public UHSTableCellRenderer() {
+	public CatalogTableCellRenderer() {
 		//Color changes don't reset on their own, so cache the initial value
 		normalUnselColor = this.getBackground();
 	}
@@ -26,17 +26,17 @@ public class UHSTableCellRenderer extends DefaultTableCellRenderer {
 	public Component getTableCellRendererComponent( JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column ) {
 		Component c = super.getTableCellRendererComponent( table, value, isSelected, hasFocus, row, column );
 
-		if ( table != null && table.getModel() instanceof DownloadableUHSTableModel ) {
+		if ( table != null && table.getModel() instanceof CatalogTableModel ) {
 			if ( !isSelected ) {
-				DownloadableUHSTableModel model = (DownloadableUHSTableModel)table.getModel();
-				DownloadableUHS tmpUHS = model.getUHS( row );
+				CatalogTableModel model = (CatalogTableModel)table.getModel();
+				CatalogItem catItem = model.getUHS( row );
 				Color rowColor = normalUnselColor;
 
-				if ( tmpUHS != null ) {
-					if ( tmpUHS.isNewer() ) {
+				if ( catItem != null ) {
+					if ( catItem.isNewer() ) {
 						rowColor = newerColor;
 					}
-					else if ( tmpUHS.isLocal() ) {
+					else if ( catItem.isLocal() ) {
 						rowColor = localColor;
 					}
 				}

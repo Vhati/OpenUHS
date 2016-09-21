@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.androidreader.R;
 import net.vhati.openuhs.androidreader.AndroidUHSConstants;
-import net.vhati.openuhs.androidreader.downloader.DownloadableUHSArrayAdapter;
+import net.vhati.openuhs.androidreader.downloader.CatalogArrayAdapter;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchObserver;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchResult;
@@ -46,8 +46,8 @@ import net.vhati.openuhs.androidreader.downloader.StringFetchTask;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchObserver;
 import net.vhati.openuhs.androidreader.downloader.StringFetchTask.StringFetchResult;
 import net.vhati.openuhs.core.downloader.CatalogParser;
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
-import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
+import net.vhati.openuhs.core.downloader.CatalogItem;
+import net.vhati.openuhs.core.downloader.CatalogItemComparator;
 
 
 public class DownloaderActivity extends AppCompatActivity implements UHSFetchObserver {
@@ -60,7 +60,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	private File externalDir = null;
 	private File hintsDir = null;
 
-	private DownloadableUHSComparator catalogComparator = new DownloadableUHSComparator();
+	private CatalogItemComparator catalogComparator = new CatalogItemComparator();
 	private CatalogParser catalogParser = null;
 	private StringFetchTask catalogFetchTask = null;
 	private UHSFetchTask uhsFetchTask = null;
@@ -100,11 +100,11 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 		catalogListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			public void onItemClick( AdapterView<?> parent, View view, int position, long id ) {
-				DownloadableUHS tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem( position );
+				CatalogItem catItem = ((CatalogArrayAdapter)catalogListView.getAdapter()).getItem( position );
 				File uhsFile = null;
 
-				if ( tmpUHS != null && tmpUHS.getName().length() > 0 ) {
-					uhsFile = new File( hintsDir, tmpUHS.getName() );
+				if ( catItem != null && catItem.getName().length() > 0 ) {
+					uhsFile = new File( hintsDir, catItem.getName() );
 				}
 				if ( uhsFile != null && uhsFile.exists() ) {
 					openFile( uhsFile.getAbsolutePath() );
@@ -161,15 +161,15 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	public void onCreateContextMenu( ContextMenu menu, View v, ContextMenuInfo menuInfo ) {
 		super.onCreateContextMenu( menu, v, menuInfo );
 
-		DownloadableUHS tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem( ((AdapterContextMenuInfo)menuInfo).position );
-		if ( tmpUHS != null && tmpUHS.getName().length() > 0 ) {
+		CatalogItem catItem = ((CatalogArrayAdapter)catalogListView.getAdapter()).getItem( ((AdapterContextMenuInfo)menuInfo).position );
+		if ( catItem != null && catItem.getName().length() > 0 ) {
 
 			MenuInflater inflater = getMenuInflater();
 			inflater.inflate( R.menu.downloader_context_menu, menu );
 
-			menu.setHeaderTitle( tmpUHS.getName() );
+			menu.setHeaderTitle( catItem.getName() );
 
-			File uhsFile = new File( hintsDir, tmpUHS.getName() );
+			File uhsFile = new File( hintsDir, catItem.getName() );
 			if ( uhsFile.exists() ) {
 				menu.findItem( R.id.openFileContextAction ).setEnabled( true );
 				menu.findItem( R.id.deleteFileContextAction ).setEnabled( true );
@@ -180,17 +180,17 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	@Override
 	public boolean onContextItemSelected( MenuItem item ) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo)item.getMenuInfo();
-		DownloadableUHS tmpUHS = null;
+		CatalogItem catItem = null;
 		File uhsFile = null;
 
 		switch (item.getItemId()) {
 			case R.id.openFileContextAction:
-				tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem( info.position );
-				if (tmpUHS.getName().length() == 0) {
+				catItem = ((CatalogArrayAdapter)catalogListView.getAdapter()).getItem( info.position );
+				if ( catItem.getName().length() == 0 ) {
 					// TODO: Complain.
 					return false;
 				}
-				uhsFile = new File(hintsDir, tmpUHS.getName());
+				uhsFile = new File(hintsDir, catItem.getName());
 				String uhsPath = uhsFile.getAbsolutePath();
 				if ( !uhsFile.exists() ) {
 					// TODO: Complain.
@@ -200,26 +200,26 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 				return true;
 
 			case R.id.fetchFileContextAction:
-				tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem( info.position );
-				if ( tmpUHS.getName().length() == 0 ) {
+				catItem = ((CatalogArrayAdapter)catalogListView.getAdapter()).getItem( info.position );
+				if ( catItem.getName().length() == 0 ) {
 					// TODO: Complain.
 					return false;
 				}
 
-				fetchUHS( tmpUHS );
+				fetchUHS( catItem );
 				return true;
 
 			case R.id.deleteFileContextAction:
-				tmpUHS = ((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).getItem( info.position );
-				if ( tmpUHS.getName().length() == 0 ) {
+				catItem = ((CatalogArrayAdapter)catalogListView.getAdapter()).getItem( info.position );
+				if ( catItem.getName().length() == 0 ) {
 					// TODO: Complain.
 					return false;
 				}
-				uhsFile = new File( hintsDir, tmpUHS.getName() );
+				uhsFile = new File( hintsDir, catItem.getName() );
 				if ( uhsFile.exists() ) {
 					uhsFile.delete();
-					colorizeCatalogRow( tmpUHS );
-					((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).notifyDataSetChanged();
+					colorizeCatalogRow( catItem );
+					((CatalogArrayAdapter)catalogListView.getAdapter()).notifyDataSetChanged();
 				}
 				return true;
 
@@ -239,14 +239,14 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		}
 	}
 
-	private void fetchUHS( DownloadableUHS duh ) {
+	private void fetchUHS( CatalogItem catItem ) {
 		cancelFetching();
-		logger.info( "Fetching \"{}\"", duh.getName() );
+		logger.info( "Fetching \"{}\"", catItem.getName() );
 
 		uhsFetchTask = new UHSFetchTask( hintsDir );
 		uhsFetchTask.setUserAgent( CatalogParser.DEFAULT_USER_AGENT );
 		uhsFetchTask.setObserver( this );
-		uhsFetchTask.execute( duh );
+		uhsFetchTask.execute( catItem );
 	}
 
 	private void fetchCatalog() {
@@ -315,8 +315,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 				fetchResult.file.delete();
 			}
 		}
-		colorizeCatalogRow( fetchResult.duh );
-		((DownloadableUHSArrayAdapter)catalogListView.getAdapter()).notifyDataSetChanged();
+		colorizeCatalogRow( fetchResult.catItem );
+		((CatalogArrayAdapter)catalogListView.getAdapter()).notifyDataSetChanged();
 	}
 
 
@@ -341,11 +341,11 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		if ( fetchResult.status == StringFetchResult.STATUS_COMPLETED ) {
 			//Toast.makeText( this, "Fetched catalog", Toast.LENGTH_SHORT ).show();
 
-			List<DownloadableUHS> catalog = catalogParser.parseCatalog( fetchResult.content );
+			List<CatalogItem> catalog = catalogParser.parseCatalog( fetchResult.content );
 			if ( catalog.size() > 0 ) {
 				Collections.sort( catalog, catalogComparator );
 				colorizeCatalog( catalog );
-				catalogListView.setAdapter(new DownloadableUHSArrayAdapter( DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog ));
+				catalogListView.setAdapter(new CatalogArrayAdapter( DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog ));
 			}
 			else {
 				logger.error( "Catalog was empty or parsing failed" );
@@ -369,21 +369,21 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	 *
 	 * <p>Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.</p>
 	 */
-	public void colorizeCatalog( List<DownloadableUHS> catalog ) {
+	public void colorizeCatalog( List<CatalogItem> catalog ) {
 
 		String[] hintNames = hintsDir.list();
 		Arrays.sort( hintNames );
 
-		for ( DownloadableUHS tmpUHS : catalog ) {
-			tmpUHS.resetState();
+		for ( CatalogItem catItem : catalog ) {
+			catItem.resetState();
 
-			if ( Arrays.binarySearch( hintNames, tmpUHS.getName() ) >= 0 ) {
-				tmpUHS.setLocal( true );
-				File uhsFile = new File( hintsDir, tmpUHS.getName() );
+			if ( Arrays.binarySearch( hintNames, catItem.getName() ) >= 0 ) {
+				catItem.setLocal( true );
+				File uhsFile = new File( hintsDir, catItem.getName() );
 				Date localDate = new Date( uhsFile.lastModified() );
 
-				if ( tmpUHS.getDate() != null && tmpUHS.getDate().after( localDate ) ) {
-					tmpUHS.setNewer( true );
+				if ( catItem.getDate() != null && catItem.getDate().after( localDate ) ) {
+					catItem.setNewer( true );
 				}
 			}
 		}
@@ -394,16 +394,16 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	 *
 	 * <p>Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.</p>
 	 */
-	public void colorizeCatalogRow( DownloadableUHS tmpUHS ) {
-		tmpUHS.resetState();
+	public void colorizeCatalogRow( CatalogItem catItem ) {
+		catItem.resetState();
 
-		if ( tmpUHS.getName().length() > 0 ) {
-			File uhsFile = new File( hintsDir, tmpUHS.getName() );
+		if ( catItem.getName().length() > 0 ) {
+			File uhsFile = new File( hintsDir, catItem.getName() );
 			if ( uhsFile.exists() ) {
-				tmpUHS.setLocal( true );
+				catItem.setLocal( true );
 
-				if ( tmpUHS.getDate() != null && tmpUHS.getDate().after( new Date( uhsFile.lastModified() ) ) ) {
-						tmpUHS.setNewer( true );
+				if ( catItem.getDate() != null && catItem.getDate().after( new Date( uhsFile.lastModified() ) ) ) {
+						catItem.setNewer( true );
 				}
 			}
 		}

@@ -22,11 +22,11 @@ import javax.swing.event.AncestorListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.CatalogItem;
 import net.vhati.openuhs.desktopreader.Nerfable;
 import net.vhati.openuhs.desktopreader.UHSReaderConfig;
 import net.vhati.openuhs.desktopreader.UHSReaderConfigPanel;
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
+import net.vhati.openuhs.desktopreader.downloader.CatalogTableModel;
 import net.vhati.openuhs.desktopreader.downloader.UHSDownloaderPanel;
 import net.vhati.openuhs.desktopreader.reader.AudioNodePanel;
 import net.vhati.openuhs.desktopreader.reader.DefaultNodePanel;
@@ -89,17 +89,17 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 			}
 		});
 
-		downloaderPanel.getUHSTable().addMouseListener(new MouseAdapter() {
+		downloaderPanel.getCatalogTable().addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked( MouseEvent e ) {
-				JTable tmpTable = (JTable)e.getSource();
-				if ( tmpTable.getRowCount() == 0 ) return;
+				JTable catalogTable = (JTable)e.getSource();
+				if ( catalogTable.getRowCount() == 0 ) return;
 
 				if ( e.getClickCount() == 2 ) {
-					int row = tmpTable.getSelectedRow();
+					int row = catalogTable.getSelectedRow();
 					if ( row == -1 ) return;
-					DownloadableUHS tmpUHS = ((DownloadableUHSTableModel)tmpTable.getModel()).getUHS( row );
-					File uhsFile = new File( hintsDir, tmpUHS.getName() );
+					CatalogItem catItem = ((CatalogTableModel)catalogTable.getModel()).getUHS( row );
+					File uhsFile = new File( hintsDir, catItem.getName() );
 					if ( uhsFile.exists() ) {
 						tabbedPane.setSelectedIndex( tabbedPane.indexOfTab( "Reader" ) );
 						readerPanel.openFile( uhsFile );

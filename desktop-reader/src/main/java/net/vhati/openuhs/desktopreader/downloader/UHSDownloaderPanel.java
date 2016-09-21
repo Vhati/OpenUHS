@@ -48,15 +48,15 @@ import javax.swing.event.ListSelectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.downloader.CatalogItem;
+import net.vhati.openuhs.core.downloader.CatalogItemComparator;
 import net.vhati.openuhs.core.downloader.CatalogParser;
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
-import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
 import net.vhati.openuhs.desktopreader.Nerfable;
-import net.vhati.openuhs.desktopreader.downloader.DownloadableUHSTableModel;
+import net.vhati.openuhs.desktopreader.downloader.CatalogTableCellRenderer;
+import net.vhati.openuhs.desktopreader.downloader.CatalogTableModel;
 import net.vhati.openuhs.desktopreader.downloader.StringFetchTask;
 import net.vhati.openuhs.desktopreader.downloader.StringFetchTask.StringFetchResult;
 import net.vhati.openuhs.desktopreader.downloader.UHSFetchTask.UHSFetchResult;
-import net.vhati.openuhs.desktopreader.downloader.UHSTableCellRenderer;
 import net.vhati.openuhs.desktopreader.reader.UHSReaderPanel;
 
 
@@ -64,9 +64,9 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	private final Logger logger = LoggerFactory.getLogger( UHSDownloaderPanel.class );
 
-	private DownloadableUHSTableModel uhsTableModel = new DownloadableUHSTableModel( new String[] {"Title","Date","FullSize","Name"} );
-	private JTable uhsTable = null;
-	private JScrollPane uhsTableScroll = null;
+	private CatalogTableModel catalogTableModel = new CatalogTableModel( new String[] {"Title","Date","FullSize","Name"} );
+	private JTable catalogTable = null;
+	private JScrollPane catalogTableScroll = null;
 
 	private JButton reloadBtn = null;
 	private JButton downloadBtn = null;
@@ -117,25 +117,25 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 				ctrlPanel.add( ctrlRightPanel );
 
 
-		uhsTable = new JTable();
-			uhsTable.setModel( uhsTableModel );
+		catalogTable = new JTable();
+			catalogTable.setModel( catalogTableModel );
 			try {
-				uhsTable.setDefaultRenderer( Class.forName( "java.lang.Object" ), new UHSTableCellRenderer() );
+				catalogTable.setDefaultRenderer( Class.forName( "java.lang.Object" ), new CatalogTableCellRenderer() );
 			}
 			catch( ClassNotFoundException e ) {
 				logger.error( "Could not set table renderer for download panel", e );
 			}
-			uhsTable.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
-			uhsTable.getTableHeader().setReorderingAllowed( false );
-			uhsTable.getColumn( "Title" ).setPreferredWidth( 80 );
-			uhsTable.getColumn( "Date" ).setMaxWidth( 80 );
-			uhsTable.getColumn( "Date" ).setPreferredWidth( 70 );
-			uhsTable.getColumn( "FullSize" ).setMaxWidth( 75 );
-			uhsTable.getColumn( "FullSize" ).setPreferredWidth( 50 );
-			uhsTable.getColumn( "Name" ).setMaxWidth( 130 );
-			uhsTable.getColumn( "Name" ).setPreferredWidth( 100 );
-			uhsTableScroll = new JScrollPane( uhsTable );
-				uhsTable.addNotify();
+			catalogTable.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
+			catalogTable.getTableHeader().setReorderingAllowed( false );
+			catalogTable.getColumn( "Title" ).setPreferredWidth( 80 );
+			catalogTable.getColumn( "Date" ).setMaxWidth( 80 );
+			catalogTable.getColumn( "Date" ).setPreferredWidth( 70 );
+			catalogTable.getColumn( "FullSize" ).setMaxWidth( 75 );
+			catalogTable.getColumn( "FullSize" ).setPreferredWidth( 50 );
+			catalogTable.getColumn( "Name" ).setMaxWidth( 130 );
+			catalogTable.getColumn( "Name" ).setPreferredWidth( 100 );
+		catalogTableScroll = new JScrollPane( catalogTable );
+			catalogTable.addNotify();
 
 
 		JPanel bottomPanel = new JPanel();
@@ -172,45 +172,45 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 		findPanel.getInputMap( JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT ).put( KeyStroke.getKeyStroke( "released ENTER" ), "find" );
 		findPanel.getActionMap().put( "find", findAction );
 
-		uhsTable.getTableHeader().addMouseListener(new MouseAdapter() {
+		catalogTable.getTableHeader().addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseReleased( MouseEvent e ) {
-				int index = uhsTable.getColumnModel().getColumnIndexAtX( e.getX() );
-				int col = uhsTable.convertColumnIndexToModel( index );
+				int index = catalogTable.getColumnModel().getColumnIndexAtX( e.getX() );
+				int col = catalogTable.convertColumnIndexToModel( index );
 
-				int sortBy = DownloadableUHSComparator.SORT_TITLE;
+				int sortBy = CatalogItemComparator.SORT_TITLE;
 				boolean reverse = false;
-				if ( "Title".equals( uhsTableModel.getColumnName( col ) ) ) {
-					sortBy = DownloadableUHSComparator.SORT_TITLE;
+				if ( "Title".equals( catalogTableModel.getColumnName( col ) ) ) {
+					sortBy = CatalogItemComparator.SORT_TITLE;
 				}
-				else if ( "Date".equals( uhsTableModel.getColumnName( col ) ) ) {
-					sortBy = DownloadableUHSComparator.SORT_DATE;
+				else if ( "Date".equals( catalogTableModel.getColumnName( col ) ) ) {
+					sortBy = CatalogItemComparator.SORT_DATE;
 					reverse = true;
 				}
-				else if ( "FullSize".equals( uhsTableModel.getColumnName( col ) ) ) {
-					sortBy = DownloadableUHSComparator.SORT_FULLSIZE;
+				else if ( "FullSize".equals( catalogTableModel.getColumnName( col ) ) ) {
+					sortBy = CatalogItemComparator.SORT_FULLSIZE;
 				}
-				else if ( "Name".equals( uhsTableModel.getColumnName( col ) ) ) {
-					sortBy = DownloadableUHSComparator.SORT_NAME;
+				else if ( "Name".equals( catalogTableModel.getColumnName( col ) ) ) {
+					sortBy = CatalogItemComparator.SORT_NAME;
 				}
-				Comparator<DownloadableUHS> c = new DownloadableUHSComparator( sortBy );
+				Comparator<CatalogItem> c = new CatalogItemComparator( sortBy );
 				if ( reverse ) c = Collections.reverseOrder( c );
-				uhsTableModel.sort( c );
+				catalogTableModel.sort( c );
 			}
 		});
 
-		uhsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+		catalogTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 			@Override
 			public void valueChanged( ListSelectionEvent e ) {
 				if ( e.getValueIsAdjusting() ) return;
 				boolean state = false;
-				if ( uhsTable.getSelectedRow() != -1 ) state = true;
+				if ( catalogTable.getSelectedRow() != -1 ) state = true;
 				downloadBtn.setEnabled( state );
 			}
 		});
 
 		this.add( ctrlPanel, BorderLayout.NORTH );
-		this.add( uhsTableScroll, BorderLayout.CENTER );
+		this.add( catalogTableScroll, BorderLayout.CENTER );
 		this.add( bottomPanel, BorderLayout.SOUTH );
 	}
 
@@ -222,8 +222,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 			fetchCatalog();
 		}
 		else if ( source == downloadBtn ) {
-			List<DownloadableUHS> wantedDuhs = getWantedDownloads();
-			fetchUHS( wantedDuhs );
+			List<CatalogItem> wantedItems = getWantedDownloads();
+			fetchUHS( wantedItems );
 		}
 		else if ( source == findBtn ) {
 			find( findField.getText() );
@@ -262,60 +262,60 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	 *
 	 * @return a List of entries, after pruning any local ones the user did not wish to delete
 	 */
-	private List<DownloadableUHS> getWantedDownloads() {
-		int[] rows = uhsTable.getSelectedRows();
+	private List<CatalogItem> getWantedDownloads() {
+		int[] rows = catalogTable.getSelectedRows();
 
-		List<DownloadableUHS> wantedDuhs = new ArrayList<DownloadableUHS>(rows.length);
-		List<DownloadableUHS> existingDuhs = new ArrayList<DownloadableUHS>(rows.length);
+		List<CatalogItem> wantedItems = new ArrayList<CatalogItem>(rows.length);
+		List<CatalogItem> existingItems = new ArrayList<CatalogItem>(rows.length);
 
 		String[] hintNames = hintsDir.list();
 		Arrays.sort( hintNames );
 
 		for ( int i=0; i < rows.length; i++ ) {
-			DownloadableUHS duh = uhsTableModel.getUHS( rows[i] );
-			if ( duh.getName().length() == 0 ) continue;
+			CatalogItem catItem = catalogTableModel.getUHS( rows[i] );
+			if ( catItem.getName().length() == 0 ) continue;
 
-			if ( Arrays.binarySearch( hintNames, duh.getName()) >= 0 ) {
-				existingDuhs.add( duh );
+			if ( Arrays.binarySearch( hintNames, catItem.getName()) >= 0 ) {
+				existingItems.add( catItem );
 			}
-			wantedDuhs.add( duh );
+			wantedItems.add( catItem );
 		}
-		if ( !existingDuhs.isEmpty() ) {
+		if ( !existingItems.isEmpty() ) {
 			String message;
-			if ( existingDuhs.size() == 1 ) {
-				message = String.format( "That file exists (\"%s\"), overwrite?", existingDuhs.get( 0 ).getName() );
+			if ( existingItems.size() == 1 ) {
+				message = String.format( "That file exists (\"%s\"), overwrite?", existingItems.get( 0 ).getName() );
 			}
 			else {
-				message = String.format( "Some of these files exist (%d), overwrite?", existingDuhs.size() );
+				message = String.format( "Some of these files exist (%d), overwrite?", existingItems.size() );
 			}
 
 			int choice = JOptionPane.showConfirmDialog( getAncestorComponent(), message, "Overwrite?", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
 			if ( choice == JOptionPane.YES_OPTION ) {
-				for ( DownloadableUHS duh : existingDuhs ) {
-					File uhsFile = new File( hintsDir, duh.getName() );
+				for ( CatalogItem catItem : existingItems ) {
+					File uhsFile = new File( hintsDir, catItem.getName() );
 					uhsFile.delete();
 				}
-				existingDuhs.clear();
+				existingItems.clear();
 			}
 			else if ( choice == JOptionPane.NO_OPTION ) {
-				wantedDuhs.removeAll( existingDuhs );
+				wantedItems.removeAll( existingItems );
 			}
 			else {
-				wantedDuhs.clear();
+				wantedItems.clear();
 			}
 		}
 
-		return wantedDuhs;
+		return wantedItems;
 	}
 
-	private void fetchUHS( List<DownloadableUHS> duhs ) {
+	private void fetchUHS( List<CatalogItem> catItems ) {
 		cancelFetching();
-		if ( duhs.isEmpty() ) return;
+		if ( catItems.isEmpty() ) return;
 
-		uhsFetchTask = new UHSFetchTask( hintsDir, duhs.toArray( new DownloadableUHS[duhs.size()] ) );
+		uhsFetchTask = new UHSFetchTask( hintsDir, catItems.toArray( new CatalogItem[catItems.size()] ) );
 		uhsFetchTask.setUserAgent( CatalogParser.DEFAULT_USER_AGENT );
 
-		final boolean single = ( duhs.size() == 1 );
+		final boolean single = ( catItems.size() == 1 );
 		uhsFetchTask.addPropertyChangeListener(new PropertyChangeListener() {
 			private ProgressMonitor progressDlg = null;
 			private String unitName = "";
@@ -422,14 +422,14 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 							if ( fetchResult.status == StringFetchResult.STATUS_COMPLETED ) {
 
 								CatalogParser catalogParser = new CatalogParser();
-								List<DownloadableUHS> catalog = catalogParser.parseCatalog( fetchResult.content );
+								List<CatalogItem> catalog = catalogParser.parseCatalog( fetchResult.content );
 								if ( catalog.size() > 0 ) {
-									uhsTableModel.clear();
+									catalogTableModel.clear();
 
-									for ( DownloadableUHS duh : catalog ) {
-										uhsTableModel.addUHS( duh );
+									for ( CatalogItem catItem : catalog ) {
+										catalogTableModel.addUHS( catItem );
 									}
-									uhsTableModel.sort();
+									catalogTableModel.sort();
 									colorizeTable();
 								}
 								else {
@@ -461,26 +461,26 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 
 	private void colorizeTable() {
-		uhsTable.clearSelection();
+		catalogTable.clearSelection();
 
 		String[] hintNames = hintsDir.list();
 		Arrays.sort( hintNames );
 
-		for ( int i=0; i < uhsTableModel.getRowCount(); i++ ) {
-			DownloadableUHS tmpUHS = uhsTableModel.getUHS( i );
-			tmpUHS.resetState();
+		for ( int i=0; i < catalogTableModel.getRowCount(); i++ ) {
+			CatalogItem catItem = catalogTableModel.getUHS( i );
+			catItem.resetState();
 
-			if ( Arrays.binarySearch( hintNames, tmpUHS.getName()) >= 0 ) {
-				tmpUHS.setLocal( true );
-				File uhsFile = new File( hintsDir, tmpUHS.getName() );
+			if ( Arrays.binarySearch( hintNames, catItem.getName()) >= 0 ) {
+				catItem.setLocal( true );
+				File uhsFile = new File( hintsDir, catItem.getName() );
 				Date localDate = new Date( uhsFile.lastModified() );
 
-				if ( tmpUHS.getDate() != null && tmpUHS.getDate().after( localDate ) ) {
-					tmpUHS.setNewer( true );
+				if ( catItem.getDate() != null && catItem.getDate().after( localDate ) ) {
+					catItem.setNewer( true );
 				}
 			}
 		}
-		uhsTable.repaint();
+		catalogTable.repaint();
 	}
 
 
@@ -488,15 +488,15 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 		if ( s.length() == 0 ) return;
 		String findString = s.toLowerCase();
 
-		Rectangle viewRect = uhsTableScroll.getViewport().getViewRect();
-		int selRow = uhsTable.getSelectedRow();
-		int rowCount = uhsTableModel.getRowCount();
+		Rectangle viewRect = catalogTableScroll.getViewport().getViewRect();
+		int selRow = catalogTable.getSelectedRow();
+		int rowCount = catalogTableModel.getRowCount();
 		int foundRow = -1;
 
 		if ( selRow >= 0 ) {
 			for ( int i=selRow+1; i < rowCount; i++ ) {
-				DownloadableUHS tmpUHS = uhsTableModel.getUHS( i );
-				if ( tmpUHS.getTitle().toLowerCase().indexOf( findString ) != -1 ) {
+				CatalogItem catItem = catalogTableModel.getUHS( i );
+				if ( catItem.getTitle().toLowerCase().indexOf( findString ) != -1 ) {
 					foundRow = i;
 					break;
 				}
@@ -504,16 +504,16 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 		}
 		if ( foundRow == -1 ) {
 			for ( int i=0; i < (selRow >= 0 ? selRow : rowCount); i++ ) {
-				DownloadableUHS tmpUHS = uhsTableModel.getUHS( i );
-				if ( tmpUHS.getTitle().toLowerCase().indexOf( findString ) != -1 ) {
+				CatalogItem catItem = catalogTableModel.getUHS( i );
+				if ( catItem.getTitle().toLowerCase().indexOf( findString ) != -1 ) {
 					foundRow = i;
 					break;
 				}
 			}
 		}
 		if ( foundRow != -1 ) {
-			uhsTable.scrollRectToVisible( new Rectangle( uhsTable.getCellRect( foundRow, 0, true ) ) );
-			uhsTable.setRowSelectionInterval( foundRow, foundRow );
+			catalogTable.scrollRectToVisible( new Rectangle( catalogTable.getCellRect( foundRow, 0, true ) ) );
+			catalogTable.setRowSelectionInterval( foundRow, foundRow );
 		}
 	}
 
@@ -525,8 +525,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 	 *
 	 * @return the table
 	 */
-	public JTable getUHSTable() {
-		return uhsTable;
+	public JTable getCatalogTable() {
+		return catalogTable;
 	}
 
 

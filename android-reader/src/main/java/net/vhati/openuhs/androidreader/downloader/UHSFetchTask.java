@@ -15,12 +15,12 @@ import java.util.zip.ZipEntry;
 import android.os.AsyncTask;
 
 import net.vhati.openuhs.androidreader.downloader.FetchUnitException;
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.CatalogItem;
 
 
-public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTask.UHSFetchResult> {
+public class UHSFetchTask extends AsyncTask<CatalogItem, Integer, UHSFetchTask.UHSFetchResult> {
 
-	// doInBackground()'s param is the first generic: [duhs].
+	// doInBackground()'s param is the first generic: [catItems].
 	// It reports the second generic, [a percentage], to onProgressUpdate().
 	// It returns the third generic [result] to onPostExecute().
 
@@ -50,16 +50,16 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 
 	// This runs in a background thread, unlike the other methods here.
 	@Override
-	protected UHSFetchResult doInBackground( DownloadableUHS... duhs ) {
+	protected UHSFetchResult doInBackground( CatalogItem... catItems ) {
 		HttpURLConnection con = null;
 		InputStream downloadStream = null;
 		ZipInputStream unzipStream = null;
 		OutputStream os = null;
 		File uhsFile = null;
 
-		DownloadableUHS duh = duhs[0];
-		String urlString = duh.getUrl();
-		UHSFetchResult fetchResult = new UHSFetchResult( duh );
+		CatalogItem catItem = catItems[0];
+		String urlString = catItem.getUrl();
+		UHSFetchResult fetchResult = new UHSFetchResult( catItem );
 		Exception ex = null;
 
 		try {
@@ -85,9 +85,9 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 				// Get the uncompressed uhs file's length. (possibly -1)
 				long uhsLength = ze.getSize();
 
-				// Presumably ze.getName().equals( duh.getName() ).
+				// Presumably ze.getName().equals( catItem.getName() ).
 
-				uhsFile = new File( destDir, duh.getName() );
+				uhsFile = new File( destDir, catItem.getName() );
 				fetchResult.file = uhsFile;
 				os = new FileOutputStream( uhsFile );
 
@@ -155,13 +155,13 @@ public class UHSFetchTask extends AsyncTask<DownloadableUHS, Integer, UHSFetchTa
 		public static final int STATUS_CANCELLED = 2;
 		public static final int STATUS_ERROR = 3;
 
-		public DownloadableUHS duh;
+		public CatalogItem catItem;
 		public int status = STATUS_DOWNLOADING;
 		public Throwable errorCause = null;
 		public File file = null;
 
-		public UHSFetchResult( DownloadableUHS duh ) {
-			this.duh = duh;
+		public UHSFetchResult( CatalogItem catItem ) {
+			this.catItem = catItem;
 		}
 	}
 

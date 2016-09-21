@@ -10,10 +10,10 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.CatalogItem;
 
 
-public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {
+public class CatalogArrayAdapter extends ArrayAdapter<CatalogItem> {
 	private int remoteColor = android.graphics.Color.BLACK;
 	private int localColor = android.graphics.Color.DKGRAY;
 	private int newerColor = android.graphics.Color.LTGRAY;
@@ -23,7 +23,7 @@ public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {
 	private int resLblId = -1;
 
 
-	public DownloadableUHSArrayAdapter( Context context, int resource, int imageViewResourceId, int textViewResourceId, List<DownloadableUHS> objects ) {
+	public CatalogArrayAdapter( Context context, int resource, int imageViewResourceId, int textViewResourceId, List<CatalogItem> objects ) {
 		super( context, resource, textViewResourceId, objects );
 		resXmlId = resource;
 		resImgId = imageViewResourceId;
@@ -48,20 +48,20 @@ public class DownloadableUHSArrayAdapter extends ArrayAdapter<DownloadableUHS> {
 	public View getView( int position, View convertView, ViewGroup parent ) {
 		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService( Context.LAYOUT_INFLATER_SERVICE );
 		View row = inflater.inflate( resXmlId, parent, false );
-		DownloadableUHS rowUHS = getItem( position );
+		CatalogItem catItem = getItem( position );
 
 		TextView label = (TextView)row.findViewById( resLblId );
 		ImageView icon = (ImageView)row.findViewById( resImgId );
 
-		label.setText( rowUHS.getTitle() );
+		label.setText( catItem.getTitle() );
 
 		//if (position%2 == 0) icon.setImageResource(android.R.drawable.checkbox_on_background);
 
 		icon.setImageResource( android.R.drawable.checkbox_off_background );
-		if ( rowUHS.isNewer() ) {
+		if ( catItem.isNewer() ) {
 			icon.setBackgroundColor( newerColor );
 		}
-		else if ( rowUHS.isLocal() ) {
+		else if ( catItem.isLocal() ) {
 			icon.setBackgroundColor( localColor );
 		}
 		else {

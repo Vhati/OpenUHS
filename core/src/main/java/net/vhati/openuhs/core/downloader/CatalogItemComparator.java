@@ -2,10 +2,10 @@ package net.vhati.openuhs.core.downloader;
 
 import java.util.Comparator;
 
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.CatalogItem;
 
 
-public class DownloadableUHSComparator implements Comparator<DownloadableUHS> {
+public class CatalogItemComparator implements Comparator<CatalogItem> {
 	public static final int SORT_TITLE = 0;
 	public static final int SORT_NAME = 1;
 	public static final int SORT_DATE = 2;
@@ -19,20 +19,20 @@ public class DownloadableUHSComparator implements Comparator<DownloadableUHS> {
 	 *
 	 * @param sortBy  one of: SORT_TITLE, SORT_NAME, SORT_DATE, or SORT_FULLSIZE
 	 */
-	public DownloadableUHSComparator( int sortBy ) {
+	public CatalogItemComparator( int sortBy ) {
 		this.sortBy = sortBy;
 	}
 
 	/**
 	 * Constructs a comparator that sorts by title.
 	 */
-	public DownloadableUHSComparator() {
+	public CatalogItemComparator() {
 		this( SORT_TITLE );
 	}
 
 
 	@Override
-	public int compare( DownloadableUHS a, DownloadableUHS b ) {
+	public int compare( CatalogItem a, CatalogItem b ) {
 		if ( a != null && b != null ) {
 			if ( sortBy == SORT_TITLE ) {
 				return a.getTitle().compareTo( b.getTitle() );

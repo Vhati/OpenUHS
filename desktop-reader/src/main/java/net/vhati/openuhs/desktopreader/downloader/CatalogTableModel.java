@@ -9,19 +9,19 @@ import java.util.List;
 import java.util.Vector;
 import javax.swing.table.AbstractTableModel;
 
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
-import net.vhati.openuhs.core.downloader.DownloadableUHSComparator;
+import net.vhati.openuhs.core.downloader.CatalogItem;
+import net.vhati.openuhs.core.downloader.CatalogItemComparator;
 
 
-public class DownloadableUHSTableModel extends AbstractTableModel {
-	private Comparator<DownloadableUHS> comparator = new DownloadableUHSComparator();
+public class CatalogTableModel extends AbstractTableModel {
+	private Comparator<CatalogItem> comparator = new CatalogItemComparator();
 	private DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
 
-	List<DownloadableUHS> dataVector = new Vector<DownloadableUHS>();
+	List<CatalogItem> dataVector = new Vector<CatalogItem>();
 	List<String> colVector = new Vector<String>();
 
 
-	public DownloadableUHSTableModel( String[] columnNames ) {
+	public CatalogTableModel( String[] columnNames ) {
 		for ( int i=0; i < columnNames.length; i++ ) {
 			colVector.add( columnNames[i] );
 		}
@@ -74,14 +74,14 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 	}
 
 
-	public void addUHS( DownloadableUHS duh ) {
-		dataVector.add( duh );
+	public void addUHS( CatalogItem catItem ) {
+		dataVector.add( catItem );
 		this.fireTableDataChanged();
 	}
 
-	public void addUHSs( DownloadableUHS[] duhs ) {
-		for ( int i=0; i < duhs.length; i++ ) {
-			dataVector.add( duhs[i] );
+	public void addUHSs( CatalogItem[] catItems ) {
+		for ( int i=0; i < catItems.length; i++ ) {
+			dataVector.add( catItems[i] );
 		}
 		this.fireTableDataChanged();
 	}
@@ -101,7 +101,7 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 	}
 
 
-	public DownloadableUHS getUHS( int row ) {
+	public CatalogItem getUHS( int row ) {
 		if ( row < 0 || row >= dataVector.size() ) return null;
 		return dataVector.get( row );
 	}
@@ -118,7 +118,7 @@ public class DownloadableUHSTableModel extends AbstractTableModel {
 		this.fireTableDataChanged();
 	}
 
-	public void sort( Comparator<DownloadableUHS> c ) {
+	public void sort( Comparator<CatalogItem> c ) {
 		comparator = c;
 		sort();
 	}

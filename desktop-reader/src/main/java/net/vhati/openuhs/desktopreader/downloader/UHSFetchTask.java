@@ -15,7 +15,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipEntry;
 import javax.swing.SwingWorker;
 
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.CatalogItem;
 import net.vhati.openuhs.desktopreader.downloader.FetchUnitException;
 
 
@@ -44,12 +44,12 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 	private String userAgent = System.getProperty( "http.agent" );
 
 	private File destDir;
-	private DownloadableUHS[] duhs;
+	private CatalogItem[] catItems;
 
 
-	public UHSFetchTask( File destDir, DownloadableUHS... duhs ) {
+	public UHSFetchTask( File destDir, CatalogItem... catItems ) {
 		this.destDir = destDir;
-		this.duhs = duhs;
+		this.catItems = catItems;
 	}
 
 
@@ -77,17 +77,17 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 
 	@Override
 	protected List<UHSFetchResult> doInBackground() {
-		List<UHSFetchResult> fetchResults = new ArrayList<UHSFetchResult>( duhs.length );
+		List<UHSFetchResult> fetchResults = new ArrayList<UHSFetchResult>( catItems.length );
 		String unitName = null;
 		int unitProgress = 0;
 
-		for ( int unitIndex=0; unitIndex < duhs.length; unitIndex++ ) {
+		for ( int unitIndex=0; unitIndex < catItems.length; unitIndex++ ) {
 			if ( isCancelled() || aborting ) break;
 
-			DownloadableUHS duh = duhs[unitIndex];
+			CatalogItem catItem = catItems[unitIndex];
 
 			String unitNameOld = unitName;
-			unitName = duh.getName();
+			unitName = catItem.getName();
 			this.getPropertyChangeSupport().firePropertyChange( PROP_UNIT_NAME, unitNameOld, unitName );
 
 			int unitProgressOld = unitProgress;
@@ -100,8 +100,8 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 			OutputStream os = null;
 			File uhsFile = null;
 
-			String urlString = duh.getUrl();
-			UHSFetchResult fetchResult = new UHSFetchResult( duh );
+			String urlString = catItem.getUrl();
+			UHSFetchResult fetchResult = new UHSFetchResult( catItem );
 			Exception ex = null;
 
 			try {
@@ -127,9 +127,9 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 					// Get the uncompressed uhs file's length. (possibly -1)
 					long uhsLength = ze.getSize();
 
-					// Presumably ze.getName().equals( duh.getName() ).
+					// Presumably ze.getName().equals( catItem.getName() ).
 
-					uhsFile = new File( destDir, duh.getName() );
+					uhsFile = new File( destDir, catItem.getName() );
 					fetchResult.file = uhsFile;
 					os = new FileOutputStream( uhsFile );
 
@@ -177,7 +177,7 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 				fetchResults.add( fetchResult );
 			}
 
-			this.setProgress( ((unitIndex+1) * 100 / duhs.length) );
+			this.setProgress( ((unitIndex+1) * 100 / catItems.length) );
 		}
 
 		return fetchResults;
@@ -196,13 +196,13 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 		public static final int STATUS_CANCELLED = 2;
 		public static final int STATUS_ERROR = 3;
 
-		public DownloadableUHS duh;
+		public CatalogItem catItem;
 		public int status = STATUS_DOWNLOADING;
 		public Throwable errorCause = null;
 		public File file = null;
 
-		public UHSFetchResult( DownloadableUHS duh ) {
-			this.duh = duh;
+		public UHSFetchResult( CatalogItem catItem ) {
+			this.catItem = catItem;
 		}
 	}
 }

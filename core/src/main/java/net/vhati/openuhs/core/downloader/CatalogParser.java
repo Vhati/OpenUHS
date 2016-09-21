@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.vhati.openuhs.core.downloader.DownloadableUHS;
+import net.vhati.openuhs.core.downloader.CatalogItem;
 
 
 /**
@@ -55,7 +55,7 @@ import net.vhati.openuhs.core.downloader.DownloadableUHS;
  *
  * <p>So FDATE can be "dd-MMM-yy" or "dd-MMM-yy HH:mm:ss".</p>
  *
- * @see net.vhati.openuhs.core.downloader.DownloadableUHS
+ * @see net.vhati.openuhs.core.downloader.CatalogItem
  */
 public class CatalogParser {
 	public static final String DEFAULT_CATALOG_URL = "http://www.uhs-hints.com:80/cgi-bin/update.cgi";
@@ -84,12 +84,12 @@ public class CatalogParser {
 	 * Parses the catalog of available hint files.
 	 *
 	 * @param catalogString  the xml-like string downloaded from the server
-	 * @return a List of DownloadableUHS objects
+	 * @return a List of CatalogItem objects
 	 */
-	public List<DownloadableUHS> parseCatalog( String catalogString ) {
+	public List<CatalogItem> parseCatalog( String catalogString ) {
 		logger.debug( "Catalog parse started" );
 
-		List<DownloadableUHS> catalog = new ArrayList<DownloadableUHS>();
+		List<CatalogItem> catalog = new ArrayList<CatalogItem>();
 
 		if (catalogString == null || catalogString.length() == 0) return catalog;
 
@@ -112,21 +112,21 @@ public class CatalogParser {
 		Matcher m = null;
 		while (fileChunkMatcher.find()) {
 			String fileChunk = fileChunkMatcher.group( 1 );
-			DownloadableUHS tmpUHS = new DownloadableUHS();
+			CatalogItem catItem = new CatalogItem();
 
 			m = titlePtn.matcher( fileChunk );
-			if ( m.find() ) tmpUHS.setTitle( m.group( 1 ) );
+			if ( m.find() ) catItem.setTitle( m.group( 1 ) );
 
 			m = urlPtn.matcher( fileChunk );
-			if ( m.find() ) tmpUHS.setUrl( m.group( 1 ) );
+			if ( m.find() ) catItem.setUrl( m.group( 1 ) );
 
 			m = namePtn.matcher( fileChunk );
-			if ( m.find() ) tmpUHS.setName( m.group( 1 ) );
+			if ( m.find() ) catItem.setName( m.group( 1 ) );
 
 			m = datePtn.matcher( fileChunk );
 			if ( m.find() ) {
 				try {
-					tmpUHS.setDate( goofyDateFormat.parse( m.group( 1 ) ) );
+					catItem.setDate( goofyDateFormat.parse( m.group( 1 ) ) );
 				}
 				catch ( ParseException e ) {
 					logger.warn( "Unexpected catalog date format: '{}'", m.group( 1 ) );
@@ -134,12 +134,12 @@ public class CatalogParser {
 			}
 
 			m = compressedSizePtn.matcher( fileChunk );
-			if ( m.find() ) tmpUHS.setCompressedSize( m.group( 1 ) );
+			if ( m.find() ) catItem.setCompressedSize( m.group( 1 ) );
 
 			m = fullSizePtn.matcher( fileChunk );
-			if ( m.find() ) tmpUHS.setFullSize( m.group(1) );
+			if ( m.find() ) catItem.setFullSize( m.group(1) );
 
-			catalog.add( tmpUHS );
+			catalog.add( catItem );
 		}
 
 		logger.debug( "Catalog parse finished (count: {})", catalog.size() );

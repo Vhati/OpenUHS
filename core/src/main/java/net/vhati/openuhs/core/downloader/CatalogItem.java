@@ -12,7 +12,7 @@ import java.util.Date;
  *
  * @see net.vhati.openuhs.core.downloader.CatalogParser
  */
-public class DownloadableUHS {
+public class CatalogItem {
 	private String title = "";
 	private String url = "";
 	private String name = "";
@@ -24,7 +24,7 @@ public class DownloadableUHS {
 	private boolean stateNewer = false;
 
 
-	public DownloadableUHS() {
+	public CatalogItem() {
 	}
 
 
