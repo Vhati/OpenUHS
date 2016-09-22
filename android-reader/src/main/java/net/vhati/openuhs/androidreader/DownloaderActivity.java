@@ -1,6 +1,14 @@
 package net.vhati.openuhs.androidreader;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -33,12 +41,19 @@ import android.support.v4.content.IntentCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.androidreader.R;
 import net.vhati.openuhs.androidreader.AndroidUHSConstants;
 import net.vhati.openuhs.androidreader.downloader.CatalogArrayAdapter;
+import net.vhati.openuhs.androidreader.downloader.CatalogItemDeserializer;
+import net.vhati.openuhs.androidreader.downloader.CatalogItemSerializer;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchObserver;
 import net.vhati.openuhs.androidreader.downloader.UHSFetchTask.UHSFetchResult;
@@ -59,6 +74,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 	private File externalDir = null;
 	private File hintsDir = null;
+	private File cachedCatalogFile = null;
 
 	private CatalogItemComparator catalogComparator = new CatalogItemComparator();
 	private CatalogParser catalogParser = null;
@@ -66,6 +82,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	private UHSFetchTask uhsFetchTask = null;
 
 	private ProgressDialog progressDlg = null;
+
+	ObjectMapper jsonMapper = null;
 
 
 	/** Called when the activity is first created. */
@@ -86,6 +104,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 		externalDir = this.getExternalFilesDir( null );
 		hintsDir = new File( externalDir, "hints" );
+		cachedCatalogFile = new File( externalDir, "cached_catalog.txt" );
 
 		if ( !hintsDir.exists() ) {
 			if ( hintsDir.mkdir() ) {
@@ -135,6 +154,16 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 				progressDlg.dismiss();
 			}
 		});
+
+		jsonMapper = new ObjectMapper();
+		SimpleModule uhsModule = new SimpleModule( "OpenUHS", new Version( 1, 0, 0, null ) );
+		uhsModule.addSerializer( CatalogItem.class, new CatalogItemSerializer() );
+		uhsModule.addDeserializer( CatalogItem.class, new CatalogItemDeserializer() );
+		jsonMapper.registerModule( uhsModule );
+
+		if ( cachedCatalogFile.exists() ) {
+			loadCatalog();
+		}
 	}
 
 
@@ -343,9 +372,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 			List<CatalogItem> catalog = catalogParser.parseCatalog( fetchResult.content );
 			if ( catalog.size() > 0 ) {
-				Collections.sort( catalog, catalogComparator );
-				colorizeCatalog( catalog );
-				catalogListView.setAdapter(new CatalogArrayAdapter( DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog ));
+				setCatalog( catalog );
+				storeCatalog( catalog );
 			}
 			else {
 				logger.error( "Catalog was empty or parsing failed" );
@@ -406,6 +434,72 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 						catItem.setNewer( true );
 				}
 			}
+		}
+	}
+
+
+	/**
+	 * Repopulates the catalog list with new items.
+	 */
+	public void setCatalog( List<CatalogItem> catalog ) {
+		Collections.sort( catalog, catalogComparator );
+		colorizeCatalog( catalog );
+		catalogListView.setAdapter(new CatalogArrayAdapter( DownloaderActivity.this, R.layout.catalog_row, R.id.icon, R.id.uhs_title_label, catalog ));
+	}
+
+	/**
+	 * Deserializes a cached catalog file.
+	 */
+	public void loadCatalog() {
+		logger.info( "Loading cached catalog" );
+		FileInputStream fis = null;
+		BufferedReader reader = null;
+		boolean failed = false;
+		try {
+			fis = new FileInputStream( cachedCatalogFile );
+			reader = new BufferedReader( new InputStreamReader( fis, "UTF-8" ) );
+			List<CatalogItem> catalog = jsonMapper.readValue( reader, new TypeReference<List<CatalogItem>>() {} );
+			setCatalog( catalog );
+
+			Date cacheDate = new Date( cachedCatalogFile.lastModified() );
+			String cacheDateString = new SimpleDateFormat( "yyyy-MM-dd" ).format( cacheDate );
+			Toast.makeText( this, String.format( "Last refresh: %s", cacheDateString ), Toast.LENGTH_SHORT ).show();
+		}
+		catch ( IOException e ) {
+			logger.error( "Error loading cached catalog", e );
+			Toast.makeText( this, String.format( "Error loading cached catalog: %s", e.getMessage() ), Toast.LENGTH_LONG ).show();
+			failed = true;
+		}
+		finally {
+			try {if ( reader != null ) reader.close();} catch ( IOException e ) {}
+			try {if ( fis != null ) fis.close();} catch ( IOException e ) {}
+			if ( failed && cachedCatalogFile.exists() ) cachedCatalogFile.delete();
+		}
+	}
+
+	/**
+	 * Serializes a catalog to a file.
+	 */
+	public void storeCatalog( List<CatalogItem> catalog ) {
+		logger.info( "Caching the catalog" );
+		FileOutputStream fos = null;
+		BufferedWriter writer = null;
+		boolean failed = false;
+		try {
+			fos = new FileOutputStream( cachedCatalogFile );
+			writer = new BufferedWriter( new OutputStreamWriter( fos, "UTF-8" ) );
+			//jsonMapper.writerWithType( new TypeReference<CatalogItem[]>() {} ).writeValue( writer, catalog.toArray( new CatalogItem[catalog.size()] ) );
+			jsonMapper.writerWithType( new TypeReference<List<CatalogItem>>() {} ).writeValue( writer, catalog );
+		}
+		catch ( IOException e ) {
+			logger.error( "Error caching catalog", e );
+			Toast.makeText( this, String.format( "Error caching catalog: %s", e.getMessage() ), Toast.LENGTH_LONG ).show();
+			failed = true;
+		}
+		finally {
+			try {if ( writer != null ) writer.close();} catch ( IOException e ) {}
+			try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
+			if ( failed && cachedCatalogFile.exists() ) cachedCatalogFile.delete();
 		}
 	}
 

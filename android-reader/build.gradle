@@ -172,4 +172,11 @@ dependencies {
 
 	compile "org.slf4j:slf4j-api:1.7.21"
 	compile "org.slf4j:slf4j-android:1.7.21"
+
+	/*
+	 * Jackson 2.7.7 was the last to support Java 1.6.
+	 * Jackson 2.3.5 was the last to support Android 2.x.
+	 */
+	compile "com.fasterxml.jackson.core:jackson-core:2.3.5"
+	compile "com.fasterxml.jackson.core:jackson-databind:2.3.5"
 }

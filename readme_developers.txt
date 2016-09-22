@@ -41,12 +41,14 @@ Projects
   android-reader - Android UHS reader.
     Libraries
       - Android Level 10 (2.3.3 Gingerbread)
-        https://developer.android.com/reference/packages.html
-        (Above the sidebar, there's a dropdown list to set the API level.)
+          https://developer.android.com/reference/packages.html
+          (Above the sidebar, there's a dropdown list to set the API level.)
       - SLF4J (api)
           http://www.slf4j.org/
       - SLF4J-Android
           http://www.slf4j.org/android/
+      - Jackson (databind, core)
+          https://github.com/FasterXML/jackson-docs/wiki/Finding-Javadoc
 
 
 Build Environment
