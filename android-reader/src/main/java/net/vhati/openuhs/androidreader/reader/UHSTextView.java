@@ -36,9 +36,6 @@ public class UHSTextView extends LinearLayout {
 		this.setClickable( false );
 		this.setFocusable( false );
 
-		//LayoutInflater inflater = (LayoutInflater)context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
-		//View view = inflater.inflate( R.layout.uhs_text_view, null );
-
 		this.inflate( context, R.layout.uhs_text_view, this );
 		contentLbl = (TextView)this.findViewById( R.id.contentText );
 		textColorDefault = contentLbl.getTextColors().getDefaultColor();

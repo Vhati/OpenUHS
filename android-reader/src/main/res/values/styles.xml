@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="MyMaterialTheme" parent="Theme.AppCompat">
         <item name="windowNoTitle">true</item>

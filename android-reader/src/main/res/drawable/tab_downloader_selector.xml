@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_selected="true" android:drawable="@drawable/ic_view_list_normal_24dp" />
-    <item android:drawable="@drawable/ic_view_list_pressed_24dp" />
-</selector>
