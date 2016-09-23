@@ -1,25 +1,26 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="net.vhati.openuhs.androidreader.DownloaderActivity" >
 
     <item android:id="@+id/catalogFetchAction"
           android:title="@string/action_catalog_fetch"
           android:icon="@drawable/ic_refresh_normal_24dp"
-          tools:showAsAction="ifRoom" />
+          app:showAsAction="ifRoom" />
 
     <item android:id="@+id/catalogFilterLocalAction"
           android:title="@string/action_catalog_filter_local"
           android:icon="@drawable/ic_folder_normal_24dp"
-          tools:showAsAction="never" />
+          app:showAsAction="never" />
 
     <item android:id="@+id/catalogSortTitleAction"
           android:title="@string/action_catalog_sort_title"
           android:icon="@drawable/ic_sort_by_alpha_normal_24dp"
-          tools:showAsAction="never" />
+          app:showAsAction="never" />
 
     <item android:id="@+id/catalogSortDateAction"
           android:title="@string/action_catalog_sort_date"
           android:icon="@drawable/ic_schedule_normal_24dp"
-          tools:showAsAction="never" />
+          app:showAsAction="never" />
 
 </menu>
