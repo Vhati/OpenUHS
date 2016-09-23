@@ -193,7 +193,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() { 
 			@Override 
 			public boolean onQueryTextChange( String query ) {
-				catalogAdapter.setLocalFilterEnabled( false );
+				catalogAdapter.clearFilters();
 				catalogAdapter.setSortFilter( catalogTitleComparator );
 				catalogAdapter.setTitleFilter( query );
 				catalogAdapter.applyFilters();
@@ -217,19 +217,20 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 				return true;
 
 			case R.id.catalogFilterLocalAction:
+				catalogAdapter.clearFilters();
 				catalogAdapter.setLocalFilterEnabled( true );
 				catalogAdapter.setSortFilter( catalogTitleComparator );
 				catalogAdapter.applyFilters();
 				return true;
 
 			case R.id.catalogSortTitleAction:
-				catalogAdapter.setLocalFilterEnabled( false );
+				catalogAdapter.clearFilters();
 				catalogAdapter.setSortFilter( catalogTitleComparator );
 				catalogAdapter.applyFilters();
 				return true;
 
 			case R.id.catalogSortDateAction:
-				catalogAdapter.setLocalFilterEnabled( false );
+				catalogAdapter.clearFilters();
 				catalogAdapter.setSortFilter( catalogDateComparator );
 				catalogAdapter.applyFilters();
 				return true;
@@ -498,7 +499,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	public void setCatalog( List<CatalogItem> catalog ) {
 		colorizeCatalog( catalog );
 		catalogAdapter.setCatalog( catalog );
-		catalogAdapter.setLocalFilterEnabled( false );
+		catalogAdapter.clearFilters();
 		catalogAdapter.setSortFilter( catalogTitleComparator );
 		catalogAdapter.applyFilters();
 	}
@@ -516,6 +517,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 			reader = new BufferedReader( new InputStreamReader( fis, "UTF-8" ) );
 			List<CatalogItem> catalog = jsonMapper.readValue( reader, new TypeReference<List<CatalogItem>>() {} );
 			setCatalog( catalog );
+			catalogAdapter.clearFilters();
 			catalogAdapter.setLocalFilterEnabled( true );
 			catalogAdapter.setSortFilter( catalogTitleComparator );
 			catalogAdapter.applyFilters();

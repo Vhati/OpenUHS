@@ -136,6 +136,7 @@ public class CatalogAdapter extends BaseAdapter {
 	 * <p>This means pruning any items whose titles lack the substring.</p>
 	 *
 	 * @para s  the substring, or null
+	 * @see #applyFilters()
 	 * @see net.vhati.openuhs.core.downloader.CatalogItem#getTitle()
 	 */
 	public void setTitleFilter( String s ) {
@@ -146,6 +147,17 @@ public class CatalogAdapter extends BaseAdapter {
 		return titleFilter;
 	}
 
+
+	/**
+	 * Unsets all filters.
+	 *
+	 * @see #applyFilters()
+	 */
+	public void clearFilters() {
+		setLocalFilterEnabled( false );
+		setSortFilter( null );
+		setTitleFilter( null );
+	}
 
 	/**
 	 * Repopulates the filteredCatalog with items from the original catalog.
@@ -160,8 +172,10 @@ public class CatalogAdapter extends BaseAdapter {
 	/**
 	 * Resets, prunes, and sorts the filtered catalog.
 	 *
+	 * @see #clearFilters()
 	 * @see #setLocalFilterEnabled(boolean)
 	 * @see #setSortFilter(Comparator)
+	 * @see #setTitleFilter(String)
 	 */
 	public void applyFilters() {
 		resetFilteredCatalog();
