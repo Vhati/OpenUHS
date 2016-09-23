@@ -38,7 +38,7 @@ public class CatalogItemComparator implements Comparator<CatalogItem> {
 				return a.getTitle().compareTo( b.getTitle() );
 			}
 			if ( sortBy == SORT_DATE ) {
-				return a.getDate().compareTo( b.getDate() ) * -1;
+				return a.getDate().compareTo( b.getDate() );
 			}
 			if ( sortBy == SORT_FULLSIZE ) {
 				if ( a.getFullSize().matches( "^[0-9]+$" ) && b.getFullSize().matches( "^[0-9]+$" ) ) {
