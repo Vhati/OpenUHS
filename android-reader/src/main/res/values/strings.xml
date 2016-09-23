@@ -5,7 +5,10 @@
     <string name="action_show_all_hints">Show All Hints</string>
     <string name="action_switch_to_downloader">Downloader...</string>
     <string name="downloader">Downloader</string>
-    <string name="action_fetch_catalog">Refresh</string>
+    <string name="action_catalog_fetch">Refresh</string>
+    <string name="action_catalog_filter_local">Show Local Files</string>
+    <string name="action_catalog_sort_date">Show All By Date</string>
+    <string name="action_catalog_sort_title">Show All By Title</string>
     <string name="context_action_open_file">Open</string>
     <string name="context_action_fetch_file">Download</string>
     <string name="context_action_delete_file">Delete</string>

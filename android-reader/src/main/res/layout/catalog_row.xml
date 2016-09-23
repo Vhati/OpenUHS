@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-  android:layout_width="fill_parent"
-  android:layout_height="wrap_content"
-  android:orientation="horizontal">
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Parent should be a horizontal LinearLayout. -->
+
   <ImageView
-    android:id="@+id/icon"
+    android:id="@+id/catalogRowIcon"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:gravity="center"
-    android:src="@drawable/icon"
+    android:src="@drawable/checkbox_off_background"
     android:layout_margin="8.0dp" />
   <TextView
-    android:id="@+id/uhs_title_label"
+    android:id="@+id/catalogRowTitleLbl"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="center_vertical" />
-</LinearLayout>
+</merge>
