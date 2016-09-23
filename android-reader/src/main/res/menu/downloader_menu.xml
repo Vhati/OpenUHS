@@ -3,6 +3,12 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="net.vhati.openuhs.androidreader.DownloaderActivity" >
 
+    <item android:id="@+id/catalogSearchAction"
+          android:title="@string/action_catalog_search"
+          android:icon="@drawable/ic_search_normal_24dp"
+          app:showAsAction="collapseActionView|ifRoom"
+          app:actionViewClass="android.support.v7.widget.SearchView" />
+
     <item android:id="@+id/catalogFetchAction"
           android:title="@string/action_catalog_fetch"
           android:icon="@drawable/ic_refresh_normal_24dp"

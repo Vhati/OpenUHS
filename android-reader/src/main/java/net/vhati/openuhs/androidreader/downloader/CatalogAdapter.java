@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.content.Context;
 import android.view.View;
@@ -21,8 +23,9 @@ public class CatalogAdapter extends BaseAdapter {
 	private int localColor = android.graphics.Color.DKGRAY;
 	private int newerColor = android.graphics.Color.LTGRAY;
 
-	private boolean localOnly = false;
-	private Comparator<CatalogItem> comparator = null;
+	private boolean localFilter = false;
+	private Comparator<CatalogItem> sortFilter = null;
+	private String titleFilter = null;
 
 	private final Context context;
 	private List<CatalogItem> originalCatalog = Collections.emptyList();
@@ -106,20 +109,41 @@ public class CatalogAdapter extends BaseAdapter {
 	 * @see net.vhati.openuhs.core.downloader.CatalogItem#isLocal()
 	 */
 	public void setLocalFilterEnabled( boolean b ) {
-		localOnly = b;
+		localFilter = b;
 	}
 
 	public boolean isLocalFilterEnabled() {
-		return localOnly;
+		return localFilter;
 	}
 
 	/**
-	 * Sets a new comparator and reorders the catalog.
+	 * Sets a comparator to sort the catalog.
 	 *
+	 * @para c  the comparator, or null
 	 * @see #applyFilters()
 	 */
 	public void setSortFilter( Comparator<CatalogItem> c ) {
-		comparator = c;
+		sortFilter = c;
+	}
+
+	public Comparator<CatalogItem> getSortFilter() {
+		return sortFilter;
+	}
+
+	/**
+	 * Sets a substring to find in CatalogItem titles.
+	 *
+	 * <p>This means pruning any items whose titles lack the substring.</p>
+	 *
+	 * @para s  the substring, or null
+	 * @see net.vhati.openuhs.core.downloader.CatalogItem#getTitle()
+	 */
+	public void setTitleFilter( String s ) {
+		titleFilter = s;
+	}
+
+	public String getTitleFilter() {
+		return titleFilter;
 	}
 
 
@@ -149,7 +173,17 @@ public class CatalogAdapter extends BaseAdapter {
 			}
 		}
 
-		if ( comparator != null ) Collections.sort( filteredCatalog, comparator );
+		if ( getTitleFilter() != null ) {
+			Pattern titlePtn = Pattern.compile( Pattern.quote( titleFilter ), Pattern.CASE_INSENSITIVE );
+
+			Iterator<CatalogItem> it = filteredCatalog.iterator();
+			while ( it.hasNext() ) {
+				String itemTitle = it.next().getTitle();
+				if ( !titlePtn.matcher( itemTitle ).find() ) it.remove();
+			}
+		}
+
+		if ( getSortFilter() != null ) Collections.sort( filteredCatalog, sortFilter );
 		this.notifyDataSetChanged();
 	}
 

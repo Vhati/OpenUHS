@@ -7,8 +7,10 @@
     <string name="downloader">Downloader</string>
     <string name="action_catalog_fetch">Refresh</string>
     <string name="action_catalog_filter_local">Show Local Files</string>
+    <string name="action_catalog_search">Search</string>
     <string name="action_catalog_sort_date">Show All By Date</string>
     <string name="action_catalog_sort_title">Show All By Title</string>
+    <string name="catalog_search_hint">Search titles</string>
     <string name="context_action_open_file">Open</string>
     <string name="context_action_fetch_file">Download</string>
     <string name="context_action_delete_file">Delete</string>

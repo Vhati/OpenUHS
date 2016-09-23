@@ -17,13 +17,13 @@ import java.util.List;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.InputType;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
@@ -32,14 +32,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import android.support.v4.content.IntentCompat;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 
 import com.fasterxml.jackson.core.Version;
@@ -151,7 +152,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 			progressDlg.setCancelable( false );
 			progressDlg.setMessage( "..." );
 
-		progressDlg.setOnCancelListener(new OnCancelListener() {
+		progressDlg.setOnCancelListener(new DialogInterface.OnCancelListener() {
 			@Override
 			public void onCancel( DialogInterface dialog ) {
 				if ( AsyncTask.Status.RUNNING.equals( catalogFetchTask.getStatus() ) ) {
@@ -180,6 +181,31 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	public boolean onCreateOptionsMenu( Menu menu ) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate( R.menu.downloader_menu, menu );
+
+		// Handle search internally, without involving SearchManager or Intent passing.
+		// It may not be possible to disable suggestions reliably.
+		SearchView searchView = (SearchView)MenuItemCompat.getActionView( menu.findItem( R.id.catalogSearchAction ) );
+		searchView.setSubmitButtonEnabled( false );
+		searchView.setQueryHint( getResources().getString( R.string.catalog_search_hint ) );
+		searchView.setInputType( InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_FILTER|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS );
+		searchView.setSuggestionsAdapter( null );
+
+		searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() { 
+			@Override 
+			public boolean onQueryTextChange( String query ) {
+				catalogAdapter.setLocalFilterEnabled( false );
+				catalogAdapter.setSortFilter( catalogTitleComparator );
+				catalogAdapter.setTitleFilter( query );
+				catalogAdapter.applyFilters();
+				return true; 
+			}
+
+			@Override
+			public boolean onQueryTextSubmit( String query ) {
+				return false;
+			}
+		});
+
 		return true;
 	}
 
@@ -283,6 +309,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 				return super.onContextItemSelected( item );
 		}
 	}
+
 
 	private void cancelFetching() {
 		if ( catalogFetchTask != null && AsyncTask.Status.RUNNING.equals( catalogFetchTask.getStatus() ) ) {
