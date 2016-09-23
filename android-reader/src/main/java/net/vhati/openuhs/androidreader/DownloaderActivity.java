@@ -139,7 +139,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		});
 
 		catalogAdapter = new CatalogAdapter( this );
-		catalogAdapter.sort( catalogTitleComparator );
+		catalogAdapter.setSortFilter( catalogTitleComparator );
 		catalogListView.setAdapter( catalogAdapter );
 
 		catalogParser = new CatalogParser();
@@ -192,17 +192,20 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 			case R.id.catalogFilterLocalAction:
 				catalogAdapter.setLocalFilterEnabled( true );
-				catalogAdapter.sort( catalogTitleComparator );
+				catalogAdapter.setSortFilter( catalogTitleComparator );
+				catalogAdapter.applyFilters();
 				return true;
 
 			case R.id.catalogSortTitleAction:
 				catalogAdapter.setLocalFilterEnabled( false );
-				catalogAdapter.sort( catalogTitleComparator );
+				catalogAdapter.setSortFilter( catalogTitleComparator );
+				catalogAdapter.applyFilters();
 				return true;
 
 			case R.id.catalogSortDateAction:
 				catalogAdapter.setLocalFilterEnabled( false );
-				catalogAdapter.sort( catalogDateComparator );
+				catalogAdapter.setSortFilter( catalogDateComparator );
+				catalogAdapter.applyFilters();
 				return true;
 
 			default:
@@ -469,7 +472,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		colorizeCatalog( catalog );
 		catalogAdapter.setCatalog( catalog );
 		catalogAdapter.setLocalFilterEnabled( false );
-		catalogAdapter.sort( catalogTitleComparator );
+		catalogAdapter.setSortFilter( catalogTitleComparator );
+		catalogAdapter.applyFilters();
 	}
 
 	/**
@@ -486,7 +490,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 			List<CatalogItem> catalog = jsonMapper.readValue( reader, new TypeReference<List<CatalogItem>>() {} );
 			setCatalog( catalog );
 			catalogAdapter.setLocalFilterEnabled( true );
-			catalogAdapter.sort( catalogTitleComparator );
+			catalogAdapter.setSortFilter( catalogTitleComparator );
+			catalogAdapter.applyFilters();
 
 			Date cacheDate = new Date( cachedCatalogFile.lastModified() );
 			String cacheDateString = new SimpleDateFormat( "yyyy-MM-dd" ).format( cacheDate );

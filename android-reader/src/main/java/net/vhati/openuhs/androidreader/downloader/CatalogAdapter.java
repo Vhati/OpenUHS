@@ -75,37 +75,11 @@ public class CatalogAdapter extends BaseAdapter {
 
 
 	/**
-	 * Repopulates the filteredCatalog with items from the original catalog.
-	 *
-	 * <p>Note: Remember to call notifyDataSetChanged() afterward.</p>
-	 */
-	protected void resetFilteredCatalog() {
-		filteredCatalog.clear();
-		filteredCatalog.addAll( originalCatalog );
-	}
-
-	/**
-	 * Prunes the filtered catalog, removing any items for which isLocal() returns false.
-	 *
-	 * @see net.vhati.openuhs.core.downloader.CatalogItem#isLocal()
-	 */
-	protected void applyLocalFilter() {
-		Iterator<CatalogItem> it = filteredCatalog.iterator();
-		while ( it.hasNext() ) {
-			if ( !it.next().isLocal() ) it.remove();
-		}
-	}
-
-
-	/**
 	 * Sets a new original catalog to back this adapter.
 	 */
 	public void setCatalog( List<CatalogItem> newCatalog ) {
 		originalCatalog = newCatalog;
-		resetFilteredCatalog();
-		if ( localOnly ) applyLocalFilter();
-		sort();
-		this.notifyDataSetChanged();
+		applyFilters();
 	}
 
 	/**
@@ -123,46 +97,60 @@ public class CatalogAdapter extends BaseAdapter {
 	}
 
 
-	public void sort() {
-		if ( comparator == null ) return;
-
-		Collections.sort( filteredCatalog, comparator );
-		this.notifyDataSetChanged();
-	}
-
-	/**
-	 * Sets a new comparator and reorders the catalog.
-	 */
-	public void sort( Comparator<CatalogItem> c ) {
-		comparator = c;
-
-		if ( c == null ) {
-			resetFilteredCatalog();
-			if ( localOnly ) applyLocalFilter();
-			this.notifyDataSetChanged();
-		}
-		else {
-			sort();
-		}
-	}
-
-
 	/**
 	 * Toggles whether to only show local CatalogItems.
+	 *
+	 * <p>This means pruning any items for which isLocal() returns false.</p>
+	 *
+	 * @see #applyFilters()
+	 * @see net.vhati.openuhs.core.downloader.CatalogItem#isLocal()
 	 */
 	public void setLocalFilterEnabled( boolean b ) {
-		if ( localOnly != b ) {
-			localOnly = b;
-
-			resetFilteredCatalog();
-			if ( localOnly ) applyLocalFilter();
-			sort();
-			this.notifyDataSetChanged();
-		}
+		localOnly = b;
 	}
 
 	public boolean isLocalFilterEnabled() {
 		return localOnly;
+	}
+
+	/**
+	 * Sets a new comparator and reorders the catalog.
+	 *
+	 * @see #applyFilters()
+	 */
+	public void setSortFilter( Comparator<CatalogItem> c ) {
+		comparator = c;
+	}
+
+
+	/**
+	 * Repopulates the filteredCatalog with items from the original catalog.
+	 *
+	 * <p>Note: Remember to call notifyDataSetChanged() afterward.</p>
+	 */
+	protected void resetFilteredCatalog() {
+		filteredCatalog.clear();
+		filteredCatalog.addAll( originalCatalog );
+	}
+
+	/**
+	 * Resets, prunes, and sorts the filtered catalog.
+	 *
+	 * @see #setLocalFilterEnabled(boolean)
+	 * @see #setSortFilter(Comparator)
+	 */
+	public void applyFilters() {
+		resetFilteredCatalog();
+
+		if ( isLocalFilterEnabled() ) {
+			Iterator<CatalogItem> it = filteredCatalog.iterator();
+			while ( it.hasNext() ) {
+				if ( !it.next().isLocal() ) it.remove();
+			}
+		}
+
+		if ( comparator != null ) Collections.sort( filteredCatalog, comparator );
+		this.notifyDataSetChanged();
 	}
 
 
