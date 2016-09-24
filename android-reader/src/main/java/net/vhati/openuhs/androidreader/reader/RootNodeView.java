@@ -139,6 +139,7 @@ public class RootNodeView extends NodeView {
 		//   listView.setDescendantFocusability( ViewGroup.FOCUS_BLOCK_DESCENDANTS );
 
 		listView = (ListView)LayoutInflater.from( this.getContext() ).inflate( R.layout.reader_default_node_view_list, null, false );
+		listView.setTextFilterEnabled( false );
 		listView.setAdapter( listAdapter );
 		this.addView( listView );
 

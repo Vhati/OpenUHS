@@ -99,7 +99,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		this.setContentView( R.layout.downloader );
 
 		toolbar = (Toolbar)findViewById( R.id.downloaderToolbar );
-		//toolbar.setTitle( "" );
+		toolbar.setTitle( "" );
 		this.setSupportActionBar( toolbar );
 
 
@@ -114,13 +114,14 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 		if ( !hintsDir.exists() ) {
 			if ( hintsDir.mkdir() ) {
-				logger.info( "Created \"hints/\" dir: {}", hintsDir.getAbsolutePath() );
+				logger.info( "Created hints dir: {}", hintsDir.getAbsolutePath() );
 			} else {
-				logger.error( "Failed to created \"hints/\" dir: {}", hintsDir.getAbsolutePath() );
+				logger.error( "Failed to created hints dir: {}", hintsDir.getAbsolutePath() );
 			}
 		}
 
 		catalogListView = (ListView)findViewById( R.id.catalogList );
+		catalogListView.setTextFilterEnabled( false );
 		this.registerForContextMenu( catalogListView );
 
 		catalogListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
