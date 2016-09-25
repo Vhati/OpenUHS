@@ -11,12 +11,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -349,7 +349,7 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 	 */
 	@Override
 	public void setReaderNode( int id ) {
-		UHSNode tmpNode = rootNode.getLink( id );
+		UHSNode tmpNode = rootNode.getNodeByLinkId( id );
 		if ( tmpNode != null ) {
 			setReaderNode( tmpNode );
 		} else {
@@ -396,5 +396,43 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 		revealNextBtn.setEnabled( !currentNodeView.isComplete() );
 
 		return true;
+	}
+
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+
+		for ( int i=nodeViewRegistry.size()-1; i >= 0 ; i-- ) {
+			NodeView nv = nodeViewRegistry.get( i );
+			nv.reset();
+		}
+
+		unbindDrawables( this.findViewById( android.R.id.content ) );
+		System.gc();
+	}
+
+	/**
+	 * Recursively detaches child views and nulls references to resources.
+	 *
+	 * <p>Call this during onDestroy(), followed by System.gc().</p>
+	 */
+	private void unbindDrawables( View view ) {
+		if ( view.getBackground() != null ) {
+			view.getBackground().setCallback( null );
+		}
+
+		if ( view instanceof ImageView ) {
+			((ImageView)view).setImageBitmap( null );
+		}
+		else if ( view instanceof ViewGroup ) {
+			for ( int i=0; i < ((ViewGroup)view).getChildCount(); i++ ) {
+				unbindDrawables( ((ViewGroup)view).getChildAt( i ) );
+			}
+
+			if ( view instanceof AdapterView == false ) {
+				((ViewGroup)view).removeAllViews();  // AdapterViews do not support this.
+			}
+		}
 	}
 }

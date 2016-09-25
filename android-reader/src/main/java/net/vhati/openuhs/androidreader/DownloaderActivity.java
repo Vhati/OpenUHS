@@ -25,14 +25,15 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.text.InputType;
 import android.view.ContextMenu;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -242,7 +243,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	}
 
 	@Override
-	public void onCreateContextMenu( ContextMenu menu, View v, ContextMenuInfo menuInfo ) {
+	public void onCreateContextMenu( ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo ) {
 		super.onCreateContextMenu( menu, v, menuInfo );
 
 		CatalogItem catItem = catalogAdapter.getItem( ((AdapterContextMenuInfo)menuInfo).position );
@@ -577,5 +578,37 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		intent.putExtra( ReaderActivity.EXTRA_OPEN_FILE, uhsPath );
 		this.startActivity( intent );
 		finish();
+	}
+
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		unbindDrawables( this.findViewById( android.R.id.content ) );
+		System.gc();
+	}
+
+	/**
+	 * Recursively detaches child views and nulls references to resources.
+	 *
+	 * <p>Call this during onDestroy(), followed by System.gc().</p>
+	 */
+	private void unbindDrawables( View view ) {
+		if ( view.getBackground() != null ) {
+			view.getBackground().setCallback( null );
+		}
+
+		if ( view instanceof ImageView ) {
+			((ImageView)view).setImageBitmap( null );
+		}
+		else if ( view instanceof ViewGroup ) {
+			for ( int i=0; i < ((ViewGroup)view).getChildCount(); i++ ) {
+				unbindDrawables( ((ViewGroup)view).getChildAt( i ) );
+			}
+
+			if ( view instanceof AdapterView == false ) {
+				((ViewGroup)view).removeAllViews();  // AdapterViews do not support this.
+			}
+		}
 	}
 }

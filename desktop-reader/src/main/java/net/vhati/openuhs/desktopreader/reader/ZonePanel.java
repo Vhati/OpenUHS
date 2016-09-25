@@ -13,7 +13,7 @@ import javax.swing.JComponent;
  * A panel representing a single zone in a hotspot node.
  */
 public class ZonePanel extends JComponent {
-	private boolean showContents = false;
+	private boolean revealed = false;
 	private JComponent component = null;
 	private ZonePanel zoneTarget = null;
 	private int linkTarget = -1;
@@ -70,12 +70,13 @@ public class ZonePanel extends JComponent {
 	/**
 	 * Toggles whether this zone's content is visible.
 	 */
-	public void setContentsVisible( boolean b ) {
-		showContents = b; this.repaint();
+	public void setRevealed( boolean b ) {
+		revealed = b;
+		this.repaint();
 	}
 
-	public boolean getContentsVisible() {
-		return showContents;
+	public boolean isRevealed() {
+		return revealed;
 	}
 
 
@@ -106,7 +107,7 @@ public class ZonePanel extends JComponent {
 	public void paintComponent( Graphics g ) {
 		super.paintComponent( g );
 		if ( component != null ) {
-			if ( showContents ) {
+			if ( revealed ) {
 				component.paint( g );
 			} else {
 				paintEdges( (Graphics2D)g.create(), Color.GRAY );
@@ -126,7 +127,7 @@ public class ZonePanel extends JComponent {
 	private void paintEdges( Graphics2D g2, Color c ) {
 		g2.setColor( c );
 		float dashes[] = {1f,2f};
-		g2.setStroke( new BasicStroke( 1,BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND,1,dashes,0 ) );
+		g2.setStroke( new BasicStroke( 1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1, dashes, 0 ) );
 		g2.draw( new Rectangle( 1, 1, getWidth()-2, getHeight()-2 ) );
 	}
 }

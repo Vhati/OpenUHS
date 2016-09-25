@@ -92,7 +92,7 @@ public class HotSpotNodePanel extends NodePanel {
 				int targetIndex = sourcePanel.getLinkTarget();
 
 				if ( zoneTarget != null ) {
-					zoneTarget.setContentsVisible( !zoneTarget.getContentsVisible() );
+					zoneTarget.setRevealed( !zoneTarget.isRevealed() );
 				}
 				else if ( targetIndex != -1 ) {
 					HotSpotNodePanel.this.getNavCtrl().setReaderNode( targetIndex );

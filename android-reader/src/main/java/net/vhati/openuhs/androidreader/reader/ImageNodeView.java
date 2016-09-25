@@ -1,5 +1,7 @@
 package net.vhati.openuhs.androidreader.reader;
 
+import java.io.ByteArrayInputStream;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,11 +18,15 @@ import net.vhati.openuhs.core.UHSNode;
 public class ImageNodeView extends NodeView {
 	protected UHSImageNode imageNode = null;
 
+	protected ImageView imageView;
+
 
 	public ImageNodeView( Context context ) {
 		super( context );
 		setClickable( false );
 		setFocusable( false );
+
+		imageView = new ImageView( context );
 	}
 
 	@Override
@@ -38,15 +44,19 @@ public class ImageNodeView extends NodeView {
 		imageNode = (UHSImageNode)node;
 
 		byte[] imageBytes = imageNode.getRawImageContent();
-		Bitmap imageBitmap = BitmapFactory.decodeByteArray( imageBytes, 0, imageBytes.length );
+		Bitmap imageBitmap = BitmapFactory.decodeStream( new ByteArrayInputStream( imageBytes ) );
 
-		ImageView image = new ImageView( this.getContext() );
-		image.setImageBitmap( imageBitmap );
-		this.addView( image );
+		imageView.setImageBitmap( imageBitmap );
+		this.addView( imageView );
+
+		this.requestLayout();
+		this.invalidate();
 	}
 
 	@Override
 	public void reset() {
+		imageView.setImageBitmap( null );
+
 		imageNode = null;
 		this.removeAllViews();
 		super.reset();

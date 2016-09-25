@@ -135,31 +135,6 @@ public class UHSRootNode extends UHSNode {
 		return targetNode;
 	}
 
-	/**
-	 * Gets a link's target.
-	 *
-	 * <p>If the target is not a group, a temporary
-	 * group node will be created as a wrapper so that
-	 * the target's content will not be treated as
-	 * a title.</p>
-	 *
-	 * @param id  the id of the node to get
-	 * @return the node, possibly wrapped, or null if not found
-	 */
-	public UHSNode getLink( int id ) {
-		UHSNode targetNode = linkMap.get( id+"" );
-		if ( targetNode == null ) return null;
-
-		if ( targetNode.isGroup() ) {
-			return targetNode;
-		}
-		else {
-			UHSNode wrapperNode = new UHSNode( "LinkWrapper" );
-			wrapperNode.setRawStringContent( "" );
-			wrapperNode.addChild( targetNode );
-			return wrapperNode;
-		}
-	}
 
 	public int getLinkCount() {
 		return linkMap.size();
