@@ -168,7 +168,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		});
 
 		jsonMapper = new ObjectMapper();
-		SimpleModule uhsModule = new SimpleModule( "OpenUHS", new Version( 1, 0, 0, null ) );
+		SimpleModule uhsModule = new SimpleModule( "OpenUHS", new Version( 1, 0, 0, null, null, null ) );
 		uhsModule.addSerializer( CatalogItem.class, new CatalogItemSerializer() );
 		uhsModule.addDeserializer( CatalogItem.class, new CatalogItemDeserializer() );
 		jsonMapper.registerModule( uhsModule );

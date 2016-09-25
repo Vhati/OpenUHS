@@ -180,3 +180,12 @@ dependencies {
 	compile "com.fasterxml.jackson.core:jackson-core:2.3.5"
 	compile "com.fasterxml.jackson.core:jackson-databind:2.3.5"
 }
+
+/*
+ * Add compiler args to all flavors' dynamically generated compile tasks.
+ */
+gradle.projectsEvaluated {
+	tasks.withType(JavaCompile) {
+		options.compilerArgs.addAll(["-Xlint:deprecation"])
+	}
+}
