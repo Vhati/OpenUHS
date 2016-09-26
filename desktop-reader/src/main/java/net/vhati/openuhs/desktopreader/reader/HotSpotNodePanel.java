@@ -134,7 +134,7 @@ public class HotSpotNodePanel extends NodePanel {
 		ZonePanel mainContentPanel = new ZonePanel( mainImageLbl );
 			Dimension mainContentSize = mainContentPanel.getPreferredSize();
 			mainContentPanel.setBounds( 0, 0, mainContentSize.width, mainContentSize.height );
-			mainContentPanel.setContentsVisible( true );
+			mainContentPanel.setRevealed( true );
 			sharedPanel.add( mainContentPanel, JLayeredPane.DEFAULT_LAYER, 0 );
 
 		// Stretch the shared panel to fit the main image.
