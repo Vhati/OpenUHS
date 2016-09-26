@@ -444,28 +444,35 @@ public class UHSParser {
 		context.setFile( f );
 		readBytesUsingStream( context );
 
-		index += parse88Format( context );
-		UHSRootNode rootNode = context.getRootNode();
+		UHSRootNode rootNode = null;
+		try {
+			index += parse88Format( context );
+			rootNode = context.getRootNode();
 
-		// In 88a files, this would e the end.
-		// In 9x files, index should be right after "** END OF 88A FORMAT **".
+			// In 88a files, this would e the end.
+			// In 9x files, index should be right after "** END OF 88A FORMAT **".
 
-		if ( !force88a && rootNode.isLegacy() ) {
-			// That was a fake 88a format message, now comes the 9x format.
-			UHSRootNode legacyRootNode = rootNode;
+			if ( !force88a && rootNode.isLegacy() ) {
+				// That was a fake 88a format message, now comes the 9x format.
+				UHSRootNode legacyRootNode = rootNode;
 
-			context.setLineFudge( index-1 );  // Ignore all lines so far. Treat that END line as 0.
+				context.setLineFudge( index-1 );  // Ignore all lines so far. Treat that END line as 0.
 
-			rootNode = parse9xFormat( context );
-			rootNode.setLegacyRootNode( legacyRootNode );
+				rootNode = parse9xFormat( context );
+				rootNode.setLegacyRootNode( legacyRootNode );
 
-			int storedSum = context.readStoredChecksumValue();
-			int calcSum = calcChecksum( f );
+				int storedSum = context.readStoredChecksumValue();
+				int calcSum = calcChecksum( f );
 
-			if ( storedSum != calcSum ) {
-				logger.warn( "Calculated CRC differs from CRC stored in file: {} vs {} (off by: {})", calcSum, storedSum, (storedSum - calcSum) );
+				if ( storedSum != calcSum ) {
+					logger.warn( "Calculated CRC differs from CRC stored in file: {} vs {} (off by: {})", calcSum, storedSum, (storedSum - calcSum) );
+				}
 			}
 		}
+		catch ( ArrayIndexOutOfBoundsException e ) {
+			throw new UHSParseException( String.format( "Parsing failed: %s", e.getMessage() ), e );
+		}
+
 		return rootNode;
 	}
 
