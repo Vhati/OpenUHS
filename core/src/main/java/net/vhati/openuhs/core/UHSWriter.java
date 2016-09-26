@@ -27,6 +27,7 @@ import java.util.zip.CheckedOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.CRC16;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSAudioNode;
@@ -426,7 +427,7 @@ public class UHSWriter {
 	 * @param startIndex  the line number this hunk is expected to appear at (1-based)
 	 * @see #write9xFormat(UHSRootNode, OutputStream)
 	 */
-	private int writeNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	private int writeNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, IOException, UHSGenerationException, UnsupportedEncodingException {
 		String type = currentNode.getType();
 
 		if ( context.isPhaseOne() ) {
@@ -543,7 +544,7 @@ public class UHSWriter {
 		return rootNode;
 	}
 
-	public void writeRootNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public void writeRootNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, IOException, UHSGenerationException, UnsupportedEncodingException {
 		if ( currentNode instanceof UHSRootNode == false ) return;
 		UHSRootNode rootNode = (UHSRootNode)currentNode;
 
@@ -558,7 +559,7 @@ public class UHSWriter {
 		parentBuf.append( buf );
 	}
 
-	public int writeSubjectNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeSubjectNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, IOException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + various children's lines
 		int innerCount = 0;
 
@@ -581,7 +582,7 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeNestHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeNestHintNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, IOException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + ugh
 		int innerCount = 0;
 
@@ -750,7 +751,7 @@ public class UHSWriter {
 
 		byte[] tmpBytes = asciiEncoder.encode( CharBuffer.wrap( dataBuf ) ).array();
 
-		int bytesOffset = context.getNextBinaryOffset();
+		long bytesOffset = context.getNextBinaryOffset();
 		context.registerBinarySection( tmpBytes.length );
 
 		if ( context.isPhaseThree() ) {
@@ -793,7 +794,7 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeHotSpotNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeHotSpotNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, IOException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 2 + 1 + ugh
 		int innerCount = 0;
 
@@ -823,17 +824,17 @@ public class UHSWriter {
 
 		// TODO: main id vs main image id? Possibly register the other id in phase one?
 
-		byte[] mainImageBytes = hotspotNode.getRawImageContent();
+		ByteReference mainImageRef = hotspotNode.getRawImageContent();
 
-		int mainBytesOffset = context.getNextBinaryOffset();
-		context.registerBinarySection( mainImageBytes.length );
+		long mainBytesOffset = context.getNextBinaryOffset();
+		context.registerBinarySection( mainImageRef.length() );
 
 		if ( context.isPhaseThree() ) {
-			context.getBinaryHunkOutputStream().write( mainImageBytes, 0, mainImageBytes.length );
+			context.writeBinarySegment( mainImageRef );
 		}
 
 		String offsetString = zeroPad( mainBytesOffset, context.getOffsetNumberWidth() );
-		String lengthString = zeroPad( mainImageBytes.length, context.getLengthNumberWidth() );
+		String lengthString = zeroPad( mainImageRef.length(), context.getLengthNumberWidth() );
 		buf.append( "000000 " ).append( offsetString ).append( " " ).append( lengthString );
 		buf.append( "\r\n" );
 		innerCount++;
@@ -868,17 +869,17 @@ public class UHSWriter {
 				appendLines( oBuf, true, contentLines );
 				innerCount += 2;
 
-				byte[] overlayImageBytes = overlayNode.getRawImageContent();
+				ByteReference overlayImageRef = overlayNode.getRawImageContent();
 
-				int overlayBytesOffset = context.getNextBinaryOffset();
-				context.registerBinarySection( overlayImageBytes.length );
+				long overlayBytesOffset = context.getNextBinaryOffset();
+				context.registerBinarySection( overlayImageRef.length() );
 
 				if ( context.isPhaseThree() ) {
-					context.getBinaryHunkOutputStream().write( overlayImageBytes, 0, overlayImageBytes.length );
+					context.writeBinarySegment( overlayImageRef );
 				}
 
 				String oOffsetString = zeroPad( overlayBytesOffset, context.getOffsetNumberWidth() );
-				String oLengthString = zeroPad( overlayImageBytes.length, context.getLengthNumberWidth() );
+				String oLengthString = zeroPad( overlayImageRef.length(), context.getLengthNumberWidth() );
 				oBuf.append( "000000 " ).append( oOffsetString ).append( " " ).append( oLengthString );
 				oBuf.append( " " );
 				oBuf.append( zeroPad( spot.x+1, 4 ) );  // X and Y need plus 1.
@@ -908,7 +909,7 @@ public class UHSWriter {
 		return innerCount;
 	}
 
-	public int writeSoundNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, UHSGenerationException, UnsupportedEncodingException {
+	public int writeSoundNode( UHSGenerationContext context, UHSNode currentNode, StringBuilder parentBuf, int startIndex ) throws CharacterCodingException, IOException, UHSGenerationException, UnsupportedEncodingException {
 		// lines: 3
 		int innerCount = 0;
 
@@ -922,17 +923,17 @@ public class UHSWriter {
 		appendLines( buf, true, contentLines );
 		innerCount += 2;
 
-		byte[] tmpBytes = soundNode.getRawAudioContent();
+		ByteReference audioRef = soundNode.getRawAudioContent();
 
-		int bytesOffset = context.getNextBinaryOffset();
-		context.registerBinarySection( tmpBytes.length );
+		long bytesOffset = context.getNextBinaryOffset();
+		context.registerBinarySection( audioRef.length() );
 
 		if ( context.isPhaseThree() ) {
-			context.getBinaryHunkOutputStream().write( tmpBytes, 0, tmpBytes.length );
+			context.writeBinarySegment( audioRef );
 		}
 
 		String offsetString = zeroPad( bytesOffset, context.getOffsetNumberWidth() );
-		String lengthString = zeroPad( tmpBytes.length, context.getLengthNumberWidth() );
+		String lengthString = zeroPad( audioRef.length(), context.getLengthNumberWidth() );
 		buf.append( "000000 " ).append( offsetString ).append( " " ).append( lengthString );
 		buf.append( "\r\n" );
 		innerCount++;

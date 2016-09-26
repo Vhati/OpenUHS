@@ -1,10 +1,11 @@
 package net.vhati.openuhs.core;
 
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.UHSNode;
 
 
 public class UHSImageNode extends UHSNode {
-	protected byte[] rawImageContent = null;
+	protected ByteReference rawImageContent = null;
 
 
 	public UHSImageNode( String type ) {
@@ -15,11 +16,11 @@ public class UHSImageNode extends UHSNode {
 	/**
 	 * Sets this node's image content, or null.
 	 */
-	public void setRawImageContent( byte[] rawImageContent ) {
+	public void setRawImageContent( ByteReference rawImageContent ) {
 		this.rawImageContent = rawImageContent;
 	}
 
-	public byte[] getRawImageContent() {
+	public ByteReference getRawImageContent() {
 		return rawImageContent;
 	}
 

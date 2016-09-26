@@ -2,6 +2,7 @@ package net.vhati.openuhs.desktopreader;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -31,6 +32,7 @@ import ch.qos.logback.core.filter.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.Proto4xUHSParser;
 import net.vhati.openuhs.core.UHSAudioNode;
 import net.vhati.openuhs.core.UHSImageNode;
@@ -425,7 +427,7 @@ public class UHSReaderMain {
 
 
 	/**
-	 * Recursively extracts the contents of a node and its children to files.
+	 * Recursively extracts the binary content of a node and its children to files.
 	 *
 	 * <p>Extensions are guessed.</p>
 	 *
@@ -437,39 +439,45 @@ public class UHSReaderMain {
 	 * @see net.vhati.openuhs.desktopreader.UHSUtil#getFileExtension(byte[])
 	 */
 	public static int extractNode( UHSNode currentNode, File destDir, String basename, int n ) throws IOException {
-		boolean extractable = false;
-		if ( currentNode instanceof UHSImageNode ) {
-			extractable = true;
-		} else if ( currentNode instanceof UHSAudioNode ) {
-			extractable = true;
+		ByteReference contentRef = null;
+		if ( currentNode instanceof UHSImageNode ) {  // Includes UHSHotSpotNode subclass.
+			UHSImageNode imageNode = (UHSImageNode)currentNode;
+			contentRef = imageNode.getRawImageContent();
+		}
+		else if ( currentNode instanceof UHSAudioNode ) {
+			UHSAudioNode audioNode = (UHSAudioNode)currentNode;
+			contentRef = audioNode.getRawAudioContent();
 		}
 
-		if ( extractable == true ) {
+		if ( contentRef != null ) {
 			int id = currentNode.getId();
 			String idStr = (( id == -1 ) ? "" : "_"+id);
 
-			byte[] content = null;
-			if ( currentNode instanceof UHSImageNode ) {
-				UHSImageNode imageNode = (UHSImageNode)currentNode;
-				content = imageNode.getRawImageContent();
-			}
-			else if ( currentNode instanceof UHSAudioNode ) {
-				UHSAudioNode audioNode = (UHSAudioNode)currentNode;
-				content = audioNode.getRawAudioContent();
-			}
-
-			String extension = UHSUtil.getFileExtension( content );
-
-			File destFile = new File( destDir, (basename + n + idStr +"."+ extension) );
+			File destFile = null;
+			InputStream sigStream = null;;
+			InputStream contentStream = null;;
 			FileOutputStream fos = null;
 			try {
+				sigStream = contentRef.getInputStream();
+				String extension = UHSUtil.guessFileExtension( sigStream );
+				sigStream.close();
+
+				destFile = new File( destDir, (basename + n + idStr +"."+ extension) );
+
+				contentStream = contentRef.getInputStream();
 				fos = new FileOutputStream( destFile );
-				fos.write( content );
+				byte[] buf = new byte[512];
+				int count;
+				while ( (count=contentStream.read( buf )) != -1 ) {
+					fos.write( buf, 0, count );
+				}
 			}
 			catch ( IOException e ) {
-				throw new IOException( String.format( "Error extracting %s node's binary content to a file: %s", currentNode.getType(), destFile.getAbsolutePath() ), e );
+				throw new IOException( String.format( "Error extracting binary content of %s node (\"%s\") to a file: %s", currentNode.getType(), currentNode.getRawStringContent(), (( destFile != null ) ? destFile.getAbsolutePath() : null ), e ) );
 			}
 			finally {
+				try {if ( sigStream != null ) sigStream.close();} catch ( IOException e ) {}
+				try {if ( contentStream != null ) contentStream.close();} catch ( IOException e ) {}
 				try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
 			}
 			n++;

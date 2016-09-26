@@ -1,10 +1,18 @@
 package net.vhati.openuhs.core;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.vhati.openuhs.core.ArrayByteReference;
+import net.vhati.openuhs.core.ByteReference;
+import net.vhati.openuhs.core.FileRegionByteReference;
 import net.vhati.openuhs.core.UHSRootNode;
 
 
@@ -16,19 +24,36 @@ import net.vhati.openuhs.core.UHSRootNode;
  * @see net.vhati.openuhs.core.UHSParser
  */
 public class UHSParseContext {
+
+	private final Logger logger = LoggerFactory.getLogger( UHSParseContext.class );
+
+	protected boolean binaryDeferred = false;
 	protected File file = null;
-	protected long binOffset = -1;
+	protected long binHunkOffset = -1;
 	protected UHSRootNode rootNode = null;
 	protected int[] encryptionKey = null;
 
 	protected List<String> allLines = null;
 	protected byte[] binHunk = null;
+	protected long binHunkLength = 0;
 
 	protected int lineIndexFudge = 0;
 	protected int lastLineIndex = -1;
 
 
 	public UHSParseContext() {
+	}
+
+
+	/**
+	 * Sets whether to preload binary hunk segments into arrays or defer reads until needed.
+	 */
+	public void setBinaryDeferred( boolean b ) {
+		binaryDeferred = b;
+	}
+
+	public boolean isBinaryDeferred() {
+		return binaryDeferred;
 	}
 
 
@@ -52,12 +77,32 @@ public class UHSParseContext {
 	 * <p>In the 9x format, there's a special 0x1a byte in the file.
 	 * Everything after that is the binary hunk.</p>
 	 */
-	public void setBinaryHunkOffset( long binOffset ) {
-		this.binOffset = binOffset;
+	public void setBinaryHunkOffset( long binHunkOffset ) {
+		this.binHunkOffset = binHunkOffset;
 	}
 
 	public long getBinaryHunkOffset() {
-		return binOffset;
+		return binHunkOffset;
+	}
+
+	/**
+	 * Sets the binary hunk: either a preloaded array, or null.
+	 *
+	 * @param binHunk  the array, can be null if binaryDeferred is true
+	 * @see #setBinaryHunkLength(long)
+	 */
+	public void setBinaryHunk( byte[] binHunk ) {
+		this.binHunk = binHunk;
+	}
+
+	/**
+	 * Sets the length of the binary hunk.
+	 *
+	 * @param binHunkLength  the length of the binary hunk (required even when binhunk is null)
+	 * @see #setBinaryHunk(byte[])
+	 */
+	public void setBinaryHunkLength( long binHunkLength ) {
+		this.binHunkLength = binHunkLength;
 	}
 
 
@@ -113,29 +158,50 @@ public class UHSParseContext {
 		this.allLines = allLines;
 	}
 
-	public void setBinaryHunk( byte[] binHunk ) {
-		this.binHunk = binHunk;
-	}
-
 
 	/**
-	 * Reads some raw bytes originally from the end of the UHS file.
+	 * Returns a reference to read bytes from the binary hunk.
 	 *
 	 * <p>Images, comments, sounds, etc., are stored there.</p>
 	 *
-	 * <p>This offset here is relative to the start of the binary hunk, NOT the beginning of the file.</p>
+	 * <p>If the binary hunk has been set to an array, an ArrayByteReference
+	 * will be returned. Otherwise, a FileRegionByteReference will be
+	 * returned, as long as the binary hunk offset has been set.</p>
+	 *
+	 * <p>The offset here is relative to the start of the binary hunk, NOT the beginning of the file.</p>
 	 *
 	 * @param offset  the start offset of the data, within the binary hunk
 	 * @param length  the number of bytes to read
-	 * @return the relevant bytes, or null if the offset or length is invalid
+	 * @return a ByteReference to retrieve the relevant bytes
+	 * @see #setBinaryHunk(byte[])
+	 * @see #setBinaryHunkOffset(long)
 	 */
-	public byte[] readBinaryHunk( long offset, int length ) {
-		if ( offset < 0 || length < 0 || offset+length > binHunk.length )
-			return null;
-		byte[] result = new byte[length];
-		System.arraycopy( binHunk, (int)offset, result, 0, length );
+	public ByteReference readBinaryHunk( long offset, int length ) {
+		if ( offset < 0 || length < 0 ) {
+			throw new IllegalArgumentException( String.format( "Offset (%d) and length (%d) must not be negative (last parsed line: %d)", offset, length, getLastParsedLineNumber() ) );
+		}
+		if ( offset+length > binHunkLength ) {
+			throw new ArrayIndexOutOfBoundsException( String.format( "Offset (%d) + length (%d) exceeded the binary hunk length (%d) (last parsed line: %d)", offset, length, binHunkLength, getLastParsedLineNumber() ) );
+		}
 
-		return result;
+		if ( isBinaryDeferred() ) {
+			if ( binHunkOffset >= 0 ) {
+				return new FileRegionByteReference( file, binHunkOffset+offset, length );
+			}
+			else {
+				throw new IllegalStateException( "Binary hunk offset was not set" );
+			}
+		}
+		else {
+			if ( binHunk != null ) {
+				byte[] data = new byte[length];
+				System.arraycopy( binHunk, (int)offset, data, 0, length );
+				return new ArrayByteReference( data );
+			}
+			else {
+				throw new IllegalStateException( "Binary hunk array was not set" );
+			}
+		}
 	}
 
 	/**
@@ -149,11 +215,26 @@ public class UHSParseContext {
 	 * int.</p>
 	 */
 	public int readStoredChecksumValue() {
-		ByteBuffer crcBuf = ByteBuffer.allocate( 2 );
-		crcBuf.order( ByteOrder.LITTLE_ENDIAN );
-		crcBuf.put( binHunk, binHunk.length-2, 2 );
-		crcBuf.flip();
-		int result = crcBuf.getShort() & 0xFFFF;
+		int result = -1;
+		ByteReference crcRef = readBinaryHunk( binHunkLength-2, 2 );
+		InputStream is = null;
+		try {
+			is = crcRef.getInputStream();
+
+			ByteBuffer crcBuf = ByteBuffer.allocate( 2 );
+			crcBuf.order( ByteOrder.LITTLE_ENDIAN );
+			for ( int i=0; i < 2; i++ ) {
+				int b = is.read();
+				if ( b == -1 ) throw new IOException( "Unexpected end of binary hunk" );
+				crcBuf.put( (byte)b );
+			}
+			crcBuf.flip();
+			result = crcBuf.getShort() & 0xFFFF;
+		}
+		catch ( IOException e ) {
+			logger.error( "Error reading stored checksum: {}", e );
+		}
+
 		return result;
 	}
 

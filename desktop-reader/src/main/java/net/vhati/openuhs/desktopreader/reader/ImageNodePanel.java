@@ -3,9 +3,16 @@ package net.vhati.openuhs.desktopreader.reader;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
+import java.io.InputStream;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.desktopreader.reader.NodePanel;
@@ -17,6 +24,8 @@ import net.vhati.openuhs.desktopreader.reader.NodePanel;
  * @see net.vhati.openuhs.core.UHSImageNode
  */
 public class ImageNodePanel extends NodePanel {
+
+	private final Logger logger = LoggerFactory.getLogger( ImageNodePanel.class );
 
 	protected UHSImageNode imageNode = null;
 
@@ -50,9 +59,24 @@ public class ImageNodePanel extends NodePanel {
 		gridC.fill = GridBagConstraints.HORIZONTAL;
 		gridC.insets = new Insets( 1, 2, 1, 2 );
 
-		JLabel imageLbl = new JLabel( new ImageIcon( imageNode.getRawImageContent() ) );
-		this.add( imageLbl, gridC );
-		gridC.gridy++;
+		ByteReference imageRef = imageNode.getRawImageContent();
+		InputStream is = null;
+		try {
+			is = imageRef.getInputStream();
+
+			JLabel imageLbl = new JLabel( new ImageIcon( ImageIO.read( is ) ) );
+			this.add( imageLbl, gridC );
+			gridC.gridy++;
+		}
+		catch ( IOException e ) {
+			logger.error( "Error loading binary content of {} node (\"{}\"): {}", imageNode.getType(), imageNode.getRawStringContent(), e );
+
+			reset();
+			return;
+		}
+		finally {
+			try {if ( is != null ) is.close();} catch ( IOException e ) {}
+		}
 
 		this.revalidate();
 		this.repaint();

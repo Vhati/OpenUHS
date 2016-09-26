@@ -8,6 +8,9 @@ import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.InputStream;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
@@ -17,6 +20,7 @@ import javax.swing.event.MouseInputListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSImageNode;
@@ -126,69 +130,84 @@ public class HotSpotNodePanel extends NodePanel {
 
 		JLayeredPane sharedPanel = new JLayeredPane();
 
-		// The main image is visible and full size.
+		InputStream is = null;
+		try {
+			// The main image is visible and full size.
 
-		byte[] mainImageBytes = hotspotNode.getRawImageContent();
-		JLabel mainImageLbl = new JLabel( new ImageIcon( mainImageBytes ) );
+			ByteReference mainImageRef = hotspotNode.getRawImageContent();
+			is = mainImageRef.getInputStream();
+			JLabel mainImageLbl = new JLabel( new ImageIcon( ImageIO.read( is ) ) );
+			is.close();
 
-		ZonePanel mainContentPanel = new ZonePanel( mainImageLbl );
-			Dimension mainContentSize = mainContentPanel.getPreferredSize();
-			mainContentPanel.setBounds( 0, 0, mainContentSize.width, mainContentSize.height );
-			mainContentPanel.setRevealed( true );
-			sharedPanel.add( mainContentPanel, JLayeredPane.DEFAULT_LAYER, 0 );
+			ZonePanel mainContentPanel = new ZonePanel( mainImageLbl );
+				Dimension mainContentSize = mainContentPanel.getPreferredSize();
+				mainContentPanel.setBounds( 0, 0, mainContentSize.width, mainContentSize.height );
+				mainContentPanel.setRevealed( true );
+				sharedPanel.add( mainContentPanel, JLayeredPane.DEFAULT_LAYER, 0 );
 
-		// Stretch the shared panel to fit the main image.
-		sharedPanel.setPreferredSize( mainContentSize );
-		sharedPanel.setMinimumSize( mainContentSize );
+			// Stretch the shared panel to fit the main image.
+			sharedPanel.setPreferredSize( mainContentSize );
+			sharedPanel.setMinimumSize( mainContentSize );
 
+			for ( int i=0; i < node.getChildCount(); i++ ) {
+				UHSNode childNode = node.getChild( i );
+				String childType = childNode.getType();
 
-		for ( int i=0; i < node.getChildCount(); i++ ) {
-			UHSNode childNode = node.getChild( i );
-			String childType = childNode.getType();
+				if ( "Overlay".equals( childType ) && childNode instanceof UHSImageNode ) {
+					UHSImageNode overlayNode = (UHSImageNode)childNode;
+					String title = overlayNode.getDecoratedStringContent();
 
-			if ( "Overlay".equals( childType ) && childNode instanceof UHSImageNode ) {
-				UHSImageNode overlayNode = (UHSImageNode)childNode;
-				String title = overlayNode.getDecoratedStringContent();
+					HotSpot spot = hotspotNode.getSpot( overlayNode );
 
-				HotSpot spot = hotspotNode.getSpot( overlayNode );
+					ByteReference overlayImageRef = overlayNode.getRawImageContent();
+					is = overlayImageRef.getInputStream();
+					JLabel overlayImageLbl = new JLabel( new ImageIcon( ImageIO.read( is ) ) );
+					is.close();
 
-				byte[] overlayImageBytes = overlayNode.getRawImageContent();
-				JLabel overlayImageLbl = new JLabel( new ImageIcon( overlayImageBytes ) );
+					ZonePanel contentPanel = new ZonePanel( overlayImageLbl );
+						Dimension pSize = contentPanel.getPreferredSize();
+						contentPanel.setBounds( spot.x, spot.y, pSize.width, pSize.height );
+						sharedPanel.add( contentPanel, JLayeredPane.DEFAULT_LAYER, 0 );
 
-				ZonePanel contentPanel = new ZonePanel( overlayImageLbl );
-					Dimension pSize = contentPanel.getPreferredSize();
-					contentPanel.setBounds( spot.x, spot.y, pSize.width, pSize.height );
-					sharedPanel.add( contentPanel, JLayeredPane.DEFAULT_LAYER, 0 );
+					ZonePanel spotPanel = new ZonePanel();
+						spotPanel.setToolTipText( title );
+						spotPanel.setZoneTarget( contentPanel );
+						spotPanel.setBounds( spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH );
+						sharedPanel.add( spotPanel, JLayeredPane.PALETTE_LAYER, 0 );
+						spotPanel.addMouseListener( zoneListener );
 
-				ZonePanel spotPanel = new ZonePanel();
-					spotPanel.setToolTipText( title );
-					spotPanel.setZoneTarget( contentPanel );
-					spotPanel.setBounds( spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH );
-					sharedPanel.add( spotPanel, JLayeredPane.PALETTE_LAYER, 0 );
-					spotPanel.addMouseListener( zoneListener );
-
-			}
-			else {
-				String text = childNode.getDecoratedStringContent();
-
-				HotSpot spot = hotspotNode.getSpot( childNode );
-
-				ZonePanel spotPanel = new ZonePanel();
-					spotPanel.setToolTipText( text );
-					spotPanel.setBounds( spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH );
-					sharedPanel.add( spotPanel, JLayeredPane.PALETTE_LAYER, 0 );
-					spotPanel.addMouseListener( zoneListener );
-
-				if ( childNode.isLink() ) { // Follow the link when clicked.
-					spotPanel.setLinkTarget( childNode.getLinkTarget() );
-				}
-				else if ( childNode.getId() != -1 ) { // Visit that child when clicked.
-					spotPanel.setLinkTarget( childNode.getId() );
 				}
 				else {
-					logger.error( "Unexpected {} child of UHSHotSpotNode", childNode.getType() );
+					String text = childNode.getDecoratedStringContent();
+
+					HotSpot spot = hotspotNode.getSpot( childNode );
+
+					ZonePanel spotPanel = new ZonePanel();
+						spotPanel.setToolTipText( text );
+						spotPanel.setBounds( spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH );
+						sharedPanel.add( spotPanel, JLayeredPane.PALETTE_LAYER, 0 );
+						spotPanel.addMouseListener( zoneListener );
+
+					if ( childNode.isLink() ) { // Follow the link when clicked.
+						spotPanel.setLinkTarget( childNode.getLinkTarget() );
+					}
+					else if ( childNode.getId() != -1 ) { // Visit that child when clicked.
+						spotPanel.setLinkTarget( childNode.getId() );
+					}
+					else {
+						logger.error( "Unexpected {} child of UHSHotSpotNode", childNode.getType() );
+					}
 				}
 			}
+		}
+		catch ( IOException e ) {
+			logger.error( "Error loading binary content within {} node (\"{}\"): {}", hotspotNode.getType(), hotspotNode.getRawStringContent(), e );
+
+			reset();
+			return;
+		}
+		finally {
+			try {if ( is != null ) is.close();} catch ( IOException e ) {}
 		}
 
 		this.add( sharedPanel, gridC );

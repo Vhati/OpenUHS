@@ -1,6 +1,7 @@
 package net.vhati.openuhs.androidreader.reader;
 
-import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,12 +21,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.androidreader.AndroidUHSConstants;
 import net.vhati.openuhs.androidreader.reader.NodeView;
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSImageNode;
@@ -33,6 +36,7 @@ import net.vhati.openuhs.core.UHSNode;
 
 
 public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
+
 	private final Logger logger = LoggerFactory.getLogger( AndroidUHSConstants.LOG_TAG );
 
 	protected int overlayOutlineColor = Color.rgb( 0x80, 0x80, 0x80 );  // Gray.
@@ -88,8 +92,17 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 		super.setNode( node, showAll );
 		hotspotNode = (UHSHotSpotNode)node;
 
-		byte[] mainImageBytes = hotspotNode.getRawImageContent();
-		fullSizeRect = getOriginalImageSize( mainImageBytes );
+		try {
+			ByteReference mainImageRef = hotspotNode.getRawImageContent();
+			fullSizeRect = getOriginalImageSize( mainImageRef );
+		}
+		catch ( IOException e ) {
+			logger.error( "Error loading image: {}", e );
+			Toast.makeText( this.getContext(), "Error loading audio", Toast.LENGTH_LONG ).show();
+
+			reset();
+			return;
+		}
 
 		if ( this.getWidth() > 0 && this.getHeight() > 0 ) {
 			// After reusing this view, the next node triggers onMeasure().
@@ -211,7 +224,7 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 					if ( "Overlay".equals( childType ) && childNode instanceof UHSImageNode ) {
 						UHSImageNode overlayNode = (UHSImageNode)childNode;
 
-						zoneHolder.imageBytes = overlayNode.getRawImageContent();
+						zoneHolder.imageRef = overlayNode.getRawImageContent();
 					}
 					else {
 						zoneHolder.linkTarget = childNode.getLinkTarget();
@@ -221,79 +234,101 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 				}
 			}
 
-			byte[] mainImageBytes = hotspotNode.getRawImageContent();
-			mainImageBitmap = getResizedBitmap( contentWidth, contentHeight, mainImageBytes );
+			try {
+				ByteReference mainImageRef = hotspotNode.getRawImageContent();
+				mainImageBitmap = getResizedBitmap( contentWidth, contentHeight, mainImageRef );
 
-			float scaleX = mainImageBitmap.getWidth() / fullSizeRect.width();
-			float scaleY = mainImageBitmap.getHeight() / fullSizeRect.height();
+				float scaleX = mainImageBitmap.getWidth() / fullSizeRect.width();
+				float scaleY = mainImageBitmap.getHeight() / fullSizeRect.height();
 
-			for ( ZoneHolder zoneHolder : zoneHolders ) {
-				float newZoneL = zoneHolder.originalSpot.zoneX * scaleX;
-				float newZoneT = zoneHolder.originalSpot.zoneY * scaleY;
-				float newZoneR = newZoneL + (zoneHolder.originalSpot.zoneW * scaleX);
-				float newZoneB = newZoneT + (zoneHolder.originalSpot.zoneH * scaleY);
-				zoneHolder.scaledZoneRect.set( newZoneL, newZoneT, newZoneR, newZoneB );
+				for ( ZoneHolder zoneHolder : zoneHolders ) {
+					float newZoneL = zoneHolder.originalSpot.zoneX * scaleX;
+					float newZoneT = zoneHolder.originalSpot.zoneY * scaleY;
+					float newZoneR = newZoneL + (zoneHolder.originalSpot.zoneW * scaleX);
+					float newZoneB = newZoneT + (zoneHolder.originalSpot.zoneH * scaleY);
+					zoneHolder.scaledZoneRect.set( newZoneL, newZoneT, newZoneR, newZoneB );
 
-				if ( zoneHolder.imageBytes != null ) {
-					RectF overlayFullSizeRect = getOriginalImageSize( zoneHolder.imageBytes );
-					float overlayScaledWidth = overlayFullSizeRect.width() * scaleX;
-					float overlayScaledHeight = overlayFullSizeRect.height() * scaleY;
-					zoneHolder.imageBitmap = getResizedBitmap( overlayScaledWidth, overlayScaledHeight, zoneHolder.imageBytes );
+					if ( zoneHolder.imageRef != null ) {
+						RectF overlayFullSizeRect = getOriginalImageSize( zoneHolder.imageRef );
+						float overlayScaledWidth = overlayFullSizeRect.width() * scaleX;
+						float overlayScaledHeight = overlayFullSizeRect.height() * scaleY;
+						zoneHolder.imageBitmap = getResizedBitmap( overlayScaledWidth, overlayScaledHeight, zoneHolder.imageRef );
 
-					float outlineL = zoneHolder.originalSpot.x * scaleX;
-					float outlineT = zoneHolder.originalSpot.y * scaleY;
-					float outlineR = outlineL + overlayScaledWidth;
-					float outlineB = outlineT + overlayScaledHeight;
-					zoneHolder.imageOutlineRect.set( outlineL, outlineT, outlineR, outlineB );
+						float outlineL = zoneHolder.originalSpot.x * scaleX;
+						float outlineT = zoneHolder.originalSpot.y * scaleY;
+						float outlineR = outlineL + overlayScaledWidth;
+						float outlineB = outlineT + overlayScaledHeight;
+						zoneHolder.imageOutlineRect.set( outlineL, outlineT, outlineR, outlineB );
+					}
 				}
+			}
+			catch ( IOException e ) {
+				logger.error( "Error resizing content: {}", e );
+				Toast.makeText( this.getContext(), "Error resizing content", Toast.LENGTH_LONG ).show();
+				reset();
 			}
 		}
 	}
 
-	protected RectF getOriginalImageSize( byte[] imageBytes ) {
-		ByteArrayInputStream is = new ByteArrayInputStream( imageBytes );
+	protected RectF getOriginalImageSize( ByteReference imageRef ) throws IOException {
+		InputStream is = null;
+		try {
+			is = imageRef.getInputStream();
+			BitmapFactory.Options opts = new BitmapFactory.Options();
+			opts.inJustDecodeBounds = true;
+			BitmapFactory.decodeStream( is, null, opts );
+			float originalWidth = opts.outWidth;
+			float originalHeight = opts.outHeight;
 
-		BitmapFactory.Options opts = new BitmapFactory.Options();
-		opts.inJustDecodeBounds = true;
-		BitmapFactory.decodeStream( is, null, opts );
-		float originalWidth = opts.outWidth;
-		float originalHeight = opts.outHeight;
-
-		return new RectF( 0, 0, originalWidth, originalHeight );
+			return new RectF( 0, 0, originalWidth, originalHeight );
+		}
+		finally {
+			try {if ( is != null ) is.close();} catch ( IOException e ) {}
+		}
 	}
 
 	/**
 	 * Returns an efficiently scaled version of an image.
 	 */
-	protected Bitmap getResizedBitmap( float targetWidth, float targetHeight, byte[] imageBytes ) {
-		if ( targetWidth <= 0 || targetHeight <= 0 ) throw new IllegalArgumentException( "width and height must be > 0" );
+	protected Bitmap getResizedBitmap( float targetWidth, float targetHeight, ByteReference imageRef ) throws IOException {
+		if ( targetWidth <= 0 || targetHeight <= 0 ) throw new IllegalArgumentException( "Target width and height must be > 0" );
 
-		ByteArrayInputStream is = new ByteArrayInputStream( imageBytes );
+		InputStream boundsStream = null;
+		InputStream roughStream = null;
+		try {
+			BitmapFactory.Options opts = new BitmapFactory.Options();
+			opts.inJustDecodeBounds = true;
+			boundsStream = imageRef.getInputStream();
+			BitmapFactory.decodeStream( boundsStream, null, opts );
+			boundsStream.close();
+			float originalWidth = opts.outWidth;
+			float originalHeight = opts.outHeight;
 
-		BitmapFactory.Options opts = new BitmapFactory.Options();
-		opts.inJustDecodeBounds = true;
-		BitmapFactory.decodeStream( is, null, opts );
-		float originalWidth = opts.outWidth;
-		float originalHeight = opts.outHeight;
+			opts = new BitmapFactory.Options();
+			opts.inSampleSize = (int)Math.max( originalWidth/targetWidth, originalHeight/targetHeight );
+			roughStream = imageRef.getInputStream();
+			Bitmap roughBitmap = BitmapFactory.decodeStream( roughStream, null, opts );
+			if ( roughBitmap == null ) throw new IOException( "Failed to read bitmap" );
+			roughStream.close();
 
-		opts = new BitmapFactory.Options();
-		opts.inSampleSize = (int)Math.max( originalWidth/targetWidth, originalHeight/targetHeight );
-		is.reset();
-		Bitmap roughBitmap = BitmapFactory.decodeStream( is, null, opts );
+			Matrix m = new Matrix();
+			RectF roughRect = new RectF( 0, 0, roughBitmap.getWidth(), roughBitmap.getHeight() );
+			RectF targetRect = new RectF( 0, 0, targetWidth, targetHeight );
+			m.setRectToRect( roughRect, targetRect, Matrix.ScaleToFit.CENTER );
+			float[] values = new float[9];
+			m.getValues( values );
 
-		Matrix m = new Matrix();
-		RectF roughRect = new RectF( 0, 0, roughBitmap.getWidth(), roughBitmap.getHeight() );
-		RectF targetRect = new RectF( 0, 0, targetWidth, targetHeight );
-		m.setRectToRect( roughRect, targetRect, Matrix.ScaleToFit.CENTER );
-		float[] values = new float[9];
-		m.getValues( values );
+			Bitmap resizedBitmap = Bitmap.createScaledBitmap( roughBitmap, (int)(roughBitmap.getWidth() * values[0]), (int)(roughBitmap.getHeight() * values[4]), true );
 
-		Bitmap resizedBitmap = Bitmap.createScaledBitmap( roughBitmap, (int)(roughBitmap.getWidth() * values[0]), (int)(roughBitmap.getHeight() * values[4]), true );
+			// TODO: Maybe convert to device's pixel format (RGBA8888?).
 
-		// TODO: Maybe convert to device's pixel format (RGBA8888?).
-
-		roughBitmap.recycle();
-		return resizedBitmap;
+			roughBitmap.recycle();
+			return resizedBitmap;
+		}
+		finally {
+			try {if ( boundsStream != null ) boundsStream.close();} catch ( IOException e ) {}
+			try {if ( roughStream != null ) roughStream.close();} catch ( IOException e ) {}
+		}
 	}
 
 	@Override
@@ -337,7 +372,7 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 	private static class ZoneHolder {
 		public HotSpot originalSpot = null;
 		public String title = null;
-		public byte[] imageBytes;
+		public ByteReference imageRef;
 		public int linkTarget = -1;
 
 		public Bitmap imageBitmap = null;

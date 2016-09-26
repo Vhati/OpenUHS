@@ -1,5 +1,6 @@
 package net.vhati.openuhs.desktopreader;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import org.jdom2.output.Format;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSAudioNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
@@ -53,12 +55,18 @@ public class UHSXML {
 	 * @param basename  prefix for referenced binary files
 	 * @param n  a number for uniqueness, incrementing with each file
 	 * @return a new value for n
-	 * @see net.vhati.openuhs.desktopreader.UHSUtil#getFileExtension(byte[])
+	 * @see net.vhati.openuhs.desktopreader.UHSUtil#guessFileExtension(InputStream)
 	 */
-	private static int exportNode( Element parentElement, UHSNode currentNode, String basename, int n ) {
+	private static int exportNode( Element parentElement, UHSNode currentNode, String basename, int n ) throws IOException {
 		Element currentElement = null;
 		if ( currentNode instanceof UHSHotSpotNode ) {
 			currentElement = new Element( "hotspot-node" );
+		}
+		else if ( currentNode instanceof UHSImageNode ) {
+			currentElement = new Element( "image-node" );
+		}
+		else if ( currentNode instanceof UHSAudioNode ) {
+			currentElement = new Element( "audio-node" );
 		}
 		else {
 			currentElement = new Element( "node" );
@@ -91,7 +99,20 @@ public class UHSXML {
 		if ( currentNode instanceof UHSAudioNode ) {
 			UHSAudioNode audioNode = (UHSAudioNode)currentNode;
 			String contentTypeString = "audio";
-			String ext = UHSUtil.getFileExtension( audioNode.getRawAudioContent() );
+
+			ByteReference audioRef = audioNode.getRawAudioContent();
+			InputStream is = null;
+			String ext = null;
+			try {
+				is = audioRef.getInputStream();
+				ext = UHSUtil.guessFileExtension( is );
+			}
+			catch ( IOException e ) {
+				throw new IOException( String.format( "Error loading binary content of %s node (\"%s\")", audioNode.getType(), audioNode.getRawStringContent() ), e );
+			}
+			finally {
+				try {if ( is != null ) is.close();} catch ( IOException e ) {}
+			}
 
 			String contentString = String.format( "%s%d%s.%s", basename, n, (( id == -1 ) ? "" : "_"+id), ext );
 			n++;
@@ -104,7 +125,20 @@ public class UHSXML {
 		if ( currentNode instanceof UHSImageNode ) {
 			UHSImageNode imageNode = (UHSImageNode)currentNode;
 			String contentTypeString = "image";
-			String ext = UHSUtil.getFileExtension( imageNode.getRawImageContent() );
+
+			ByteReference imageRef = imageNode.getRawImageContent();
+			InputStream is = null;
+			String ext = null;
+			try {
+				is = imageRef.getInputStream();
+				ext = UHSUtil.guessFileExtension( is );
+			}
+			catch ( IOException e ) {
+				throw new IOException( String.format( "Error loading binary content of %s node (\"%s\")", imageNode.getType(), imageNode.getRawStringContent() ), e );
+			}
+			finally {
+				try {if ( is != null ) is.close();} catch ( IOException e ) {}
+			}
 
 			String contentString = String.format( "%s%d%s.%s", basename, n, (( id == -1 ) ? "" : "_"+id), ext );
 			n++;

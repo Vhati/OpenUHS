@@ -1,8 +1,13 @@
 package net.vhati.openuhs.core;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
+import net.vhati.openuhs.core.ArrayByteReference;
+import net.vhati.openuhs.core.ByteReference;
+import net.vhati.openuhs.core.FileRegionByteReference;
 import net.vhati.openuhs.core.UHSRootNode;
 
 
@@ -14,6 +19,7 @@ import net.vhati.openuhs.core.UHSRootNode;
  * @see net.vhati.openuhs.core.Proto4xUHSParser
  */
 public class Proto4xUHSParseContext {
+	protected boolean binaryDeferred = false;
 	protected File file = null;
 	protected File workingDir = null;
 	protected UHSRootNode rootNode = null;
@@ -25,6 +31,18 @@ public class Proto4xUHSParseContext {
 
 
 	public Proto4xUHSParseContext() {
+	}
+
+
+	/**
+	 * Sets whether to preload binary hunk segments into arrays or defer reads until needed.
+	 */
+	public void setBinaryDeferred( boolean b ) {
+		binaryDeferred = b;
+	}
+
+	public boolean isBinaryDeferred() {
+		return binaryDeferred;
 	}
 
 
@@ -84,6 +102,50 @@ public class Proto4xUHSParseContext {
 	 */
 	public void setAllLines( List<String> allLines ) {
 		this.allLines = allLines;
+	}
+
+	/**
+	 * Returns a reference to read bytes from a file.
+	 *
+	 * <p>If binaryDeferred is false, an ArrayByteReference will be returned.
+	 * Otherwise, a FileRegionByteReference will be returned.</p>
+	 *
+	 * @param f  the file to read
+	 * @return a ByteReference to retrieve the relevant bytes
+	 * @see #setBinaryDeferred(boolean)
+	 */
+	public ByteReference readBinaryFile( File f ) throws IOException {
+		ByteReference result = null;
+
+		if ( isBinaryDeferred() ) {
+			result = new FileRegionByteReference( f, 0, f.length() );
+		}
+		else {
+			FileInputStream is = null;
+			try {
+				is = new FileInputStream( f );
+				long length = f.length();
+				if ( length > Integer.MAX_VALUE ) {
+					throw new IOException( "Binary file is too large to fit in an int-indexed array" );
+				}
+
+				byte[] data = new byte[(int)length];
+				int offset = 0;
+				int count = 0;
+				while ( offset < data.length && (count=is.read( data, offset, data.length-offset )) >= 0 ) {
+					offset += count;
+				}
+				if ( offset < data.length ) {
+					throw new IOException( "Could not completely read binary content" );
+				}
+				result = new ArrayByteReference( data );
+			}
+			finally {
+				try {if ( is != null ) is.close();} catch ( IOException e ) {}
+			}
+		}
+
+		return result;
 	}
 
 

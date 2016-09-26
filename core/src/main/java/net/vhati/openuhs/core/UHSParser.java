@@ -1,9 +1,12 @@
 package net.vhati.openuhs.core;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -20,6 +23,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.CRC16;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSAudioNode;
@@ -49,12 +53,25 @@ public class UHSParser {
 
 	private final Logger logger = LoggerFactory.getLogger( UHSParser.class );
 
+	private boolean binaryDeferred = false;
 	private boolean force88a = false;
 
 
 	public UHSParser() {
 	}
 
+
+	/**
+	 * Sets whether to preload binary hunk segments into arrays or defer reads until needed.
+	 *
+	 * <p>This will be passed along to UHSParseContexts as they're created during parsing.</p>
+	 *
+	 * @param b  true to defer, false to preload (default is false)
+	 * @see net.vhati.openuhs.core.UHSParseContext#setBinaryDeferred(boolean)
+	 */
+	public void setBinaryDeferred( boolean b ) {
+		binaryDeferred = b;
+	}
 
 	/**
 	 * Toggles parsing 9x files as an 88a reader.
@@ -174,25 +191,26 @@ public class UHSParser {
 
 
 	/**
-	 * Creates a parse context using a RandomAccessFile.
+	 * Reads bytes into a parse context using a RandomAccessFile.
 	 *
 	 * <p>This method is unbuffered and thus inefficient. It is also somewhat
 	 * reckless in decoding bytes into characters. On the plus side, the code
 	 * is uncomplicated.</p>
 	 *
-	 * @see #createParseContextFromStream(File)
+	 * @param context  the parse context
+	 * @see #readBytesUsingStream(File)
 	 */
-	private UHSParseContext createParseContextFromRAF( File f ) throws IOException, UHSParseException {
+	private void readBytesUsingRAF( UHSParseContext context ) throws IOException, UHSParseException {
 		int index = -1;  // Increment before reads, and this will be the last read 0-based index.
 		String tmp = "";
 
 		List<String> allLines = new ArrayList<String>();
-		long binOffset = -1;
+		long binHunkOffset = -1;
 		byte[] binHunk = new byte[0];
 
 		RandomAccessFile raf = null;
 		try {
-			raf = new RandomAccessFile( f, "r" );
+			raf = new RandomAccessFile( context.getFile(), "r" );
 
 			index++;
 			tmp = raf.readLine();
@@ -224,27 +242,24 @@ public class UHSParser {
 			}
 			if ( skippedNulls > 0 ) logger.warn( "Skipped {} extraneous null bytes", skippedNulls );
 
-			binOffset = raf.getChannel().position();  // Either after 0x1a, or EOF.
-			long binSize = raf.length() - binOffset;
+			binHunkOffset = raf.getChannel().position();  // Either after 0x1a, or EOF.
+			long binSize = raf.length() - binHunkOffset;
 			if ( binSize > 0 && binSize <= Integer.MAX_VALUE ) {
 				binHunk = new byte[(int)binSize];
 				raf.readFully( binHunk );
 			}
 			else {
-				binOffset = -1;
+				binHunkOffset = -1;
 			}
 		}
 		finally {
 			try {if ( raf != null ) raf.close();} catch ( IOException e ) {}
 		}
 
-		UHSParseContext context = new UHSParseContext();
-		context.setFile( f );
 		context.setAllLines( allLines );
 		context.setBinaryHunk( binHunk );
-		context.setBinaryHunkOffset( binOffset );
-
-		return context;
+		context.setBinaryHunkOffset( binHunkOffset );
+		if ( binHunkOffset >= 0 ) context.setBinaryHunkLength( context.getFile().length() - binHunkOffset );
 	}
 
 	/**
@@ -269,23 +284,25 @@ public class UHSParser {
 	}
 
 	/**
-	 * Creates a parse context using an InputStream, a CharsetDecoder, and buffers.
+	 * Reads bytes into a parse context using an InputStream, a CharsetDecoder, and buffers.
 	 *
 	 * <p>Bytes are read from the file a little at a time. Any bytes prior to
 	 * the 9x format binary indicator byte (0x1a), if present, are decoded to
-	 * characters. Everything after that is collected as bytes.</p>
+	 * ascii characters. Everything after that is collected as bytes.</p>
 	 *
 	 * <p>This method is elborate, but in an informal benchmark, it was over
 	 * six times faster than RandomAccessFile at parsing a directory of every
 	 * UHS file.</p>
 	 *
-	 * @see #createParseContextFromRAF(File)
+	 * @param context  the parse context
+	 * @see #readBytesUsingRAF(File)
 	 */
-	private UHSParseContext createParseContextFromStream( File f ) throws IOException, UHSParseException {
+	private void readBytesUsingStream( UHSParseContext context ) throws IOException, UHSParseException {
 		CharsetDecoder decoder = Charset.forName( "US-ASCII" ).newDecoder();
 		decoder.onMalformedInput( CodingErrorAction.REPORT );
 		decoder.onUnmappableCharacter( CodingErrorAction.REPORT );
 
+		boolean binWanted = !context.isBinaryDeferred();
 		ByteBuffer bb = ByteBuffer.allocate( 8192 );
 		CharBuffer cb = CharBuffer.allocate( 8192 );
 		StringBuilder builder = new StringBuilder();
@@ -295,12 +312,12 @@ public class UHSParser {
 		boolean eofFound = false;
 		CoderResult decodeResult = null;
 		int binPos = -1;  // Intra-buffer position of binary hunk.
-		long binHunkOffset = -1;  // Offset from beginnint of file to the byte after 0x1a.
+		long binHunkOffset = -1;  // Offset from beginning of file to the byte after 0x1a.
 		boolean prunedNulls = false;
 
 		FileInputStream fin = null;
 		try {
-			fin = new FileInputStream( f );
+			fin = new FileInputStream( context.getFile() );
 			FileChannel fChan = fin.getChannel();
 			int count;
 			while ( !binFound && !eofFound ) {
@@ -318,7 +335,7 @@ public class UHSParser {
 
 						//logger.debug( "Binary hunk found: {}", binHunkOffset );
 
-						while ( bb.hasRemaining() ) {  // Dump the binary part.
+						while ( binWanted && bb.hasRemaining() ) {  // Dump the binary part.
 							binStream.write( bb.get() );
 						}
 						bb.limit( binPos );            // Prepare to decode just the text part.
@@ -381,7 +398,7 @@ public class UHSParser {
 			//logger.debug( "Decoder flushed, lines: {}, final line: {}", carvedLines.size(), carvedLines.get(carvedLines.size()-1) );
 
 			// Collect the rest of the binary lingering in the file.
-			if ( binFound ) {
+			if ( binWanted && binFound ) {
 				while ( !eofFound ) {
 					bb.clear();
 					eofFound = ( (count=fChan.read( bb )) == -1 );
@@ -397,13 +414,10 @@ public class UHSParser {
 
 			//for ( int i=0; i < 20; i++ ) logger.debug( "Line {}: {}", i, carvedLines.get( i ) );
 
-			UHSParseContext context = new UHSParseContext();
-			context.setFile( f );
 			context.setAllLines( carvedLines );
-			context.setBinaryHunk( binStream.toByteArray() );
+			if ( binWanted ) context.setBinaryHunk( binStream.toByteArray() );
 			context.setBinaryHunkOffset( binHunkOffset );
-
-			return context;
+			if ( binHunkOffset >= 0 ) context.setBinaryHunkLength( context.getFile().length() - binHunkOffset );
 		}
 		finally {
 			try {if ( fin != null ) fin.close();} catch ( IOException e ) {}
@@ -425,7 +439,10 @@ public class UHSParser {
 	public UHSRootNode parseFile( File f ) throws IOException, UHSParseException {
 		int index = 0;  // Increment after getting lines, and this will be the pending 0-based index.
 
-		UHSParseContext context = createParseContextFromStream( f );
+		UHSParseContext context = new UHSParseContext();
+		context.setBinaryDeferred( binaryDeferred );
+		context.setFile( f );
+		readBytesUsingStream( context );
 
 		index += parse88Format( context );
 		UHSRootNode rootNode = context.getRootNode();
@@ -1176,20 +1193,20 @@ public class UHSParser {
 		StringBuffer tmpContent = new StringBuffer();
 		UHSNode newNode = new UHSNode( "TextData" );
 
-		byte[] tmpBytes = context.readBinaryHunk( offset, length );
-		if ( tmpBytes != null ) {
-			tmp = new String( tmpBytes );
+		ByteReference textRef = context.readBinaryHunk( offset, length );
+		try {
+			List<String> decodedLines = decodeByteReference( textRef );
+			for ( String line : decodedLines ) {
+				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
+				tmpContent.append( decryptTextHunk( line, context.getEncryptionKey() ) );
+			}
+
 		}
-		else {
+		catch ( IOException e ) {
 			// This error would be at index-1, if not for context.getLine()'s memory.
-			logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
-			tmp = "";
+			logger.error( "Could not read referenced raw bytes (last parsed line: {}): e", context.getLastParsedLineNumber(), e );
 		}
-		String[] lines = tmp.split( "(\r\n)|\r|\n", -1 );
-		for ( int i=0; i < lines.length; i++ ) {
-			if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
-			tmpContent.append( decryptTextHunk( lines[i], context.getEncryptionKey() ) );
-		}
+
 		newNode.setRawStringContent( tmpContent.toString() );
 		newNode.setStringContentDecorator( new Version9xTextDecorator() );
 		textNode.addChild( newNode );
@@ -1355,14 +1372,11 @@ public class UHSParser {
 		offset = Long.parseLong( tokens[1] ) - context.getBinaryHunkOffset();
 		length = Integer.parseInt( tokens[2] );
 
-		tmpBytes = context.readBinaryHunk( offset, length );
-		if ( tmpBytes == null ) {
-			logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
-		}
+		ByteReference mainImageRef = context.readBinaryHunk( offset, length );
 
 		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( mainType );
 			hotspotNode.setRawStringContent( mainTitle );
-			hotspotNode.setRawImageContent( tmpBytes );
+			hotspotNode.setRawImageContent( mainImageRef );
 			hotspotNode.setId( startIndex );  // TODO: The id can be mainImageIndex and/or startIndex.
 			currentNode.addChild( hotspotNode );
 			context.getRootNode().addLink( hotspotNode );
@@ -1403,13 +1417,11 @@ public class UHSParser {
 					int posX = Integer.parseInt( tokens[3] )-1;
 					int posY = Integer.parseInt( tokens[4] )-1;
 
-					tmpBytes = context.readBinaryHunk( offset, length );
-					if ( tmpBytes == null ) {
-						logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
-					}
+					ByteReference overlayImageRef = context.readBinaryHunk( offset, length );
+
 					UHSImageNode overlayNode = new UHSImageNode( "Overlay" );
 						overlayNode.setRawStringContent( overlayTitle );
-						overlayNode.setRawImageContent( tmpBytes );
+						overlayNode.setRawImageContent( overlayImageRef );
 						overlayNode.setId( nestedIndex );
 						hotspotNode.addChild( overlayNode );
 						context.getRootNode().addLink( overlayNode );
@@ -1489,13 +1501,9 @@ public class UHSParser {
 		long offset = Long.parseLong( tmp.substring( tmp.indexOf( " " )+1, tmp.lastIndexOf( " " ) ) ) - context.getBinaryHunkOffset();
 		int length = Integer.parseInt( tmp.substring( tmp.lastIndexOf( " " )+1, tmp.length() ) );
 
-		byte[] tmpBytes = context.readBinaryHunk( offset, length );
-		if ( tmpBytes == null ) {
-			// This error would be at index-1, if not for context.getLine()'s memory.
-			logger.error( "Could not read referenced raw bytes (last parsed line: {})", context.getLastParsedLineNumber() );
-		}
+		ByteReference audioRef = context.readBinaryHunk( offset, length );
 
-		soundNode.setRawAudioContent( tmpBytes );
+		soundNode.setRawAudioContent( audioRef );
 
 		return index-startIndex;
 	}
@@ -1784,6 +1792,32 @@ public class UHSParser {
 
 		index += innerCount;
 		return index-startIndex;
+	}
+
+
+	/**
+	 * Returns a list of lines, as decoded ascii from the InputStream of a ByteReference.
+	 */
+	public List<String> decodeByteReference( ByteReference ref ) throws IOException {
+		List<String> results = new ArrayList<String>();
+		InputStream is = null;
+		try {
+			CharsetDecoder decoder = Charset.forName( "US-ASCII" ).newDecoder();
+			decoder.onMalformedInput( CodingErrorAction.REPORT );
+			decoder.onUnmappableCharacter( CodingErrorAction.REPORT );
+
+			is = ref.getInputStream();
+			BufferedReader br = new BufferedReader( new InputStreamReader( is, decoder ) );
+			String line;
+			while ( (line=br.readLine()) != null ) {
+				results.add( line );
+			}
+		}
+		finally {
+			try {if ( is != null ) is.close();} catch ( IOException e ) {}
+		}
+
+		return results;
 	}
 
 

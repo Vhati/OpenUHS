@@ -235,10 +235,11 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 			logger.info( "Reader opened \"{}\"", f.getName() );
 
 			UHSParser uhsParser = new UHSParser();
+			uhsParser.setBinaryDeferred( true );
 			newRootNode = uhsParser.parseFile( f );
 		}
 		catch ( Exception e ) {
-			Toast.makeText( this, "Parsing failed.", Toast.LENGTH_LONG ).show();
+			Toast.makeText( this, "Parsing failed", Toast.LENGTH_LONG ).show();
 			logger.error( "Unreadable file or parsing error", e );
 			// TODO: Exit gracefully.
 		}

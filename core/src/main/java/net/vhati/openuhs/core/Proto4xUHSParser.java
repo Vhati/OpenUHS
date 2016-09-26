@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.Proto4xUHSParseContext;
 import net.vhati.openuhs.core.UHSHotSpotNode;
@@ -943,9 +944,9 @@ public class Proto4xUHSParser {
 			mainImageFile = new File( mainImagePath );
 		}
 
-		tmpBytes = null;
+		ByteReference mainImageRef = null;
 		try {
-			tmpBytes = readBytesFromFile( mainImageFile );
+			mainImageRef = context.readBinaryFile( mainImageFile );
 		}
 		catch ( IOException e ) {
 			logger.error( "Could not read referenced file: {} (last parsed line: {})", mainImageFile.getAbsolutePath(), context.getLastParsedLineNumber(), e );
@@ -954,7 +955,7 @@ public class Proto4xUHSParser {
 
 		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( "Hyperpng" );
 			hotspotNode.setRawStringContent( mainTitle );
-			hotspotNode.setRawImageContent( tmpBytes );
+			hotspotNode.setRawImageContent( mainImageRef );
 			hotspotNode.setId( hyperId );
 			hotspotNode.setRestriction( restriction );
 			currentNode.addChild( hotspotNode );
@@ -1012,9 +1013,9 @@ public class Proto4xUHSParser {
 						int posX = Integer.parseInt( overlayPathPosMatcher.group( 4 ) )-1;
 						int posY = Integer.parseInt( overlayPathPosMatcher.group( 5 ) )-1;
 
-						tmpBytes = null;
+						ByteReference overlayImageRef = null;
 						try {
-							tmpBytes = readBytesFromFile( overlayImageFile );
+							overlayImageRef = context.readBinaryFile( overlayImageFile );
 						}
 						catch ( IOException e ) {
 							logger.error( "Could not read referenced file: {} (last parsed line: {})", overlayImageFile.getAbsolutePath(), context.getLastParsedLineNumber(), e );
@@ -1023,7 +1024,7 @@ public class Proto4xUHSParser {
 
 						UHSImageNode overlayNode = new UHSImageNode( "Overlay" );
 							overlayNode.setRawStringContent( overlayTitle );
-							overlayNode.setRawImageContent( tmpBytes );
+							overlayNode.setRawImageContent( overlayImageRef );
 							overlayNode.setId( overlayId );
 							context.getRootNode().addLink( overlayNode );
 							hotspotNode.addChild( overlayNode );
@@ -1267,29 +1268,5 @@ public class Proto4xUHSParser {
 		}
 
 		return index-startIndex;
-	}
-
-
-	private byte[] readBytesFromFile( File f ) throws IOException {
-		byte[] result = null;
-		FileInputStream is = null;
-		try {
-			is = new FileInputStream( f );
-			long length = f.length();
-			if ( length > Integer.MAX_VALUE ) return null;
-
-			result = new byte[(int)length];
-			int offset = 0;
-			int numRead = 0;
-			while ( offset < result.length && ( numRead=is.read( result, offset, result.length-offset ) ) >= 0 ) {
-				offset += numRead;
-			}
-			if ( offset < result.length ) result = null;
-			is.close();
-		}
-		finally {
-			try {if ( is != null ) is.close();} catch ( IOException e ) {}
-		}
-		return result;
 	}
 }

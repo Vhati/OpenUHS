@@ -1,9 +1,11 @@
 package net.vhati.openuhs.core;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 
 
 /**
@@ -27,10 +29,10 @@ public class UHSGenerationContext {
 	// Phase 1.
 	private Map<Integer, Integer> idToLineMap = new HashMap<Integer, Integer>();
 
-	private int highestBinSectionOffset = 0;
-	private int highestBinSectionLength = 0;
+	private long highestBinSectionOffset = 0;
+	private long highestBinSectionLength = 0;
 
-	private int binHunkOffset = 0;
+	private long binHunkOffset = 0;
 
 	// Phase 2.
 	private int offsetNumberWidth = -1;
@@ -50,10 +52,10 @@ public class UHSGenerationContext {
 
 		currentBinHunkLength = 0;
 
-		int highestOffsetWidth = Integer.toString( binHunkOffset + highestBinSectionOffset ).length();
+		int highestOffsetWidth = Long.toString( binHunkOffset + highestBinSectionOffset ).length();
 		offsetNumberWidth = Math.max( highestOffsetWidth, DEFAULT_OFFSET_NUMBER_WIDTH );
 
-		int lengthWidth = Integer.toString( highestBinSectionLength ).length();
+		int lengthWidth = Long.toString( highestBinSectionLength ).length();
 		lengthNumberWidth = Math.max( lengthWidth, DEFAULT_LENGTH_NUMBER_WIDTH );
 	}
 
@@ -116,11 +118,11 @@ public class UHSGenerationContext {
 	}
 
 
-	public int getNextBinaryOffset() {
+	public long getNextBinaryOffset() {
 		return binHunkOffset + currentBinHunkLength;
 	}
 
-	public void registerBinarySection( int sectionLength ) {
+	public void registerBinarySection( long sectionLength ) {
 		highestBinSectionOffset = Math.max( highestBinSectionOffset, currentBinHunkLength );
 		highestBinSectionLength = Math.max( highestBinSectionLength, sectionLength );
 
@@ -128,13 +130,32 @@ public class UHSGenerationContext {
 	}
 
 
-	public void setBinaryHunkOffset( int binHunkOffset ) {
+	public void setBinaryHunkOffset( long binHunkOffset ) {
 		this.binHunkOffset = binHunkOffset;
 	}
 
 
 	public ByteArrayOutputStream getBinaryHunkOutputStream() {
 		return binStream;
+	}
+
+
+	/**
+	 * Writes data from a ByteReference to the binary hunk output stream.
+	 */
+	public void writeBinarySegment( ByteReference ref ) throws IOException {
+		InputStream is = null;
+		try {
+			is = ref.getInputStream();
+			byte[] buf = new byte[512];
+			int count;
+			while ( (count=is.read( buf )) != -1 ) {
+				binStream.write( buf, 0, count );
+			}
+		}
+		finally {
+			try {if ( is != null ) is.close();} catch ( IOException e ) {}
+		}
 	}
 
 
