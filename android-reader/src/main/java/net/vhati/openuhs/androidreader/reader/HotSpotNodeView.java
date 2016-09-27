@@ -98,7 +98,7 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 		}
 		catch ( IOException e ) {
 			logger.error( "Error loading image: {}", e );
-			Toast.makeText( this.getContext(), "Error loading audio", Toast.LENGTH_LONG ).show();
+			Toast.makeText( this.getContext(), "Error loading image", Toast.LENGTH_LONG ).show();
 
 			reset();
 			return;
