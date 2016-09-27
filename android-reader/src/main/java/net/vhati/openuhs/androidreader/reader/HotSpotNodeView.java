@@ -45,8 +45,9 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 	protected int otherColor = Color.rgb( 0x00, 0x00, 0xFF );  // Blue.
 
 	protected UHSHotSpotNode hotspotNode = null;
-	protected Bitmap mainImageBitmap = null;
-	protected RectF fullSizeRect = null;
+	protected Bitmap mainBitmap = null;
+	protected RectF originalMainRect = null;
+	protected RectF currentMainRect = null;
 	protected List<ZoneHolder> zoneHolders = new ArrayList<ZoneHolder>();
 
 	protected Paint rectPaint;
@@ -92,9 +93,54 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 		super.setNode( node, showAll );
 		hotspotNode = (UHSHotSpotNode)node;
 
+		InputStream is = null;
 		try {
 			ByteReference mainImageRef = hotspotNode.getRawImageContent();
-			fullSizeRect = getOriginalImageSize( mainImageRef );
+
+			BitmapFactory.Options opts = new BitmapFactory.Options();
+			is = mainImageRef.getInputStream();
+			mainBitmap = BitmapFactory.decodeStream( is, null, opts );
+			if ( mainBitmap == null ) throw new IOException( "Failed to read main bitmap" );
+			is.close();
+			originalMainRect = new RectF( 0, 0, mainBitmap.getWidth(), mainBitmap.getHeight() );
+			currentMainRect = new RectF( originalMainRect );
+
+			for ( int i=0; i < hotspotNode.getChildCount(); i++ ) {
+				UHSNode childNode = hotspotNode.getChild( i );
+				String childType = childNode.getType();
+
+				HotSpot spot = hotspotNode.getSpot( childNode );
+
+				ZoneHolder zoneHolder = new ZoneHolder();
+				zoneHolder.originalZoneRect = new RectF( spot.zoneX, spot.zoneY, spot.zoneX+spot.zoneW, spot.zoneY+spot.zoneH );
+				zoneHolder.currentZoneRect = new RectF( zoneHolder.originalZoneRect );
+				zoneHolder.title = childNode.getDecoratedStringContent();
+
+				if ( "Overlay".equals( childType ) && childNode instanceof UHSImageNode ) {
+					UHSImageNode overlayNode = (UHSImageNode)childNode;
+
+					zoneHolder.imageRef = overlayNode.getRawImageContent();
+					if ( zoneHolder.imageRef != null ) {
+
+						opts = new BitmapFactory.Options();
+						is = zoneHolder.imageRef.getInputStream();
+						Bitmap overlayBitmap = BitmapFactory.decodeStream( is, null, opts );
+						if ( overlayBitmap == null ) throw new IOException( "Failed to read overlay bitmap" );
+						is.close();
+
+						zoneHolder.imageBitmap = overlayBitmap;
+						zoneHolder.originalOverlayRect = new RectF( 0, 0, overlayBitmap.getWidth(), overlayBitmap.getHeight() );
+						zoneHolder.originalOverlayRect.offsetTo( spot.x, spot.y );
+						zoneHolder.currentOverlayRect = new RectF( zoneHolder.originalOverlayRect );
+					}
+				}
+				else {
+					zoneHolder.linkTarget = childNode.getLinkTarget();
+				}
+
+				zoneHolders.add( zoneHolder );
+			}
+
 		}
 		catch ( IOException e ) {
 			logger.error( "Error loading image: {}", e );
@@ -102,6 +148,9 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 
 			reset();
 			return;
+		}
+		finally {
+			try {if ( is != null ) is.close();} catch ( IOException e ) {}
 		}
 
 		if ( this.getWidth() > 0 && this.getHeight() > 0 ) {
@@ -117,11 +166,12 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 
 	@Override
 	public void reset() {
-		if ( mainImageBitmap != null ) {
-			mainImageBitmap.recycle();
-			mainImageBitmap = null;
+		if ( mainBitmap != null ) {
+			mainBitmap.recycle();
+			mainBitmap = null;
 		}
-		fullSizeRect = null;
+		originalMainRect = null;
+		currentMainRect = null;
 
 		for ( ZoneHolder zoneHolder : zoneHolders ) {
 			if ( zoneHolder.imageBitmap != null ) {
@@ -148,7 +198,7 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 					float paddedX = e.getX() + this.getPaddingLeft();
 					float paddedY = e.getY() + this.getPaddingTop();
 
-					if ( zoneHolder.scaledZoneRect.contains( paddedX, paddedY ) ) {
+					if ( zoneHolder.currentZoneRect.contains( paddedX, paddedY ) ) {
 
 						if ( zoneHolder.imageBitmap != null ) {
 							zoneHolder.revealed = !zoneHolder.revealed;
@@ -178,8 +228,8 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 
 		if ( resizeWidth || resizeHeight ) {  // Skip calc if not needed.
 			if ( hotspotNode != null ) {
-				minWidth = (int)fullSizeRect.width() + this.getPaddingLeft() + this.getPaddingRight();
-				minHeight = (int)fullSizeRect.height() + this.getPaddingTop() + this.getPaddingBottom();
+				minWidth = (int)originalMainRect.width() + this.getPaddingLeft() + this.getPaddingRight();
+				minHeight = (int)originalMainRect.height() + this.getPaddingTop() + this.getPaddingBottom();
 			}
 		}
 
@@ -193,6 +243,7 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 		super.onSizeChanged( w, h, oldw, oldh );
 
 		adjustContentToScale();
+		this.invalidate();
 	}
 
 	protected void adjustContentToScale() {
@@ -201,142 +252,41 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 		float contentHeight = (float)this.getHeight() - (float)(this.getPaddingTop() + this.getPaddingBottom());
 
 		if ( hotspotNode != null ) {
-			if ( mainImageBitmap != null ) {
-				mainImageBitmap.recycle();
-				mainImageBitmap = null;
-			}
+			float scaleX = contentWidth / originalMainRect.width();
+			float scaleY = contentHeight / originalMainRect.height();
+			float scale = Math.min( scaleX, scaleY );
+
+			float newMainL = originalMainRect.left * scale;
+			float newMainT = originalMainRect.top * scale;
+			float newMainR = originalMainRect.right * scale;
+			float newMainB = originalMainRect.bottom * scale;
+			currentMainRect.set( newMainL, newMainT, newMainR, newMainB );
+
 			for ( ZoneHolder zoneHolder : zoneHolders ) {
-				if ( zoneHolder.imageBitmap != null ) {
-					zoneHolder.imageBitmap.recycle();
-					zoneHolder.imageBitmap = null;
+				float newZoneL = zoneHolder.originalZoneRect.left * scale;
+				float newZoneT = zoneHolder.originalZoneRect.top * scale;
+				float newZoneR = zoneHolder.originalZoneRect.right * scale;
+				float newZoneB = zoneHolder.originalZoneRect.bottom * scale;
+				zoneHolder.currentZoneRect.set( newZoneL, newZoneT, newZoneR, newZoneB );
+
+				if ( zoneHolder.imageRef != null ) {
+					float newOverlayL = zoneHolder.originalOverlayRect.left * scale;
+					float newOverlayT = zoneHolder.originalOverlayRect.top * scale;
+					float newOverlayR = zoneHolder.originalOverlayRect.right * scale;
+					float newOverlayB = zoneHolder.originalOverlayRect.bottom * scale;
+					zoneHolder.currentOverlayRect.set( newOverlayL, newOverlayT, newOverlayR, newOverlayB );
 				}
-			}
-
-			if ( zoneHolders.isEmpty() ) {  // Populate the list.
-				for ( int i=0; i < hotspotNode.getChildCount(); i++ ) {
-					UHSNode childNode = hotspotNode.getChild( i );
-					String childType = childNode.getType();
-
-					ZoneHolder zoneHolder = new ZoneHolder();
-					zoneHolder.originalSpot = hotspotNode.getSpot( childNode );
-					zoneHolder.title = childNode.getDecoratedStringContent();
-
-					if ( "Overlay".equals( childType ) && childNode instanceof UHSImageNode ) {
-						UHSImageNode overlayNode = (UHSImageNode)childNode;
-
-						zoneHolder.imageRef = overlayNode.getRawImageContent();
-					}
-					else {
-						zoneHolder.linkTarget = childNode.getLinkTarget();
-					}
-
-					zoneHolders.add( zoneHolder );
-				}
-			}
-
-			try {
-				ByteReference mainImageRef = hotspotNode.getRawImageContent();
-				mainImageBitmap = getResizedBitmap( contentWidth, contentHeight, mainImageRef );
-
-				float scaleX = mainImageBitmap.getWidth() / fullSizeRect.width();
-				float scaleY = mainImageBitmap.getHeight() / fullSizeRect.height();
-
-				for ( ZoneHolder zoneHolder : zoneHolders ) {
-					float newZoneL = zoneHolder.originalSpot.zoneX * scaleX;
-					float newZoneT = zoneHolder.originalSpot.zoneY * scaleY;
-					float newZoneR = newZoneL + (zoneHolder.originalSpot.zoneW * scaleX);
-					float newZoneB = newZoneT + (zoneHolder.originalSpot.zoneH * scaleY);
-					zoneHolder.scaledZoneRect.set( newZoneL, newZoneT, newZoneR, newZoneB );
-
-					if ( zoneHolder.imageRef != null ) {
-						RectF overlayFullSizeRect = getOriginalImageSize( zoneHolder.imageRef );
-						float overlayScaledWidth = overlayFullSizeRect.width() * scaleX;
-						float overlayScaledHeight = overlayFullSizeRect.height() * scaleY;
-						zoneHolder.imageBitmap = getResizedBitmap( overlayScaledWidth, overlayScaledHeight, zoneHolder.imageRef );
-
-						float outlineL = zoneHolder.originalSpot.x * scaleX;
-						float outlineT = zoneHolder.originalSpot.y * scaleY;
-						float outlineR = outlineL + overlayScaledWidth;
-						float outlineB = outlineT + overlayScaledHeight;
-						zoneHolder.imageOutlineRect.set( outlineL, outlineT, outlineR, outlineB );
-					}
-				}
-			}
-			catch ( IOException e ) {
-				logger.error( "Error resizing content: {}", e );
-				Toast.makeText( this.getContext(), "Error resizing content", Toast.LENGTH_LONG ).show();
-				reset();
 			}
 		}
 	}
 
-	protected RectF getOriginalImageSize( ByteReference imageRef ) throws IOException {
-		InputStream is = null;
-		try {
-			is = imageRef.getInputStream();
-			BitmapFactory.Options opts = new BitmapFactory.Options();
-			opts.inJustDecodeBounds = true;
-			BitmapFactory.decodeStream( is, null, opts );
-			float originalWidth = opts.outWidth;
-			float originalHeight = opts.outHeight;
-
-			return new RectF( 0, 0, originalWidth, originalHeight );
-		}
-		finally {
-			try {if ( is != null ) is.close();} catch ( IOException e ) {}
-		}
-	}
-
-	/**
-	 * Returns an efficiently scaled version of an image.
-	 */
-	protected Bitmap getResizedBitmap( float targetWidth, float targetHeight, ByteReference imageRef ) throws IOException {
-		if ( targetWidth <= 0 || targetHeight <= 0 ) throw new IllegalArgumentException( "Target width and height must be > 0" );
-
-		InputStream boundsStream = null;
-		InputStream roughStream = null;
-		try {
-			BitmapFactory.Options opts = new BitmapFactory.Options();
-			opts.inJustDecodeBounds = true;
-			boundsStream = imageRef.getInputStream();
-			BitmapFactory.decodeStream( boundsStream, null, opts );
-			boundsStream.close();
-			float originalWidth = opts.outWidth;
-			float originalHeight = opts.outHeight;
-
-			opts = new BitmapFactory.Options();
-			opts.inSampleSize = (int)Math.max( originalWidth/targetWidth, originalHeight/targetHeight );
-			roughStream = imageRef.getInputStream();
-			Bitmap roughBitmap = BitmapFactory.decodeStream( roughStream, null, opts );
-			if ( roughBitmap == null ) throw new IOException( "Failed to read bitmap" );
-			roughStream.close();
-
-			Matrix m = new Matrix();
-			RectF roughRect = new RectF( 0, 0, roughBitmap.getWidth(), roughBitmap.getHeight() );
-			RectF targetRect = new RectF( 0, 0, targetWidth, targetHeight );
-			m.setRectToRect( roughRect, targetRect, Matrix.ScaleToFit.CENTER );
-			float[] values = new float[9];
-			m.getValues( values );
-
-			Bitmap resizedBitmap = Bitmap.createScaledBitmap( roughBitmap, (int)(roughBitmap.getWidth() * values[0]), (int)(roughBitmap.getHeight() * values[4]), true );
-
-			// TODO: Maybe convert to device's pixel format (RGBA8888?).
-
-			roughBitmap.recycle();
-			return resizedBitmap;
-		}
-		finally {
-			try {if ( boundsStream != null ) boundsStream.close();} catch ( IOException e ) {}
-			try {if ( roughStream != null ) roughStream.close();} catch ( IOException e ) {}
-		}
-	}
 
 	@Override
 	protected void onDraw( Canvas canvas ) {
 		super.onDraw( canvas );
 
-		if ( mainImageBitmap != null ) {
-			canvas.drawBitmap( mainImageBitmap, 0, 0, null );
+		if ( mainBitmap != null ) {
+			canvas.drawBitmap( mainBitmap, null, currentMainRect, null );
 		}
 
 		int zoneHoldersCount = zoneHolders.size();
@@ -345,23 +295,23 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 
 			if ( zoneHolder.imageBitmap != null ) {
 				if ( zoneHolder.revealed ) {
-					canvas.drawBitmap( zoneHolder.imageBitmap, zoneHolder.imageOutlineRect.left, zoneHolder.imageOutlineRect.top, null );
+					canvas.drawBitmap( zoneHolder.imageBitmap, null, zoneHolder.currentOverlayRect, null );
 				}
 				else {
 					rectPaint.setColor( overlayOutlineColor );
-					canvas.drawRect( zoneHolder.imageOutlineRect, rectPaint );
+					canvas.drawRect( zoneHolder.currentOverlayRect, rectPaint );
 
 					rectPaint.setColor( overlayZoneColor );
-					canvas.drawRect( zoneHolder.scaledZoneRect, rectPaint );
+					canvas.drawRect( zoneHolder.currentZoneRect, rectPaint );
 				}
 			}
 			else if ( zoneHolder.linkTarget != -1 ) {
 				rectPaint.setColor( linkColor );
-				canvas.drawRect( zoneHolder.scaledZoneRect, rectPaint );
+				canvas.drawRect( zoneHolder.currentZoneRect, rectPaint );
 			}
 			else {
 				rectPaint.setColor( otherColor );
-				canvas.drawRect( zoneHolder.scaledZoneRect, rectPaint );
+				canvas.drawRect( zoneHolder.currentZoneRect, rectPaint );
 			}
 		}
 
@@ -370,14 +320,16 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 
 
 	private static class ZoneHolder {
-		public HotSpot originalSpot = null;
+		public RectF originalZoneRect = null;
+		public RectF originalOverlayRect = null;
 		public String title = null;
 		public ByteReference imageRef;
 		public int linkTarget = -1;
 
 		public Bitmap imageBitmap = null;
-		public RectF imageOutlineRect = new RectF();
-		public RectF scaledZoneRect = new RectF();
+
+		public RectF currentZoneRect = null;
+		public RectF currentOverlayRect = null;
 
 		public boolean revealed = false;
 	}
