@@ -1311,8 +1311,7 @@ public class UHSParser {
 	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
 	 *
 	 * <p>The zone (x, y, x+w, y+h) and overlay (x, y) numbers are zero-padded
-	 * to 4 digits. Both x's and y's seem to be 1-based, which also affects
-	 * the sums.</p>
+	 * to 4 digits. Both x's and y's seem to be 0-based.</p>
 	 *
 	 * <p>A gifa has the same structure, but might not officially contain
 	 * regions.</p>
@@ -1399,10 +1398,10 @@ public class UHSParser {
 				logger.error( "Unable to parse HyperImage's zone coordinates (last parsed line: {})", context.getLastParsedLineNumber() );
 				return innerCount+3;
 			}
-			int zoneX1 = Integer.parseInt( tokens[0] )-1;
-			int zoneY1 = Integer.parseInt( tokens[1] )-1;
-			int zoneX2 = Integer.parseInt( tokens[2] )-1;
-			int zoneY2 = Integer.parseInt( tokens[3] )-1;
+			int zoneX1 = Integer.parseInt( tokens[0] );
+			int zoneY1 = Integer.parseInt( tokens[1] );
+			int zoneX2 = Integer.parseInt( tokens[2] );
+			int zoneY2 = Integer.parseInt( tokens[3] );
 
 			tmp = context.getLine( index+j );
 			j++;
@@ -1421,8 +1420,8 @@ public class UHSParser {
 					// Skip dummy zeroes.
 					offset = Long.parseLong( tokens[1] ) - context.getBinaryHunkOffset();
 					length = Integer.parseInt( tokens[2] );
-					int posX = Integer.parseInt( tokens[3] )-1;
-					int posY = Integer.parseInt( tokens[4] )-1;
+					int posX = Integer.parseInt( tokens[3] );
+					int posY = Integer.parseInt( tokens[4] );
 
 					ByteReference overlayImageRef = context.readBinaryHunk( offset, length );
 

@@ -973,10 +973,10 @@ public class Proto4xUHSParser {
 				break;
 			}
 			else if ( (zoneMatcher = zonePtn.matcher( tmp )).matches() ) {
-				int zoneX1 = Integer.parseInt( zoneMatcher.group( 1 ) )-1;
-				int zoneY1 = Integer.parseInt( zoneMatcher.group( 2 ) )-1;
-				int zoneX2 = Integer.parseInt( zoneMatcher.group( 3 ) )-1;
-				int zoneY2 = Integer.parseInt( zoneMatcher.group( 4 ) )-1;
+				int zoneX1 = Integer.parseInt( zoneMatcher.group( 1 ) );
+				int zoneY1 = Integer.parseInt( zoneMatcher.group( 2 ) );
+				int zoneX2 = Integer.parseInt( zoneMatcher.group( 3 ) );
+				int zoneY2 = Integer.parseInt( zoneMatcher.group( 4 ) );
 
 				if ( zoneX1 > zoneX2 || zoneY1 > zoneY2 ) {
 					logger.error( "Invalid HyperImage zone coordinates (last parsed line: {})", context.getLastParsedLineNumber() );
@@ -1010,8 +1010,8 @@ public class Proto4xUHSParser {
 							overlayImageFile = new File( overlayImagePath );
 						}
 						// Skip dummy zeroes after the path.
-						int posX = Integer.parseInt( overlayPathPosMatcher.group( 4 ) )-1;
-						int posY = Integer.parseInt( overlayPathPosMatcher.group( 5 ) )-1;
+						int posX = Integer.parseInt( overlayPathPosMatcher.group( 4 ) );
+						int posY = Integer.parseInt( overlayPathPosMatcher.group( 5 ) );
 
 						ByteReference overlayImageRef = null;
 						try {
