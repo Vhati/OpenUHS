@@ -432,14 +432,20 @@ public class HotSpotNodeView extends NodeView {
 		}
 
 		int zoneHoldersCount = zoneHolders.size();
+
+		for ( int i=0; i < zoneHoldersCount; i++ ) {
+			ZoneHolder zoneHolder = zoneHolders.get( i );
+
+			if ( zoneHolder.imageBitmap != null && zoneHolder.revealed ) {
+				canvas.drawBitmap( zoneHolder.imageBitmap, null, zoneHolder.currentOverlayRect, null );
+			}
+		}
+
 		for ( int i=0; i < zoneHoldersCount; i++ ) {
 			ZoneHolder zoneHolder = zoneHolders.get( i );
 
 			if ( zoneHolder.imageBitmap != null ) {
-				if ( zoneHolder.revealed ) {
-					canvas.drawBitmap( zoneHolder.imageBitmap, null, zoneHolder.currentOverlayRect, null );
-				}
-				else {
+				if ( !zoneHolder.revealed ) {
 					rectPaint.setColor( overlayOutlineColor );
 					canvas.drawRect( zoneHolder.currentOverlayRect, rectPaint );
 
