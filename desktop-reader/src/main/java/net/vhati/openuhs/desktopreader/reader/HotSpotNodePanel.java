@@ -176,6 +176,7 @@ public class HotSpotNodePanel extends NodePanel {
 						sharedPanel.add( spotPanel, JLayeredPane.PALETTE_LAYER, 0 );
 						spotPanel.addMouseListener( zoneListener );
 
+					if ( showAll ) contentPanel.setRevealed( true );
 				}
 				else {
 					String text = childNode.getDecoratedStringContent();

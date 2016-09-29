@@ -123,7 +123,7 @@ public class HotSpotNodeView extends NodeView {
 				float newScale = scale;
 				newScale *= detector.getScaleFactor();
 				newScale = Math.max( minScale, Math.min( newScale, 2.0f ) );
-				setZoom( newScale );
+				handleScale( newScale );
 
 				return true;
 			}
@@ -200,6 +200,8 @@ public class HotSpotNodeView extends NodeView {
 						zoneHolder.originalOverlayRect = new RectF( 0, 0, overlayBitmap.getWidth(), overlayBitmap.getHeight() );
 						zoneHolder.originalOverlayRect.offsetTo( spot.x, spot.y );
 						zoneHolder.currentOverlayRect = new RectF( zoneHolder.originalOverlayRect );
+
+						if ( showAll ) zoneHolder.revealed = true;
 					}
 				}
 				else {
@@ -225,7 +227,7 @@ public class HotSpotNodeView extends NodeView {
 			// After reusing this view, the next node triggers onMeasure().
 			// But onSizeChanged() only happens if the measured size is
 			// different.
-			adjustContentToScale();
+			resetScale();
 		}
 
 		this.requestLayout();
@@ -282,11 +284,17 @@ public class HotSpotNodeView extends NodeView {
 	protected void onSizeChanged( int w, int h, int oldw, int oldh ) {
 		super.onSizeChanged( w, h, oldw, oldh );
 
-		adjustContentToScale();
+		resetScale();
 		this.invalidate();
 	}
 
-	protected void adjustContentToScale() {
+	/**
+	 * Resets the zoom state, fitting and centering content.
+	 *
+	 * <p>This needs to be called when either this View's dimensions change or
+	 * when a new node is set - if this View has non-zero dimensions.</p>
+	 */
+	protected void resetScale() {
 		// Account for padding.
 		float contentWidth = (float)this.getWidth() - (float)(this.getPaddingLeft() + this.getPaddingRight());
 		float contentHeight = (float)this.getHeight() - (float)(this.getPaddingTop() + this.getPaddingBottom());
@@ -302,7 +310,7 @@ public class HotSpotNodeView extends NodeView {
 			minScale = 1f;
 		}
 
-		setZoom( minScale );
+		handleScale( minScale );
 	}
 
 	/**
@@ -312,7 +320,7 @@ public class HotSpotNodeView extends NodeView {
 	 *
 	 * <p>After resizing, the pan rectangle will be centered on the same spot.</p>
 	 */
-	private void setZoom( float newScale ) {
+	private void handleScale( float newScale ) {
 		if ( hotspotNode == null ) return;
 
 		scale = newScale;
