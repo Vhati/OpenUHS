@@ -89,7 +89,7 @@ public class HotSpotNodeView extends NodeView {
 
 						if ( zoneHolder.currentZoneRect.contains( paddedX, paddedY ) ) {
 
-							if ( zoneHolder.imageBitmap != null ) {
+							if ( zoneHolder.imageRef != null ) {
 								zoneHolder.revealed = !zoneHolder.revealed;
 								HotSpotNodeView.this.invalidate();
 								// Keep looping through layers? Sure.
@@ -204,8 +204,14 @@ public class HotSpotNodeView extends NodeView {
 						if ( showAll ) zoneHolder.revealed = true;
 					}
 				}
-				else {
+				else if ( childNode.isLink() ) {  // Follow the link when clicked.
 					zoneHolder.linkTarget = childNode.getLinkTarget();
+				}
+				else if ( childNode.getId() != -1 ) {  // Visit that child when clicked.
+					zoneHolder.linkTarget = childNode.getId();
+				}
+				else {
+					logger.error( "Unexpected {} child of UHSHotSpotNode", childNode.getType() );
 				}
 
 				zoneHolders.add( zoneHolder );
@@ -251,7 +257,6 @@ public class HotSpotNodeView extends NodeView {
 		zoneHolders.clear();
 
 		hotspotNode = null;
-		this.removeAllViews();
 		super.reset();
 		this.invalidate();
 	}
@@ -460,7 +465,7 @@ public class HotSpotNodeView extends NodeView {
 		public RectF originalZoneRect = null;
 		public RectF originalOverlayRect = null;
 		public String title = null;
-		public ByteReference imageRef;
+		public ByteReference imageRef = null;
 		public int linkTarget = -1;
 
 		public Bitmap imageBitmap = null;

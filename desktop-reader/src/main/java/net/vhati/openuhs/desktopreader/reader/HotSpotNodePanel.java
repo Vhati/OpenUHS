@@ -1,19 +1,23 @@
 package net.vhati.openuhs.desktopreader.reader;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
-import java.awt.Insets;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JLayeredPane;
+import javax.swing.ToolTipManager;
 import javax.swing.event.MouseInputAdapter;
 import javax.swing.event.MouseInputListener;
 
@@ -39,70 +43,66 @@ public class HotSpotNodePanel extends NodePanel {
 	private final Logger logger = LoggerFactory.getLogger( HotSpotNodePanel.class );
 
 	protected UHSHotSpotNode hotspotNode = null;
-	protected MouseInputListener hotspotListener = null;
-	protected MouseListener zoneListener = null;
+	protected BufferedImage mainImage = null;
+
+	protected List<ZoneHolder> zoneHolders = new ArrayList<ZoneHolder>();
+
+	protected Cursor zoneCursor = Cursor.getPredefinedCursor( Cursor.HAND_CURSOR );
+
+	protected BasicStroke zoneStroke;
+	protected MouseInputListener zoneListener;
 
 
 	public HotSpotNodePanel() {
 		super();
 
-		this.setLayout( new GridBagLayout() );
-
-		hotspotListener = new MouseInputAdapter() {
-			Cursor zoneCursor = Cursor.getPredefinedCursor( Cursor.HAND_CURSOR );
-			Cursor normCursor = Cursor.getPredefinedCursor( Cursor.DEFAULT_CURSOR );
-
-			private int getZone( UHSHotSpotNode hotspotNode, int x, int y ) {
-				for ( int i=1; i < hotspotNode.getChildCount(); i++ ) {
-					HotSpot spot = hotspotNode.getSpot( hotspotNode.getChild( i ) );
-					if ( x > spot.zoneX && y > spot.zoneY && x < spot.zoneX+spot.zoneW && y < spot.zoneY+spot.zoneH ) {
-						return i;
-					}
-				}
-				return -1;
-			}
-			@Override
-			public void mouseMoved( MouseEvent e ) {
-				Component sourceComponent = (Component)e.getSource();
-
-				int x = e.getX(); int y = e.getY();
-
-				if ( getZone( hotspotNode, x, y ) != -1 ) {
-					sourceComponent.setCursor( zoneCursor );
-				} else {
-					sourceComponent.setCursor( normCursor );
-				}
-			}
-		};
+		float zoneDashes[] = {1f, 2f};
+		zoneStroke = new BasicStroke( 1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1, zoneDashes, 0 );
 
 		zoneListener = new MouseInputAdapter() {
-			Cursor zoneCursor = Cursor.getPredefinedCursor( Cursor.HAND_CURSOR );
-			Cursor normCursor = Cursor.getPredefinedCursor( Cursor.DEFAULT_CURSOR );
-
 			@Override
-			public void mouseEntered( MouseEvent e ) {
-				ZonePanel sourcePanel = (ZonePanel)e.getSource();
-				sourcePanel.setCursor( zoneCursor );
+			public void mouseMoved( MouseEvent e ) {
+				boolean inZone = false;
+				for ( ZoneHolder zoneHolder : zoneHolders ) {
+					if ( zoneHolder.zoneRect.contains( e.getX(), e.getY() ) ) {
+						inZone = true;
+						HotSpotNodePanel.this.setCursor( zoneCursor );
+						HotSpotNodePanel.this.setToolTipText( zoneHolder.title );
+						break;
+					}
+				}
+				if ( !inZone ) {
+					HotSpotNodePanel.this.setCursor( Cursor.getDefaultCursor() );
+					HotSpotNodePanel.this.setToolTipText( null );
+				}
+
+				ToolTipManager.sharedInstance().mouseMoved( e );
 			}
+
 			@Override
 			public void mouseExited( MouseEvent e ) {
-				ZonePanel sourcePanel = (ZonePanel)e.getSource();
-				sourcePanel.setCursor( normCursor );
+				HotSpotNodePanel.this.setCursor( Cursor.getDefaultCursor() );
 			}
+
 			@Override
 			public void mouseClicked( MouseEvent e ) {
-				ZonePanel sourcePanel = (ZonePanel)e.getSource();
-				ZonePanel zoneTarget = sourcePanel.getZoneTarget();
-				int targetIndex = sourcePanel.getLinkTarget();
-
-				if ( zoneTarget != null ) {
-					zoneTarget.setRevealed( !zoneTarget.isRevealed() );
-				}
-				else if ( targetIndex != -1 ) {
-					HotSpotNodePanel.this.getNavCtrl().setReaderNode( targetIndex );
+				for ( ZoneHolder zoneHolder : zoneHolders ) {
+					if ( zoneHolder.zoneRect.contains( e.getX(), e.getY() ) ) {
+						if ( zoneHolder.imageRef != null ) {
+							zoneHolder.revealed = !zoneHolder.revealed;
+							HotSpotNodePanel.this.repaint();
+							// Keep looping through layers? Sure.
+						}
+						else if ( zoneHolder.linkTarget != -1 ) {
+							HotSpotNodePanel.this.getNavCtrl().setReaderNode( zoneHolder.linkTarget );
+							break;
+						}
+					}
 				}
 			}
 		};
+		this.addMouseListener( zoneListener );
+		this.addMouseMotionListener( zoneListener );
 	}
 
 
@@ -120,85 +120,57 @@ public class HotSpotNodePanel extends NodePanel {
 		super.setNode( node, showAll );
 		hotspotNode = (UHSHotSpotNode)node;
 
-		GridBagConstraints gridC = new GridBagConstraints();
-		gridC.gridy = 0;
-		gridC.gridwidth = GridBagConstraints.REMAINDER;  //End Row
-		gridC.weightx = 1.0;
-		gridC.weighty = 0;
-		gridC.fill = GridBagConstraints.HORIZONTAL;
-		gridC.insets = new Insets( 1, 2, 1, 2 );
-
-		JLayeredPane sharedPanel = new JLayeredPane();
-
 		InputStream is = null;
 		try {
 			// The main image is visible and full size.
 
 			ByteReference mainImageRef = hotspotNode.getRawImageContent();
 			is = mainImageRef.getInputStream();
-			JLabel mainImageLbl = new JLabel( new ImageIcon( ImageIO.read( is ) ) );
+			mainImage = ImageIO.read( is );
 			is.close();
 
-			ZonePanel mainContentPanel = new ZonePanel( mainImageLbl );
-				Dimension mainContentSize = mainContentPanel.getPreferredSize();
-				mainContentPanel.setBounds( 0, 0, mainContentSize.width, mainContentSize.height );
-				mainContentPanel.setRevealed( true );
-				sharedPanel.add( mainContentPanel, JLayeredPane.DEFAULT_LAYER, 0 );
-
-			// Stretch the shared panel to fit the main image.
-			sharedPanel.setPreferredSize( mainContentSize );
-			sharedPanel.setMinimumSize( mainContentSize );
+			// Stretch to fit the main image.
+			Dimension mainImageSize = new Dimension( mainImage.getWidth(), mainImage.getHeight() );
+			this.setPreferredSize( mainImageSize );
+			this.setMinimumSize( mainImageSize );
 
 			for ( int i=0; i < node.getChildCount(); i++ ) {
 				UHSNode childNode = node.getChild( i );
 				String childType = childNode.getType();
 
+				HotSpot spot = hotspotNode.getSpot( childNode );
+
+				ZoneHolder zoneHolder = new ZoneHolder();
+				zoneHolder.zoneRect = new Rectangle( spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH );
+				zoneHolder.title = childNode.getDecoratedStringContent();
+
 				if ( "Overlay".equals( childType ) && childNode instanceof UHSImageNode ) {
 					UHSImageNode overlayNode = (UHSImageNode)childNode;
-					String title = overlayNode.getDecoratedStringContent();
 
-					HotSpot spot = hotspotNode.getSpot( overlayNode );
+					zoneHolder.imageRef = overlayNode.getRawImageContent();
+					if ( zoneHolder.imageRef != null ) {
 
-					ByteReference overlayImageRef = overlayNode.getRawImageContent();
-					is = overlayImageRef.getInputStream();
-					JLabel overlayImageLbl = new JLabel( new ImageIcon( ImageIO.read( is ) ) );
-					is.close();
+						is = zoneHolder.imageRef.getInputStream();
+						BufferedImage overlayImage = ImageIO.read( is );
+						is.close();
 
-					ZonePanel contentPanel = new ZonePanel( overlayImageLbl );
-						Dimension pSize = contentPanel.getPreferredSize();
-						contentPanel.setBounds( spot.x, spot.y, pSize.width, pSize.height );
-						sharedPanel.add( contentPanel, JLayeredPane.DEFAULT_LAYER, 0 );
+						zoneHolder.image = overlayImage;
+						zoneHolder.overlayRect = new Rectangle( spot.x, spot.y, overlayImage.getWidth(), overlayImage.getHeight() );
 
-					ZonePanel spotPanel = new ZonePanel();
-						spotPanel.setToolTipText( title );
-						spotPanel.setZoneTarget( contentPanel );
-						spotPanel.setBounds( spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH );
-						sharedPanel.add( spotPanel, JLayeredPane.PALETTE_LAYER, 0 );
-						spotPanel.addMouseListener( zoneListener );
-
-					if ( showAll ) contentPanel.setRevealed( true );
+						if ( showAll ) zoneHolder.revealed = true;
+					}
+				}
+				else if ( childNode.isLink() ) {  // Follow the link when clicked.
+					zoneHolder.linkTarget = childNode.getLinkTarget();
+				}
+				else if ( childNode.getId() != -1 ) {  // Visit that child when clicked.
+					zoneHolder.linkTarget = childNode.getId();
 				}
 				else {
-					String text = childNode.getDecoratedStringContent();
-
-					HotSpot spot = hotspotNode.getSpot( childNode );
-
-					ZonePanel spotPanel = new ZonePanel();
-						spotPanel.setToolTipText( text );
-						spotPanel.setBounds( spot.zoneX, spot.zoneY, spot.zoneW, spot.zoneH );
-						sharedPanel.add( spotPanel, JLayeredPane.PALETTE_LAYER, 0 );
-						spotPanel.addMouseListener( zoneListener );
-
-					if ( childNode.isLink() ) { // Follow the link when clicked.
-						spotPanel.setLinkTarget( childNode.getLinkTarget() );
-					}
-					else if ( childNode.getId() != -1 ) { // Visit that child when clicked.
-						spotPanel.setLinkTarget( childNode.getId() );
-					}
-					else {
-						logger.error( "Unexpected {} child of UHSHotSpotNode", childNode.getType() );
-					}
+					logger.error( "Unexpected {} child of UHSHotSpotNode", childNode.getType() );
 				}
+
+				zoneHolders.add( zoneHolder );
 			}
 		}
 		catch ( IOException e ) {
@@ -211,19 +183,29 @@ public class HotSpotNodePanel extends NodePanel {
 			try {if ( is != null ) is.close();} catch ( IOException e ) {}
 		}
 
-		this.add( sharedPanel, gridC );
-		gridC.gridy++;
-
 		this.revalidate();
 		this.repaint();
 	}
 
 	@Override
 	public void reset() {
+		if ( mainImage != null ) {
+			mainImage.flush();
+			mainImage = null;
+		}
+
+		for ( ZoneHolder zoneHolder : zoneHolders ) {
+			if ( zoneHolder.image != null ) {
+				zoneHolder.image.flush();
+			}
+		}
+		zoneHolders.clear();
+
 		hotspotNode = null;
-		this.removeAll();
 		super.reset();
 
+		this.setPreferredSize( null );
+		this.setMinimumSize( null );
 		this.revalidate();
 		this.repaint();
 	}
@@ -235,5 +217,65 @@ public class HotSpotNodePanel extends NodePanel {
 	@Override
 	public boolean getScrollableTracksViewportWidth() {
 		return false;
+	}
+
+
+	@Override
+	public void paintComponent( Graphics g ) {
+		super.paintComponent( g );
+		Graphics2D g2d = (Graphics2D)g;
+
+		if ( mainImage != null ) {
+			g2d.drawImage( mainImage, 0, 0, null );
+		}
+
+		for ( ZoneHolder zoneHolder : zoneHolders ) {
+			if ( zoneHolder.imageRef != null && zoneHolder.revealed ) {
+				g2d.drawImage( zoneHolder.image, zoneHolder.overlayRect.x, zoneHolder.overlayRect.y, null );
+			}
+		}
+
+		for ( ZoneHolder zoneHolder : zoneHolders ) {
+			Color prevColor = g2d.getColor();
+			Stroke prevStroke = g2d.getStroke();
+
+			if ( zoneHolder.imageRef != null ) {
+				if ( !zoneHolder.revealed ) {
+					g2d.setStroke( zoneStroke );
+
+					g2d.setColor( Color.GRAY );
+					g2d.drawRect( zoneHolder.overlayRect.x, zoneHolder.overlayRect.y, zoneHolder.overlayRect.width, zoneHolder.overlayRect.height );
+
+					g2d.setColor( Color.ORANGE );
+					g2d.drawRect( zoneHolder.zoneRect.x, zoneHolder.zoneRect.y, zoneHolder.zoneRect.width, zoneHolder.zoneRect.height );
+				}
+			}
+			else if ( zoneHolder.linkTarget != -1 ) {
+				g2d.setStroke( zoneStroke );
+				g2d.setColor( Color.GREEN );
+				g2d.drawRect( zoneHolder.zoneRect.x, zoneHolder.zoneRect.y, zoneHolder.zoneRect.width, zoneHolder.zoneRect.height );
+			}
+			else {
+				g2d.setStroke( zoneStroke );
+				g2d.setColor( Color.BLUE );
+				g2d.drawRect( zoneHolder.zoneRect.x, zoneHolder.zoneRect.y, zoneHolder.zoneRect.width, zoneHolder.zoneRect.height );
+			}
+
+			g2d.setColor( prevColor );
+			g2d.setStroke( prevStroke );
+		}
+	}
+
+
+	private static class ZoneHolder {
+		public Rectangle zoneRect = null;
+		public Rectangle overlayRect = null;
+		public String title = null;
+		public ByteReference imageRef = null;
+		public int linkTarget = -1;
+
+		public BufferedImage image = null;
+
+		public boolean revealed = false;
 	}
 }
