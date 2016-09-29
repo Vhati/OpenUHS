@@ -13,10 +13,13 @@ import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.ScaleGestureDetector.SimpleOnScaleGestureListener;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -35,7 +38,7 @@ import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 
 
-public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
+public class HotSpotNodeView extends NodeView {
 
 	private final Logger logger = LoggerFactory.getLogger( AndroidUHSConstants.LOG_TAG );
 
@@ -48,10 +51,17 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 	protected Bitmap mainBitmap = null;
 	protected RectF originalMainRect = null;
 	protected RectF currentMainRect = null;
+
+	protected float minScale = 1f;
+	protected float scale = 1f;
+	protected Rect panMainRect = new Rect();
+	protected RectF viewRect = new RectF();
 	protected List<ZoneHolder> zoneHolders = new ArrayList<ZoneHolder>();
 
 	protected Paint rectPaint;
-	protected GestureDetector gestureDetector;
+
+	private GestureDetector gestureDetector;
+	private ScaleGestureDetector scaleDetector;
 
 
 	public HotSpotNodeView( Context context ) {
@@ -71,12 +81,69 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 
 		gestureDetector = new GestureDetector( context, new SimpleOnGestureListener() {
 			@Override
-			public boolean onSingleTapUp( MotionEvent event ) {
+			public boolean onSingleTapUp( MotionEvent e ) {
+				if ( hotspotNode != null ) {
+					for ( ZoneHolder zoneHolder : zoneHolders ) {
+						float paddedX = e.getX() + HotSpotNodeView.this.getPaddingLeft();
+						float paddedY = e.getY() + HotSpotNodeView.this.getPaddingTop();
+
+						if ( zoneHolder.currentZoneRect.contains( paddedX, paddedY ) ) {
+
+							if ( zoneHolder.imageBitmap != null ) {
+								zoneHolder.revealed = !zoneHolder.revealed;
+								HotSpotNodeView.this.invalidate();
+								// Keep looping through layers? Sure.
+							}
+							else if ( zoneHolder.linkTarget != -1 ) {
+								HotSpotNodeView.this.getNavCtrl().setReaderNode( zoneHolder.linkTarget );
+								break;
+							}
+						}
+					}
+				}
+
+				return true;
+			}
+
+			@Override
+			public boolean onScroll( MotionEvent e1, MotionEvent e2, float distanceX, float distanceY ) {
+
+				handleScroll( distanceX, distanceY );  // Delta since last scroll, NOT since initial drag.
+				return true;
+			}
+
+			@Override
+			public boolean onDown( MotionEvent e ) {
+				return true;  // Necessary for all other gesture methods to work.
+			}
+		});
+
+		scaleDetector = new ScaleGestureDetector( context, new SimpleOnScaleGestureListener() {
+			public boolean onScale( ScaleGestureDetector detector ) {
+				float newScale = scale;
+				newScale *= detector.getScaleFactor();
+				newScale = Math.max( minScale, Math.min( newScale, 2.0f ) );
+				setZoom( newScale );
+
 				return true;
 			}
 		});
 
-		this.setOnTouchListener( this );
+
+		this.setOnTouchListener(new View.OnTouchListener() {
+			@Override
+			public boolean onTouch( View v, MotionEvent e ) {
+				if ( gestureDetector.onTouchEvent( e ) ) {
+					return true;
+				}
+				else if ( scaleDetector.onTouchEvent( e ) ) {
+					return true;
+				}
+				// Check MotionEvent.ACTION_UP here if interested in end-of-scroll.
+
+				return false;
+			}
+		});
 	}
 
 	@Override
@@ -104,6 +171,7 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 			is.close();
 			originalMainRect = new RectF( 0, 0, mainBitmap.getWidth(), mainBitmap.getHeight() );
 			currentMainRect = new RectF( originalMainRect );
+			panMainRect.offsetTo( (int)currentMainRect.centerX() - panMainRect.centerX(), (int)currentMainRect.centerY() - panMainRect.centerY() );
 
 			for ( int i=0; i < hotspotNode.getChildCount(); i++ ) {
 				UHSNode childNode = hotspotNode.getChild( i );
@@ -188,34 +256,6 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 
 
 	@Override
-	public boolean onTouch( View v, MotionEvent e ) {
-		if ( hotspotNode != null ) {
-			// Check for "e.getAction() == MotionEvent.ACTION_UP", but
-			// acounting for swipes, multiple taps, etc.
-
-			if ( gestureDetector.onTouchEvent( e ) ) {
-				for ( ZoneHolder zoneHolder : zoneHolders ) {
-					float paddedX = e.getX() + this.getPaddingLeft();
-					float paddedY = e.getY() + this.getPaddingTop();
-
-					if ( zoneHolder.currentZoneRect.contains( paddedX, paddedY ) ) {
-
-						if ( zoneHolder.imageBitmap != null ) {
-							zoneHolder.revealed = !zoneHolder.revealed;
-							HotSpotNodeView.this.invalidate();
-						}
-						else if ( zoneHolder.linkTarget != -1 ) {
-							HotSpotNodeView.this.getNavCtrl().setReaderNode( zoneHolder.linkTarget );
-						}
-					}
-				}
-			}
-		}
-		return false;  // Don't consume the event.
-	}
-
-
-	@Override
 	protected void onMeasure( int widthMeasureSpec, int heightMeasureSpec ) {
 		super.onMeasure( widthMeasureSpec, heightMeasureSpec );
 
@@ -251,33 +291,122 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 		float contentWidth = (float)this.getWidth() - (float)(this.getPaddingLeft() + this.getPaddingRight());
 		float contentHeight = (float)this.getHeight() - (float)(this.getPaddingTop() + this.getPaddingBottom());
 
+		viewRect.set( 0, 0, contentWidth, contentHeight );
+
 		if ( hotspotNode != null ) {
-			float scaleX = contentWidth / originalMainRect.width();
-			float scaleY = contentHeight / originalMainRect.height();
-			float scale = Math.min( scaleX, scaleY );
+			float fitX = contentWidth / originalMainRect.width();
+			float fitY = contentHeight / originalMainRect.height();
+			minScale = Math.min( fitX, fitY );
+		}
+		else {
+			minScale = 1f;
+		}
 
-			float newMainL = originalMainRect.left * scale;
-			float newMainT = originalMainRect.top * scale;
-			float newMainR = originalMainRect.right * scale;
-			float newMainB = originalMainRect.bottom * scale;
-			currentMainRect.set( newMainL, newMainT, newMainR, newMainB );
+		setZoom( minScale );
+	}
 
-			for ( ZoneHolder zoneHolder : zoneHolders ) {
-				float newZoneL = zoneHolder.originalZoneRect.left * scale;
-				float newZoneT = zoneHolder.originalZoneRect.top * scale;
-				float newZoneR = zoneHolder.originalZoneRect.right * scale;
-				float newZoneB = zoneHolder.originalZoneRect.bottom * scale;
-				zoneHolder.currentZoneRect.set( newZoneL, newZoneT, newZoneR, newZoneB );
+	/**
+	 * Sets a new scaling factor for content.
+	 *
+	 * <p>This will resize/reposition the main image pan view and all zones.</p>
+	 *
+	 * <p>After resizing, the pan rectangle will be centered on the same spot.</p>
+	 */
+	private void setZoom( float newScale ) {
+		if ( hotspotNode == null ) return;
 
-				if ( zoneHolder.imageRef != null ) {
-					float newOverlayL = zoneHolder.originalOverlayRect.left * scale;
-					float newOverlayT = zoneHolder.originalOverlayRect.top * scale;
-					float newOverlayR = zoneHolder.originalOverlayRect.right * scale;
-					float newOverlayB = zoneHolder.originalOverlayRect.bottom * scale;
-					zoneHolder.currentOverlayRect.set( newOverlayL, newOverlayT, newOverlayR, newOverlayB );
-				}
+		scale = newScale;
+
+		//currentMainRect.set( originalMainRect );
+
+		// Resize panMainRect, then shift back to maintain the center.
+		int prevPanCenterX = panMainRect.centerX();
+		int prevPanCenterY = panMainRect.centerY();
+		panMainRect.set( 0, 0, (int)(viewRect.width() / scale), (int)(viewRect.height() / scale) );
+
+		panMainRect.offsetTo( prevPanCenterX - panMainRect.centerX(), prevPanCenterY - panMainRect.centerY() );
+
+		for ( ZoneHolder zoneHolder : zoneHolders ) {
+			float newZoneL = zoneHolder.originalZoneRect.left * scale;
+			float newZoneT = zoneHolder.originalZoneRect.top * scale;
+			float newZoneR = zoneHolder.originalZoneRect.right * scale;
+			float newZoneB = zoneHolder.originalZoneRect.bottom * scale;
+			zoneHolder.currentZoneRect.set( newZoneL, newZoneT, newZoneR, newZoneB );
+			zoneHolder.currentZoneRect.offset( -panMainRect.left * scale, -panMainRect.top * scale );
+
+			if ( zoneHolder.imageRef != null ) {
+				float newOverlayL = zoneHolder.originalOverlayRect.left * scale;
+				float newOverlayT = zoneHolder.originalOverlayRect.top * scale;
+				float newOverlayR = zoneHolder.originalOverlayRect.right * scale;
+				float newOverlayB = zoneHolder.originalOverlayRect.bottom * scale;
+				zoneHolder.currentOverlayRect.set( newOverlayL, newOverlayT, newOverlayR, newOverlayB );
+				zoneHolder.currentOverlayRect.offset( -panMainRect.left * scale, -panMainRect.top * scale );
 			}
 		}
+
+		handleScroll( 0, 0 );  // Bring pan rect toward center during zoom-out, and invalidate.
+	}
+
+
+	/**
+	 * Incrementally nudges content.
+	 *
+	 * <p>If an axis of the pan view is larger than the main image, that
+	 * axis will not scroll. (Presumably it will have been centered
+	 * already.)</p>
+	 */
+	private void handleScroll( float distanceX, float distanceY ) {
+		if ( hotspotNode == null ) return;
+
+		float panOffsetX = distanceX / scale;  // TODO: Convert offset to scaled intra-main-image space.
+		float panOffsetY = distanceY / scale;
+
+		// Clamp to prevent scrolling beyond the main image.
+		if ( panMainRect.width() < currentMainRect.width() ) {
+			if ( panMainRect.right + panOffsetX > currentMainRect.right ) {
+				panOffsetX = currentMainRect.right - panMainRect.right;
+			}
+			else if ( panMainRect.left + panOffsetX < 0 ) {
+				panOffsetX = 0 - panMainRect.left;
+			}
+		}
+		else {
+			panOffsetX = 0;
+		}
+
+		if ( panMainRect.height() < currentMainRect.height() ) {
+			if ( panMainRect.bottom + panOffsetY > currentMainRect.bottom ) {
+				panOffsetY = currentMainRect.bottom - panMainRect.bottom;
+			}
+			else if ( panMainRect.top + panOffsetY < 0 ) {
+				panOffsetY = 0 - panMainRect.top;
+			}
+		}
+		else {
+			panOffsetY = 0;
+		}
+
+		panMainRect.offset( (int)panOffsetX, (int)panOffsetY );
+
+		float screenOffsetX = panOffsetX * scale;  // TODO: Convert back to unscaled screen coords.
+		float screenOffsetY = panOffsetY * scale;
+
+		for ( ZoneHolder zoneHolder : zoneHolders ) {
+			float newZoneL = zoneHolder.originalZoneRect.left * scale;
+			float newZoneT = zoneHolder.originalZoneRect.top * scale;
+			zoneHolder.currentZoneRect.offsetTo( newZoneL, newZoneT );
+			zoneHolder.currentZoneRect.offset( -panMainRect.left * scale, -panMainRect.top * scale );
+
+			if ( zoneHolder.imageRef != null ) {
+				float newOverlayL = zoneHolder.originalOverlayRect.left * scale;
+				float newOverlayT = zoneHolder.originalOverlayRect.top * scale;
+
+				zoneHolder.currentOverlayRect.offsetTo( newOverlayL, newOverlayT );
+				zoneHolder.currentOverlayRect.offset( -panMainRect.left * scale, -panMainRect.top * scale );
+			}
+		}
+
+		this.invalidate();
 	}
 
 
@@ -286,7 +415,7 @@ public class HotSpotNodeView extends NodeView implements View.OnTouchListener {
 		super.onDraw( canvas );
 
 		if ( mainBitmap != null ) {
-			canvas.drawBitmap( mainBitmap, null, currentMainRect, null );
+			canvas.drawBitmap( mainBitmap, panMainRect, viewRect, null );
 		}
 
 		int zoneHoldersCount = zoneHolders.size();
