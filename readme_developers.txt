@@ -119,10 +119,10 @@ Android SDK Setup
 
 
   Start the AVD Manager
-    Create a virtual device. (I used: 3.2" QVGA, 320x480 mdpi)
+    Create a virtual device. (I used: 3.2" HVGA slider, 320x480 mdpi)
     API: Level 10
     CPU: Intel Atom (x86)
-    Skin: Skin with dynamic hardware controls
+    Skin: HVGA
     SD Card: I arbitrarily chose 50 MB.
     Snapshot: This can save time by skipping boot-up, when launched using the last snapshot.
 
