@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">OpenUHS</string>
+
+    <string name="action_about">About</string>
+    <string name="ok">OK</string>
+
     <string name="reader">Reader</string>
     <string name="action_show_all_hints">Show All Hints</string>
-    <string name="action_switch_to_downloader">Downloader...</string>
-    <string name="downloader">Downloader</string>
+    <string name="action_switch_to_downloader">Catalog...</string>
+
+    <string name="downloader">Catalog</string>
     <string name="action_catalog_fetch">Refresh</string>
     <string name="action_catalog_filter_local">Show Local Files</string>
     <string name="action_catalog_search">Search</string>
@@ -14,4 +19,35 @@
     <string name="context_action_open_file">Open</string>
     <string name="context_action_fetch_file">Download</string>
     <string name="context_action_delete_file">Delete</string>
+
+    <string name="alert_welcome_title">Welcome to OpenUHS</string>
+    <string name="alert_welcome_message">This is the catalog screen.\n
+\n
+Click "refresh" in the corner menu to download a list of available titles.\n
+\n
+Find an interesting title, click to download that hint file (or click and hold
+for more options), and then click to open it in the reader screen.\n
+\n
+Graphical hints can be zoomed with two fingers and panned by dragging.
+Sometimes they will contain clickable regions indicated by a dashed outline.</string>
+
+    <string name="alert_about_title">About OpenUHS</string>
+    <string name="alert_about_message">This software is distributed under the
+GPL open source license and its source code is available under\n
+https://github.com/vhati/OpenUHS\n
+\n
+Copyright (C) 2007-2009, 2011, 2012, 2016 David Millis\n
+\n
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.\n
+\n
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.\n
+\n
+You should have received a copy of the GNU General Public License
+along with this program. If not, see http://www.gnu.org/licenses/.</string>
 </resources>

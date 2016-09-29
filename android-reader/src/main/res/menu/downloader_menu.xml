@@ -30,4 +30,9 @@
           android:icon="@drawable/ic_schedule_normal_24dp"
           app:showAsAction="never" />
 
+    <item android:id="@+id/aboutAction"
+          android:title="@string/action_about"
+          android:icon="@drawable/ic_info_normal_24dp"
+          app:showAsAction="never" />
+
 </menu>

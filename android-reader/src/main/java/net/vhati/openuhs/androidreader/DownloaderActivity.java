@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -24,6 +25,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.InputType;
+import android.text.SpannableString;
+import android.text.util.Linkify;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -100,7 +103,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		this.setContentView( R.layout.downloader );
 
 		toolbar = (Toolbar)findViewById( R.id.downloaderToolbar );
-		toolbar.setTitle( "" );
+		toolbar.setTitle( this.getString( R.string.downloader ) );
 		this.setSupportActionBar( toolbar );
 
 
@@ -175,6 +178,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 		if ( cachedCatalogFile.exists() ) {
 			loadCatalog();
+		} else {
+			showWelcomeMessage();
 		}
 	}
 
@@ -188,7 +193,7 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		// It may not be possible to disable suggestions reliably.
 		SearchView searchView = (SearchView)MenuItemCompat.getActionView( menu.findItem( R.id.catalogSearchAction ) );
 		searchView.setSubmitButtonEnabled( false );
-		searchView.setQueryHint( getResources().getString( R.string.catalog_search_hint ) );
+		searchView.setQueryHint( this.getString( R.string.catalog_search_hint ) );
 		searchView.setInputType( InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_FILTER|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS );
 		searchView.setSuggestionsAdapter( null );
 
@@ -235,6 +240,10 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 				catalogAdapter.clearFilters();
 				catalogAdapter.setSortFilter( catalogDateComparator );
 				catalogAdapter.applyFilters();
+				return true;
+
+			case R.id.aboutAction:
+				showAboutMessage();
 				return true;
 
 			default:
@@ -564,6 +573,33 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 			try {if ( fos != null ) fos.close();} catch ( IOException e ) {}
 			if ( failed && cachedCatalogFile.exists() ) cachedCatalogFile.delete();
 		}
+	}
+
+
+	private void showWelcomeMessage() {
+		AlertDialog.Builder welcomeBuilder = new AlertDialog.Builder( this );
+		welcomeBuilder.setIcon( R.drawable.ic_info_normal_24dp );
+		welcomeBuilder.setTitle( R.string.alert_welcome_title );
+		welcomeBuilder.setMessage( R.string.alert_welcome_message );
+		welcomeBuilder.setPositiveButton(R.string.ok, null );
+		AlertDialog welcomeDialog = welcomeBuilder.create();
+		welcomeDialog.show();
+	}
+
+	/**
+	 * Shows a dialog describing this app.
+	 */
+	private void showAboutMessage() {
+		SpannableString aboutMessage = new SpannableString( this.getString( R.string.alert_about_message ) );
+		Linkify.addLinks( aboutMessage, Linkify.WEB_URLS );
+
+		AlertDialog.Builder aboutBuilder = new AlertDialog.Builder( this );
+		aboutBuilder.setIcon( R.drawable.ic_info_normal_24dp );
+		aboutBuilder.setTitle( R.string.alert_about_title );
+		aboutBuilder.setMessage( aboutMessage );
+		aboutBuilder.setPositiveButton(R.string.ok, null );
+		AlertDialog aboutDialog = aboutBuilder.create();
+		aboutDialog.show();
 	}
 
 

@@ -5,8 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.util.Linkify;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -146,6 +149,10 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 				intent.setFlags( Intent.FLAG_ACTIVITY_NEW_TASK | IntentCompat.FLAG_ACTIVITY_CLEAR_TASK | IntentCompat.FLAG_ACTIVITY_TASK_ON_HOME );
 				this.startActivity( intent );
 				finish();
+				return true;
+
+			case R.id.aboutAction:
+				showAboutMessage();
 				return true;
 
 			default:
@@ -397,6 +404,23 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 		revealNextBtn.setEnabled( !currentNodeView.isComplete() );
 
 		return true;
+	}
+
+
+	/**
+	 * Shows a dialog describing this app.
+	 */
+	private void showAboutMessage() {
+		SpannableString aboutMessage = new SpannableString( this.getString( R.string.alert_about_message ) );
+		Linkify.addLinks( aboutMessage, Linkify.WEB_URLS );
+
+		AlertDialog.Builder aboutBuilder = new AlertDialog.Builder( this );
+		aboutBuilder.setIcon( R.drawable.ic_info_normal_24dp );
+		aboutBuilder.setTitle( R.string.alert_about_title );
+		aboutBuilder.setMessage( aboutMessage );
+		aboutBuilder.setPositiveButton(R.string.ok, null );
+		AlertDialog aboutDialog = aboutBuilder.create();
+		aboutDialog.show();
 	}
 
 
