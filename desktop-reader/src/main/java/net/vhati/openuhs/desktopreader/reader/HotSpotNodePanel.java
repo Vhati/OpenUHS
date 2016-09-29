@@ -30,7 +30,6 @@ import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.desktopreader.reader.NodePanel;
-import net.vhati.openuhs.desktopreader.reader.ZonePanel;
 
 
 /**
