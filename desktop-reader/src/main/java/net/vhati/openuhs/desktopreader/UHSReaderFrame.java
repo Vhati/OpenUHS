@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.downloader.CatalogItem;
 import net.vhati.openuhs.desktopreader.Nerfable;
+import net.vhati.openuhs.desktopreader.UHSReaderAboutPanel;
 import net.vhati.openuhs.desktopreader.UHSReaderConfig;
 import net.vhati.openuhs.desktopreader.UHSReaderConfigPanel;
 import net.vhati.openuhs.desktopreader.downloader.CatalogTableModel;
@@ -51,6 +52,7 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 	private UHSReaderPanel readerPanel = new UHSReaderPanel();
 	private UHSDownloaderPanel downloaderPanel = new UHSDownloaderPanel();
 	private UHSReaderConfigPanel configPanel = new UHSReaderConfigPanel();
+	private UHSReaderAboutPanel aboutPanel = new UHSReaderAboutPanel();
 
 
 	public UHSReaderFrame( UHSReaderConfig appConfig ) {
@@ -72,6 +74,8 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 		tabbedPane.add( downloaderPanel, "Downloader" );
 
 		tabbedPane.add( configPanel, "Settings" );
+
+		tabbedPane.add( aboutPanel, "About" );
 
 		readerPanel.addAncestorListener(new AncestorListener() {
 			@Override
