@@ -51,17 +51,17 @@ public class UHSFetchTask extends AsyncTask<CatalogItem, Integer, UHSFetchTask.U
 	// This runs in a background thread, unlike the other methods here.
 	@Override
 	protected UHSFetchResult doInBackground( CatalogItem... catItems ) {
+		CatalogItem catItem = catItems[0];
+		UHSFetchResult fetchResult = new UHSFetchResult( catItem );
+
 		HttpURLConnection con = null;
 		InputStream downloadStream = null;
 		ZipInputStream unzipStream = null;
 		OutputStream os = null;
 		File uhsFile = null;
 
-		CatalogItem catItem = catItems[0];
 		String urlString = catItem.getUrl();
-		UHSFetchResult fetchResult = new UHSFetchResult( catItem );
 		Exception ex = null;
-
 		try {
 			con = (HttpURLConnection)(new URL( urlString ).openConnection());
 			con.setRequestProperty( "User-Agent", userAgent );
@@ -96,11 +96,8 @@ public class UHSFetchTask extends AsyncTask<CatalogItem, Integer, UHSFetchTask.U
 				int count;
 				while ( (count=unzipStream.read(data)) != -1 ) {
 					if ( isCancelled() ) {
-						unzipStream.close();
-						if ( uhsFile.exists() ) uhsFile.delete();
-
 						fetchResult.status = UHSFetchResult.STATUS_CANCELLED;
-						return fetchResult;
+						break;
 					}
 					total += count;
 					if ( uhsLength > 0 ) {
@@ -109,9 +106,10 @@ public class UHSFetchTask extends AsyncTask<CatalogItem, Integer, UHSFetchTask.U
 					os.write( data, 0, count );
 				}
 			}
-			unzipStream.close();
 
-			fetchResult.status = UHSFetchResult.STATUS_COMPLETED;
+			if ( fetchResult.status == UHSFetchResult.STATUS_DOWNLOADING ) {
+				fetchResult.status = UHSFetchResult.STATUS_COMPLETED;
+			}
 		}
 		catch ( Exception e ) {
 			ex = e;
@@ -125,6 +123,9 @@ public class UHSFetchTask extends AsyncTask<CatalogItem, Integer, UHSFetchTask.U
 		if ( ex != null ) {
 			fetchResult.status = UHSFetchResult.STATUS_ERROR;
 			fetchResult.errorCause = ex;
+		}
+		if ( fetchResult.status != UHSFetchResult.STATUS_COMPLETED && fetchResult.file != null && fetchResult.file.exists() ) {
+			fetchResult.file.delete();
 		}
 
 		return fetchResult;

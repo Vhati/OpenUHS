@@ -82,9 +82,14 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 		int unitProgress = 0;
 
 		for ( int unitIndex=0; unitIndex < catItems.length; unitIndex++ ) {
-			if ( isCancelled() || aborting ) break;
-
 			CatalogItem catItem = catItems[unitIndex];
+			UHSFetchResult fetchResult = new UHSFetchResult( catItem );
+
+			if ( isCancelled() || aborting ) {
+				fetchResult.status = UHSFetchResult.STATUS_CANCELLED;
+				fetchResults.add( fetchResult );
+				continue;
+			}
 
 			String unitNameOld = unitName;
 			unitName = catItem.getName();
@@ -101,9 +106,7 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 			File uhsFile = null;
 
 			String urlString = catItem.getUrl();
-			UHSFetchResult fetchResult = new UHSFetchResult( catItem );
 			Exception ex = null;
-
 			try {
 				con = (HttpURLConnection)(new URL( urlString ).openConnection());
 				con.setRequestProperty( "User-Agent", userAgent );
@@ -136,14 +139,10 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 					byte data[] = new byte[4096];
 					long total = 0;
 					int count;
-					while ( (count=unzipStream.read(data)) != -1 ) {
+					while ( (count=unzipStream.read( data )) != -1 ) {
 						if ( this.isCancelled() || aborting ) {
-							unzipStream.close();
-							if ( uhsFile.exists() ) uhsFile.delete();
-
 							fetchResult.status = UHSFetchResult.STATUS_CANCELLED;
-							fetchResults.add( fetchResult );
-							return fetchResults;
+							break;
 						}
 						total += count;
 						if ( uhsLength > 0 ) {
@@ -154,9 +153,10 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 						os.write( data, 0, count );
 					}
 				}
-				unzipStream.close();
 
-				fetchResult.status = UHSFetchResult.STATUS_COMPLETED;
+				if ( fetchResult.status == UHSFetchResult.STATUS_DOWNLOADING ) {
+					fetchResult.status = UHSFetchResult.STATUS_COMPLETED;
+				}
 				fetchResults.add( fetchResult );
 			}
 			catch ( IOException e ) {
@@ -175,6 +175,9 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 				fetchResult.status = UHSFetchResult.STATUS_ERROR;
 				fetchResult.errorCause = ex;
 				fetchResults.add( fetchResult );
+			}
+			if ( fetchResult.status != UHSFetchResult.STATUS_COMPLETED && fetchResult.file != null && fetchResult.file.exists() ) {
+				fetchResult.file.delete();
 			}
 
 			this.setProgress( ((unitIndex+1) * 100 / catItems.length) );

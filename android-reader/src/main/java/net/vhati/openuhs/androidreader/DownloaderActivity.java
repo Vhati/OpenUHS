@@ -401,13 +401,10 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 		else {
 			if ( fetchResult.status != UHSFetchResult.STATUS_CANCELLED ) {
 				Throwable t = fetchResult.errorCause;
-				logger.error( "Download failed: {}", (( t != null ) ? t : "Unknown error") );
+				logger.error( "Downloading \"{}\" failed: {}", fetchResult.catItem.getName(), (( t != null ) ? t : "Unknown error") );
 
 				String message = String.format( "Download failed: %s", (( t != null ) ? t : "Unknown error") );
 				Toast.makeText( this, message, Toast.LENGTH_LONG ).show();
-			}
-			if ( fetchResult.file != null && fetchResult.file.exists() ) {
-				fetchResult.file.delete();
 			}
 		}
 		colorizeCatalogRow( fetchResult.catItem );

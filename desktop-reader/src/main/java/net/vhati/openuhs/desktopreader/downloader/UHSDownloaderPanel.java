@@ -362,10 +362,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 								if ( fetchResult.status != UHSFetchResult.STATUS_COMPLETED ) {
 
 									if ( fetchResult.status != UHSFetchResult.STATUS_CANCELLED ) {
-										// TODO: ...
-									}
-									if ( fetchResult.file != null && fetchResult.file.exists() ) {
-										fetchResult.file.delete();
+										Throwable t = fetchResult.errorCause;
+										logger.error( "Downloading \"{}\" failed: {}", fetchResult.catItem.getName(), (( t != null ) ? t : "Unknown error") );
 									}
 								}
 							}
@@ -374,7 +372,7 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 							// InterruptedException, while get() was blocking.
 							// java.util.concurrent.ExecutionException, if SwingWorker threw something.
 
-							logger.error( "Could not fetch hint files", ex );
+							logger.error( "Downloading hint files failed", ex );
 						}
 
 						colorizeTable();
