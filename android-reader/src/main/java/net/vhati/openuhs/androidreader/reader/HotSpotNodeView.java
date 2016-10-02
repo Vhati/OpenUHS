@@ -257,6 +257,8 @@ public class HotSpotNodeView extends NodeView {
 		zoneHolders.clear();
 
 		hotspotNode = null;
+		resetScale();
+
 		super.reset();
 		this.invalidate();
 	}
@@ -304,18 +306,21 @@ public class HotSpotNodeView extends NodeView {
 		float contentWidth = (float)this.getWidth() - (float)(this.getPaddingLeft() + this.getPaddingRight());
 		float contentHeight = (float)this.getHeight() - (float)(this.getPaddingTop() + this.getPaddingBottom());
 
-		viewRect.set( 0, 0, contentWidth, contentHeight );
+		viewRect.set( 0, 0, Math.max( 0, contentWidth ), Math.max( 0, contentHeight ) );
 
 		if ( hotspotNode != null ) {
 			float fitX = contentWidth / originalMainRect.width();
 			float fitY = contentHeight / originalMainRect.height();
 			minScale = Math.min( fitX, fitY );
+
+			handleScale( minScale );
 		}
 		else {
 			minScale = 1f;
-		}
+			scale = 1f;
 
-		handleScale( minScale );
+			panMainRect.set( 0, 0, (int)viewRect.width(), (int)viewRect.height() );
+		}
 	}
 
 	/**
