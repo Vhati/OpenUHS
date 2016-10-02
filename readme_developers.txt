@@ -117,6 +117,8 @@ Android SDK Setup
 
   If you have a physical device, technically you /could/ forgo emulation.
 
+  Physical devices require a driver. The SDK offers "Extras/Google USB Driver" for Nexus devices. To install it, or find other manufacturers' installers, see this guide. ( https://developer.android.com/studio/run/oem-usb.html )
+
 
   Start the AVD Manager
     Create a virtual device. (I used: 3.2" HVGA slider, 320x480 mdpi)
