@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.CRC16;
+import net.vhati.openuhs.core.ExtraNodeId;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSAudioNode;
 import net.vhati.openuhs.core.UHSBatchNode;
@@ -1416,10 +1417,10 @@ public class UHSParser {
 		UHSHotSpotNode hotspotNode = new UHSHotSpotNode( mainType );
 			hotspotNode.setRawStringContent( mainTitle );
 			hotspotNode.setRawImageContent( mainImageRef );
-			hotspotNode.setId( startIndex );  // TODO: The id can be mainImageIndex and/or startIndex.
+			hotspotNode.setId( startIndex );
 			currentNode.addChild( hotspotNode );
 			context.getRootNode().addLink( hotspotNode );
-			context.getRootNode().addLink( hotspotNode, mainImageIndex );  // TODO: Ugly. See UHSRootNode's javadoc.
+			context.registerExtraId( new UHSHotSpotNode.HotSpotMainImageId( mainImageIndex ) );  // Ignore any main image restriction.
 
 		for ( int j=0; j < innerCount; ) {
 			// Nested ids in HyperImage point to the zone line. Node type is at (zone line)+1.
@@ -1785,7 +1786,7 @@ public class UHSParser {
 			newNode.setStringContentDecorator( new Version9xIncentiveDecorator() );
 			incentiveNode.addChild( newNode );
 
-			applyRestrictions( context.getRootNode(), newNode.getDecoratedStringContent() );
+			applyRestrictions( context, newNode.getDecoratedStringContent() );
 		}
 
 		index += innerCount;
@@ -1793,36 +1794,45 @@ public class UHSParser {
 	}
 
 	/**
-	 * Sets access restrictions on UHSNodes based on ids in an incentive UHSNode.
+	 * Sets access restrictions on UHSNodes based on ids from an Incentive UHSNode.
 	 *
-	 * @param rootNode  an existing root node
+	 * @param context  the parse context
 	 * @param incentiveString  a space-separated string of numbers, each with 'Z' or 'A' appended
 	 * @see #parseIncentiveNode(UHSParseContext, UHSNode, int)
+	 * @see net.vhati.openuhs.core.UHSParseContext#registerExtraId(int)
 	 */
-	public void applyRestrictions( UHSRootNode rootNode, String incentiveString ) {
+	public void applyRestrictions( UHSParseContext context, String incentiveString ) {
 		List<String> badTokens = new ArrayList<String>();
 
 		String[] tokens = incentiveString.split( " " );
 		for ( int i=0; i < tokens.length; i++ ) {
 			if ( tokens[i].matches( "[0-9]+[AZ]" ) ) {
 				int tmpId = Integer.parseInt( tokens[i].substring( 0, tokens[i].length()-1 ) );
-				UHSNode tmpNode = rootNode.getNodeByLinkId( tmpId );
-				if ( tmpNode != null ) {
-					if ( tokens[i].endsWith( "Z" ) ) {
-						tmpNode.setRestriction( UHSNode.RESTRICT_NAG );
-					} else if ( tokens[i].endsWith("A") ) {
-						tmpNode.setRestriction( UHSNode.RESTRICT_REGONLY );
-					}
+
+				ExtraNodeId extraId = context.getExtraId( tmpId );
+				if ( extraId != null ) {
+					// This id is extraneous and not worth warning about.
+					logger.debug( "Ignoring extraneous restriction: {}", extraId.toString() );
 				}
 				else {
-					badTokens.add( tokens[i] );
+					UHSNode tmpNode = context.getRootNode().getNodeByLinkId( tmpId );
+					if ( tmpNode != null ) {
+						if ( tokens[i].endsWith( "Z" ) ) {
+							tmpNode.setRestriction( UHSNode.RESTRICT_NAG );
+						} else if ( tokens[i].endsWith("A") ) {
+							tmpNode.setRestriction( UHSNode.RESTRICT_REGONLY );
+						}
+					}
+					else {
+						badTokens.add( tokens[i] );
+					}
 				}
 			}
 		}
 		if ( !badTokens.isEmpty() ) {
 			StringBuilder buf = new StringBuilder();
 			for ( String badToken : badTokens ) {
-				if ( buf.length() > 0 ) buf.append( "," );
+				if ( buf.length() > 0 ) buf.append( ", " );
 				buf.append( badToken );
 			}
 			logger.warn( "Incentive string referenced unknown node ids ({}): {}", buf, incentiveString );

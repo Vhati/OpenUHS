@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import net.vhati.openuhs.core.ArrayByteReference;
 import net.vhati.openuhs.core.ByteReference;
+import net.vhati.openuhs.core.ExtraNodeId;
 import net.vhati.openuhs.core.FileRegionByteReference;
 import net.vhati.openuhs.core.UHSRootNode;
 
@@ -36,6 +38,8 @@ public class UHSParseContext {
 	protected List<String> allLines = null;
 	protected byte[] binHunk = null;
 	protected long binHunkLength = 0;
+
+	protected List<ExtraNodeId> extraIds = new ArrayList<ExtraNodeId>();
 
 	protected int lineIndexFudge = 0;
 	protected int lastLineIndex = -1;
@@ -156,6 +160,30 @@ public class UHSParseContext {
 	 */
 	public void setAllLines( List<String> allLines ) {
 		this.allLines = allLines;
+	}
+
+
+	/**
+	 * Registers an extraneous id to ignore.
+	 *
+	 * <p>Rather than track unnecessary ids, this will suppress warnings about
+	 * unsatisfied Incentive hunk references.</p>
+	 *
+	 * <p>HyperImage hunks sometimes have their main image line referenced in
+	 * an Incentive hunk.</p>
+	 */
+	public void registerExtraId( ExtraNodeId extraId ) {
+		extraIds.add( extraId );
+	}
+
+	/**
+	 * Returns an object representing an extraneous id, or null.
+	 */
+	public ExtraNodeId getExtraId( int id ) {
+		for ( ExtraNodeId extraId : extraIds ) {
+			if ( extraId.getId() == id ) return extraId;
+		}
+		return null;
 	}
 
 

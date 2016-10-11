@@ -3,6 +3,7 @@ package net.vhati.openuhs.core;
 import java.util.List;
 import java.util.Vector;
 
+import net.vhati.openuhs.core.ExtraNodeId;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
@@ -127,5 +128,19 @@ public class UHSHotSpotNode extends UHSImageNode {
 	public void removeAllChildren() {
 		super.removeAllChildren();
 		spots.clear();
+	}
+
+
+
+	public static class HotSpotMainImageId extends ExtraNodeId {
+
+		public HotSpotMainImageId( int id ) {
+			super( id );
+		}
+
+		@Override
+		public String toString() {
+			return String.format( "%d (HotSpotMainImage)", this.getId() );
+		}
 	}
 }

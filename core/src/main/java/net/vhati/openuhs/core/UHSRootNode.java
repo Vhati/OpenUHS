@@ -11,7 +11,7 @@ import net.vhati.openuhs.core.UHSNode;
 /**
  * A node to hold all others.
  *
- * <p>Additionally a root node is responsible for tracking nodes that are link
+ * <p>Additionally a root node is responsible for tracking ids to resolve link
  * targets.</p>
  */
 public class UHSRootNode extends UHSNode {
@@ -81,35 +81,11 @@ public class UHSRootNode extends UHSNode {
 	/**
 	 * Makes a node unavailable to target by link nodes.
 	 *
-	 * <p>TODO: Due to a workaround that introduced arbitrary many-to-one
-	 * linking for UHSHotSpotNodes, this method has to iterate linkMap's
-	 * values to remove every map entry with the non-unique node.</p>
-	 *
 	 * @param doomedLink  the node to remove
 	 * @see #addLink(UHSNode, int)
 	 */
 	public void removeLink( UHSNode doomedLink ) {
-		//if ( !linkMap.containsKey( doomedLink.getId()+"" ) ) return;
-		//linkMap.remove( doomedLink.getId()+"" );
-
-		for ( Iterator<UHSNode> it = linkMap.values().iterator(); it.hasNext(); ) {
-			if ( doomedLink.equals( it.next() ) ) {
-				it.remove();
-			}
-		}
-	}
-
-	/**
-	 * Associates a node with an arbitrary id, for unusual link nodes.
-	 *
-	 * <p>Some link nodes point to the main image in a HyperImage hunk.</p>
-	 *
-	 * <p>TODO: This method seems like a bad idea. Currently UHSNodes only
-	 * claim one id themselves, but UHSHotSpotNodes represent both the title
-	 * and main image content.</p>
-	 */
-	public void addLink( UHSNode newLink, int id ) {
-		linkMap.put( id+"", newLink );
+		linkMap.remove( doomedLink.getId()+"" );
 	}
 
 	/**
@@ -123,8 +99,8 @@ public class UHSRootNode extends UHSNode {
 	/**
 	 * Gets a node by its id.
 	 *
-	 * <p>The node itself will always be returned,
-	 * without any temporary group wrapping it.</p>
+	 * <p>The node itself will always be returned, without any temporary group
+	 * wrapping it.</p>
 	 *
 	 * @param id  the id of the node to get
 	 * @return the node, or null if not found
