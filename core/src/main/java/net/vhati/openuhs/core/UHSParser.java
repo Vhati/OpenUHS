@@ -1317,23 +1317,28 @@ public class UHSParser {
 	 * regions.</p>
 	 *
 	 * <p>The HyperImage itself gets an id, as usual. The main image also gets
-	 * an id, which may be referenced by an Incentive node.</p>
+	 * an id, which may be referenced by an Incentive chunk. There are no
+	 * examples in the wild of a restricted main image inside an unrestricted
+	 * HyperImage chunk. Testing with an edited file indicated that official
+	 * readers ignore main image restrictions, and that this is likely an
+	 * error the authors made.</p>
 	 *
 	 * </p>Line ids of nodes nested within a HyperImage are skewed because
 	 * their initial line is the region coords, and the node type comes
 	 * second.</p>
 	 *
-	 * <p>TODO: HyperImages can contain additional HyperImage nodes that have
-	 * their own children. It is unknown whether such children would need
-	 * all their ids doubly skewed.</p>
+	 * <p>HyperImages can contain additional HyperImage nodes that have
+	 * their own children. Shifting a nested HyperImage should not recurse
+	 * into its children.</p>
 	 *
 	 * <p><ul>
-	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 7, the Stone Altar, Can you give me a picture of the solution?</li>
-	 * <li>Illustrative UHS: <i>Deja Vu I</i>: Sewer, The Map</li>
 	 * <li>Illustrative UHS: <i>Arcania: Gothic 4</i>: Jungle and Mountains, Jungle Map</li>
-	 * <li>Illustrative UHS: <i>Nancy Drew 4: TitRT</i>: Shed, How can I solve, Finished Leaf Puzzle</li>
+	 * <li>Illustrative UHS: <i>Deja Vu I</i>: Sewer, The Map</li>
+	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImage and main image)</li>
 	 * <li>Illustrative UHS: <i>Elder Scrolls III: Tribunal</i>: Maps, Norenen-Dur, Details</li>
-	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImage image)</li>
+	 * <li>Illustrative UHS: <i>Nancy Drew 4: TitRT</i>: Shed, How can I solve, Finished Leaf Puzzle (Incentive'd HyperImage and main image)</li>
+	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 7, the Stone Altar, Can you give me a picture of the solution? (Overlay and Link)</li>
+	 * <li>Illustrative UHS: <i>Trinity</i>: Trinity Site, Map of the Trinity Site, Map Key (Link targeting a nested HyperImage erroneously points to the node type line, instead of shifting to the zone line)</li>
 	 * </ul></p>
 	 *
 	 * @param context  the parse context
@@ -1440,10 +1445,8 @@ public class UHSParser {
 					if ( hotspotNode.getChildCount() == childrenBefore+1 ) {
 						UHSNode newNode = hotspotNode.getChild( hotspotNode.getChildCount()-1 );
 						newNode.shiftId( -1, context.getRootNode() );
-						// It might be weird to recurse HyperImage id shifts.
-						if ( tmp.endsWith( "hyperpng" ) && newNode.getChildCount() != 1 ) {
-							// TODO.
-						}
+						// Do not recurse HyperImage id shifts.
+
 						hotspotNode.setSpot( newNode, new HotSpot( zoneX1, zoneY1, zoneX2-zoneX1, zoneY2-zoneY1, -1, -1 ) );
 					}
 					else {

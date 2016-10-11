@@ -843,13 +843,13 @@ public class UHSWriter {
 			UHSNode tmpNode = hotspotNode.getChild( i );
 
 			HotSpot spot = hotspotNode.getSpot( tmpNode );
-			buf.append( zeroPad( spot.zoneX+1, 4 ) );  // X and Y need plus 1.
+			buf.append( zeroPad( spot.zoneX, 4 ) );
 			buf.append( " " );
-			buf.append( zeroPad( spot.zoneY+1, 4 ) );
+			buf.append( zeroPad( spot.zoneY, 4 ) );
 			buf.append( " " );
-			buf.append( zeroPad( spot.zoneX+1+spot.zoneW, 4 ) );
+			buf.append( zeroPad( spot.zoneX+spot.zoneW, 4 ) );
 			buf.append( " " );
-			buf.append( zeroPad( spot.zoneY+1+spot.zoneH, 4 ) );
+			buf.append( zeroPad( spot.zoneY+spot.zoneH, 4 ) );
 			buf.append( "\r\n" );
 			innerCount++;
 
@@ -882,9 +882,9 @@ public class UHSWriter {
 				String oLengthString = zeroPad( overlayImageRef.length(), context.getLengthNumberWidth() );
 				oBuf.append( "000000 " ).append( oOffsetString ).append( " " ).append( oLengthString );
 				oBuf.append( " " );
-				oBuf.append( zeroPad( spot.x+1, 4 ) );  // X and Y need plus 1.
+				oBuf.append( zeroPad( spot.x, 4 ) );
 				oBuf.append( " " );
-				oBuf.append( zeroPad( spot.y+1, 4 ) );
+				oBuf.append( zeroPad( spot.y, 4 ) );
 				oBuf.append( "\r\n" );
 				innerCount++;
 
@@ -896,10 +896,12 @@ public class UHSWriter {
 
 				if ( context.isPhaseOne() ) {
 					// Fudge the line map to point one line earlier, to zone.
-					int badLine = context.getLine( tmpNode.getId() );
-					context.putLine( tmpNode.getId(), badLine-1 );
+					if ( tmpNode.getId() != -1 ) {
+						int badLine = context.getLine( tmpNode.getId() );
+						context.putLine( tmpNode.getId(), badLine-1 );
+					}
 
-					// TODO: No recursive id shifting is done.
+					// Do not recurse HyperImage id shifts.
 				}
 			}
 		}
