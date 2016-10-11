@@ -524,6 +524,19 @@ public class UHSParser {
 	 * legacy flag will be set if "** END OF 88A FORMAT **" was found at the
 	 * end.</p>
 	 *
+	 * <p>Some 88a format files have titles with one or more leading spaces.
+	 * It is unclear why, but official readers honor them.</p>
+	 *
+	 * <p>Two 88a format files have extraneous bytes at the end. This was
+	 * apparently a bug in the "Atari ST UHS writer". Official readers ignore
+	 * those bytes.</p>
+	 *
+	 * <p><ul>
+	 * <li>Illustrative UHS: <i>Castle Master</i> (Extraneous bytes at EOF: 0x00 x 38)</li>
+	 * <li>Illustrative UHS: <i>Spellcaster 101</i> (22 leading spaces in title)</li>
+	 * <li>Illustrative UHS: <i>The Fool's Errand</i> (Extraneous bytes at EOF: 0x00 x 71)</li>
+	 * </ul></p>
+	 *
 	 * @param context  the parse context
 	 * @see #decryptString(CharSequence)
 	 * @return  the number of lines consumed from the file in parsing children
@@ -700,7 +713,16 @@ public class UHSParser {
 	 * </ul></p>
 	 *
 	 * <p>Official readers merge the content of the auxiliary nodes to appear
-	 * together as "Credits and File Information".</p>
+	 * together as "Credits and File Information". Older readers buried it in
+	 * the file menu, "Information".</p>
+	 *
+	 * <p>Two 9x format files have extraneous bytes at the end. Official
+	 * readers ignore those bytes.</p>
+	 *
+	 * <p><ul>
+	 * <li>Illustrative UHS: <i>Return of the Phantom</i> (Extraneous bytes at EOF: 0x00 x 744)</li>
+	 * <li>Illustrative UHS: <i>Team Fortress Classic</i> (Extraneous bytes at EOF: 0x0d 0x0a)</li>
+	 * </ul></p>
 	 *
 	 * @param context  the parse context
 	 * @return the root of a tree of nodes
@@ -755,46 +777,46 @@ public class UHSParser {
 
 		String tmp = context.getLine( index );
 		if ( tmp.matches( "[0-9]+ [A-Za-z]+$" ) ) {
-			if (tmp.endsWith( " comment" )) {
+			if ( tmp.endsWith( " comment" ) ) {
 				index += parseCommentNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " credit" )) {
+			else if ( tmp.endsWith( " credit" ) ) {
 				index += parseCreditNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " hint" )) {
+			else if ( tmp.endsWith( " hint" ) ) {
 				index += parseHintNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " nesthint" )) {
+			else if ( tmp.endsWith( " nesthint" ) ) {
 				index += parseNestHintNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " subject" )) {
+			else if ( tmp.endsWith( " subject" ) ) {
 				index += parseSubjectNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " link" )) {
+			else if ( tmp.endsWith( " link" ) ) {
 				index += parseLinkNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " text" )) {
+			else if ( tmp.endsWith( " text" ) ) {
 				index += parseTextNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " hyperpng" )) {
+			else if ( tmp.endsWith( " hyperpng" ) ) {
 				index += parseHyperImageNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " gifa" )) {
+			else if ( tmp.endsWith( " gifa" ) ) {
 				index += parseHyperImageNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " sound" )) {
+			else if ( tmp.endsWith( " sound" ) ) {
 				index += parseSoundNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " blank" )) {
+			else if ( tmp.endsWith( " blank" ) ) {
 				index += parseBlankNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " version" )) {
+			else if ( tmp.endsWith( " version" ) ) {
 				index += parseVersionNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " info" )) {
+			else if ( tmp.endsWith( " info" ) ) {
 				index += parseInfoNode( context, currentNode, index );
 			}
-			else if (tmp.endsWith( " incentive" )) {
+			else if ( tmp.endsWith( " incentive" ) ) {
 				index += parseIncentiveNode( context, currentNode, index );
 			}
 			else {
@@ -873,24 +895,31 @@ public class UHSParser {
 	 * <p>A hyphen divider indicates the next batch, beginning with encrypted
 	 * hint text. The encrypted text may span multiple lines.</p>
 	 *
-	 * <p>An equals divider indicates a nested node of any type (as if this were
-	 * a Subject node), immediately followed by more encrypted hint text.</p>
+	 * <p>An equals divider indicates a nested node of any type (as if this
+	 * were a Subject node), immediately followed by more encrypted hint text.</p>
 	 *
 	 * <p>The official reader reveals "partial hint", "embedded hunk", and
 	 * "rest of hint" together as if they were one - each on a new line but
 	 * displayed within a shared border.</p>
 	 *
 	 * <p>The hints surrounding an embedded hunk are optional.
-	 * That is: a 'standalone' embedded hunk is preceeded by a hyphen and an equals sign.
-	 * It is immediately followed by the hyphen indicating the next sepatate hint.</p>
+	 * That is: a 'standalone' embedded hunk is preceeded by a hyphen and an
+	 * equals sign. It is immediately followed by the hyphen indicating the
+	 * next sepatate hint.</p>
 	 *
-	 * <p>Multiple embedded hunks can appear in a row, each preceeded by an equals.</p>
+	 * <p>Hint text can span multiple lines, but none may be empty. By
+	 * convention, a 'blank' line contains single space. Files have been seen
+	 * with 'nesthint' lines exceeding the recommended 78 character word wrap.</p>
 	 *
-	 * <p>TODO: See if multiple embedded hunks can alternate with intervening text,
-	 * not just appearing in clumps.</p>
+	 * <p>Multiple embedded hunks can appear in a row, each preceeded by an
+	 * equals.</p>
+	 *
+	 * <p>TODO: See if multiple embedded hunks can alternate with intervening
+	 * text, not just appearing in clumps.</p>
 	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 1, What should I do with all the stuff outside my window?</li>
+	 * <li>Illustrative UHS: <i>The Elder Scrolls IV: Oblivion</i>, Faction Quests, Thieves Guild, Selling Stolen Goods (longest nesthint line in a file, 107 chars, dashes in a table)</li>
 	 * </ul></p>
 	 *
 	 * @param context  the parse context
@@ -1207,7 +1236,6 @@ public class UHSParser {
 				if ( tmpContent.length() > 0 ) tmpContent.append( breakChar );
 				tmpContent.append( decryptTextHunk( line, context.getEncryptionKey() ) );
 			}
-
 		}
 		catch ( IOException e ) {
 			// This error would be at index-1, if not for context.getLine()'s memory.
@@ -1552,8 +1580,8 @@ public class UHSParser {
 	/**
 	 * Generates a version UHSNode.
 	 *
-	 * <p>This is the version reported by the hint file.
-	 * It may be inaccurate, blank, or conflict with what is claimed in the info node.</p>
+	 * <p>This is the version reported by the hint file. It may be inaccurate,
+	 * blank, or conflict with what is claimed in the info node.</p>
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -1565,16 +1593,17 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
-	 * <p>The title is the version, like "96a". The sentences describe the compiler.</p>
+	 * <p>The title text is the version, like "96a". Sentences that follow
+	 * describe the compiler.</p>
 	 *
 	 * <p><ul>
-	 * <li>Illustrative UHS: <i>Frankenstein: Through the Eyes of the Monster</i> (blank version)</li>
-	 * <li>Illustrative UHS: <i>Kingdom O' Magic</i> (blank version)</li>
-	 * <li>Illustrative UHS: <i>Out of This World</i> (blank version)</li>
-	 * <li>Illustrative UHS: <i>Spycraft: The Great Game</i> (blank version)</li>
-	 * <li>Illustrative UHS: <i>Star Control 3</i> (blank version)</li>
-	 * <li>Illustrative UHS: <i>System Shock</i> (blank version)</li>
-	 * <li>Illustrative UHS: <i>The Bizarre Adventures of Woodruff</i> (blank version)</li>
+	 * <li>Illustrative UHS: <i>Frankenstein: Through the Eyes of the Monster</i> (blank version, info says 96a)</li>
+	 * <li>Illustrative UHS: <i>Kingdom O' Magic</i> (blank version, info doesn't say)</li>
+	 * <li>Illustrative UHS: <i>Out of This World</i> (blank version, info says 95a)</li>
+	 * <li>Illustrative UHS: <i>Spycraft: The Great Game</i> (blank version, info says 95a)</li>
+	 * <li>Illustrative UHS: <i>Star Control 3</i> (blank version, info says 96a)</li>
+	 * <li>Illustrative UHS: <i>System Shock</i> (blank version, info says 96a)</li>
+	 * <li>Illustrative UHS: <i>The Bizarre Adventures of Woodruff</i> (blank version, info doesn't say)</li>
 	 * </ul></p>
 	 *
 	 * @param context  the parse context
@@ -1630,11 +1659,21 @@ public class UHSParser {
 	 * copyright=sentence
 	 * copyright=sentence
 	 * copyright=sentence
+	 * author-note=sentence
+	 * author-note=sentence
+	 * game-note=sentence
+	 * game-note=sentence
 	 * >sentence
 	 * >sentence
 	 * >sentence
 	 * }
 	 * </pre></blockquote>
+	 *
+	 * <p>This hunk is not always present. Presumably it was introduced in the
+	 * 95a format.</p>
+	 *
+	 * <p>Length is a long number, which must match the UHS file's total
+	 * length, or official readers will complain about corruption.</p>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1685,10 +1724,10 @@ public class UHSParser {
 	 * <p>This node lists ids to show/block if the reader is unregistered.</p>
 	 *
 	 * <p>The list is a space-separated string of numbers, each with 'Z' or
-	 * 'A' appended. 'Z' means the node is a nag message that should be hidden
-	 * from registered readers. 'A' means only registered readers can see the
-	 * node's children or link target. In some files, there is no list, and
-	 * this node only occupies 2 lines.</p>
+	 * 'A' appended to each. 'Z' means the node is a nag message that should
+	 * be hidden from registered readers. 'A' means only registered readers
+	 * can see the node's children or link target. In some files, there is no
+	 * list, and this node only occupies 2 lines.</p>
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -1700,10 +1739,12 @@ public class UHSParser {
 	 * }
 	 * </pre></blockquote>
 	 *
+	 * <p>This hunk is not always present. Presumably it was introduced in the
+	 * 95a format.</p>
+	 *
 	 * <p>Upon parsing this node, all referenced ids will be looked up by
 	 * calling getLink(id) on the rootNode. The nodes will have their
-	 * restriction attribute set, but it is up to readers to actually honor
-	 * them.</p>
+	 * restriction field set, but it is up to readers to actually honor that.</p>
 	 *
 	 * <p><ul>
 	 * <li>Illustrative UHS: <i>AGON</i> (no IDs)</li>
@@ -1759,6 +1800,8 @@ public class UHSParser {
 	 * @see #parseIncentiveNode(UHSParseContext, UHSNode, int)
 	 */
 	public void applyRestrictions( UHSRootNode rootNode, String incentiveString ) {
+		List<String> badTokens = new ArrayList<String>();
+
 		String[] tokens = incentiveString.split( " " );
 		for ( int i=0; i < tokens.length; i++ ) {
 			if ( tokens[i].matches( "[0-9]+[AZ]" ) ) {
@@ -1772,9 +1815,17 @@ public class UHSParser {
 					}
 				}
 				else {
-					logger.warn( "Incentive string referenced an unknown node id ({}): {}", tmpId, incentiveString );
+					badTokens.add( tokens[i] );
 				}
 			}
+		}
+		if ( !badTokens.isEmpty() ) {
+			StringBuilder buf = new StringBuilder();
+			for ( String badToken : badTokens ) {
+				if ( buf.length() > 0 ) buf.append( "," );
+				buf.append( badToken );
+			}
+			logger.warn( "Incentive string referenced unknown node ids ({}): {}", buf, incentiveString );
 		}
 	}
 
