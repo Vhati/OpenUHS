@@ -743,7 +743,7 @@ public class UHSWriter {
 		contentLines = splitContentLines( dataNode, -1 );
 		encryptContentLines( context, ENCRYPT_TEXT, contentLines );
 		StringBuilder dataBuf = new StringBuilder();
-		appendLines( dataBuf, false, contentLines );
+		appendLines( dataBuf, true, contentLines );
 
 		CharsetEncoder asciiEncoder = Charset.forName( "US-ASCII" ).newEncoder();
 		asciiEncoder.onMalformedInput( CodingErrorAction.REPORT );
