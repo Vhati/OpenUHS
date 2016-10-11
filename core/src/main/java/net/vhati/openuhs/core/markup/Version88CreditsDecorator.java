@@ -20,7 +20,7 @@ import net.vhati.openuhs.core.markup.Version88StringDecorator;
  * ever wrote with that in mind, so it's barely worth
  * enforcing.
  */
-public class Version88CreditDecorator extends Version88StringDecorator {
+public class Version88CreditsDecorator extends Version88StringDecorator {
 
 
 	@Override

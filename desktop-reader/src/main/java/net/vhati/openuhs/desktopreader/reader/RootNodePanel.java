@@ -139,7 +139,7 @@ public class RootNodePanel extends NodePanel {
 			else if ( "Info".equals( tmpNode.getType() ) ) {
 				tmpUHSArea.setOverrideText( String.format( "%s: %s", tmpNode.getType(), tmpNode.getRawStringContent() ) );
 			}
-			else if ( "Credit".equals( tmpNode.getType() ) ) {
+			else if ( "Credits".equals( tmpNode.getType() ) ) {
 				tmpUHSArea.setOverrideText( String.format( "%s: %s", tmpNode.getType(), tmpNode.getRawStringContent() ) );
 			}
 		}

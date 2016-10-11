@@ -213,8 +213,8 @@ public class UHSWriter {
 			else return false;
 		}
 
-		UHSNode creditNode = rootNode.getFirstChild( "Credit", UHSNode.class );
-		if ( creditNode == null || creditNode.getFirstChild( "CreditData", UHSNode.class ) == null ) {
+		UHSNode creditsNode = rootNode.getFirstChild( "Credits", UHSNode.class );
+		if ( creditsNode == null || creditsNode.getFirstChild( "CreditsData", UHSNode.class ) == null ) {
 			return false;
 		}
 
@@ -305,8 +305,8 @@ public class UHSWriter {
 		}
 
 		// TODO: Check for null nodes.
-		UHSNode creditNode = rootNode.getFirstChild( "Credit", UHSNode.class );
-		tmp = creditNode.getFirstChild( "CreditData", UHSNode.class ).getRawStringContent();
+		UHSNode creditsNode = rootNode.getFirstChild( "Credits", UHSNode.class );
+		tmp = creditsNode.getFirstChild( "CreditsData", UHSNode.class ).getRawStringContent();
 		tmp = tmp.replaceAll( "\\^break\\^", "\r\n" );
 		if ( tmp.length() > 0 ) buf.append( tmp ).append( "\r\n" );
 

@@ -102,7 +102,7 @@ public class RootNodeView extends NodeView {
 					else if ( "Info".equals( childNode.getType() ) ) {
 						((UHSTextView)childView).setOverrideText( String.format( "%s: %s", childNode.getType(), childNode.getRawStringContent() ) );
 					}
-					else if ( "Credit".equals( childNode.getType() ) ) {
+					else if ( "Credits".equals( childNode.getType() ) ) {
 						((UHSTextView)childView).setOverrideText( String.format( "%s: %s", childNode.getType(), childNode.getRawStringContent() ) );
 					}
 					else {

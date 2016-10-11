@@ -34,6 +34,7 @@ import net.vhati.openuhs.core.UHSNode;
 import net.vhati.openuhs.core.UHSParseContext;
 import net.vhati.openuhs.core.UHSParseException;
 import net.vhati.openuhs.core.UHSRootNode;
+import net.vhati.openuhs.core.markup.Version88CreditsDecorator;
 import net.vhati.openuhs.core.markup.Version9xCommentDecorator;
 import net.vhati.openuhs.core.markup.Version9xCreditDecorator;
 import net.vhati.openuhs.core.markup.Version9xHintDecorator;
@@ -43,7 +44,6 @@ import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 import net.vhati.openuhs.core.markup.Version9xTextDecorator;
 import net.vhati.openuhs.core.markup.Version9xTitleDecorator;
 import net.vhati.openuhs.core.markup.Version9xVersionDecorator;
-import net.vhati.openuhs.core.markup.Version88CreditDecorator;
 
 
 /**
@@ -502,7 +502,7 @@ public class UHSParser {
 	 * hint (encrypted)
 	 * hint (encrypted)
 	 * hint (encrypted)
-	 * credit sentences (several lines)
+	 * credits sentences (several lines)
 	 * }
 	 * </pre></blockquote>
 	 *
@@ -623,12 +623,12 @@ public class UHSParser {
 				fauxVersionDataNode.setRawStringContent( "This version info was added by OpenUHS during parsing because the 88a format does not report it." );
 				fauxVersionNode.addChild( fauxVersionDataNode );
 
-			UHSNode creditNode = new UHSNode( "Credit" );
-				creditNode.setRawStringContent( "-" );
-				rootNode.addChild( creditNode );
+			UHSNode creditsNode = new UHSNode( "Credits" );
+				creditsNode.setRawStringContent( "-" );
+				rootNode.addChild( creditsNode );
 
 			String breakChar = "^break^";
-			StringBuilder creditDataBuf = new StringBuilder();
+			StringBuilder creditsDataBuf = new StringBuilder();
 			while ( context.hasLine( index ) ) {
 				String tmp = context.getLine( index++ );
 
@@ -637,13 +637,13 @@ public class UHSParser {
 					break;
 				}
 
-				if ( creditDataBuf.length() > 0 ) creditDataBuf.append( breakChar );
-				creditDataBuf.append( tmp );
+				if ( creditsDataBuf.length() > 0 ) creditsDataBuf.append( breakChar );
+				creditsDataBuf.append( tmp );
 			}
-			UHSNode creditDataNode = new UHSNode( "CreditData" );
-				creditDataNode.setRawStringContent( creditDataBuf.toString() );
-				creditDataNode.setStringContentDecorator( new Version88CreditDecorator() );
-				creditNode.addChild( creditDataNode );
+			UHSNode creditsDataNode = new UHSNode( "CreditsData" );
+				creditsDataNode.setRawStringContent( creditsDataBuf.toString() );
+				creditsDataNode.setStringContentDecorator( new Version88CreditsDecorator() );
+				creditsNode.addChild( creditsDataNode );
 
 			return ( fudged + index );  // Index was reset after the header lines.
 		}
