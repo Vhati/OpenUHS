@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import net.vhati.openuhs.core.ByteReference;
 import net.vhati.openuhs.core.HotSpot;
 import net.vhati.openuhs.core.UHSAudioNode;
+import net.vhati.openuhs.core.UHSBatchNode;
 import net.vhati.openuhs.core.UHSHotSpotNode;
 import net.vhati.openuhs.core.UHSImageNode;
 import net.vhati.openuhs.core.UHSNode;
@@ -68,6 +69,9 @@ public class UHSXML {
 		else if ( currentNode instanceof UHSAudioNode ) {
 			currentElement = new Element( "audio-node" );
 		}
+		else if ( currentNode instanceof UHSBatchNode ) {
+			currentElement = new Element( "batch-node" );
+		}
 		else {
 			currentElement = new Element( "node" );
 		}
@@ -84,6 +88,9 @@ public class UHSXML {
 		else if ( restriction == UHSNode.RESTRICT_REGONLY ) {
 			currentElement.setAttribute( "restriction", "regonly" );
 		}
+
+		int linkId = currentNode.getLinkTarget();
+		currentElement.setAttribute( "link-id", (( linkId == -1 ) ? "" : linkId+"") );
 
 		// Content.
 		if ( currentNode instanceof UHSNode ) {
@@ -169,10 +176,19 @@ public class UHSXML {
 				}
 			}
 		}
+		else if ( currentNode instanceof UHSBatchNode ) {
+			List<UHSNode> children = currentNode.getChildren();
+			if ( children != null ) {
+				int childCount = children.size();
+				for ( UHSNode tmpNode : children ) {
+					Element childElement = new Element( "batch-child" );
+						childElement.setAttribute( "addon", Boolean.toString( ((UHSBatchNode)currentNode).isAddon( tmpNode ) ) );
+						currentElement.addContent( childElement );
+						n = exportNode( childElement, tmpNode, basename, n );
+				}
+			}
+		}
 		else {
-			int linkId = currentNode.getLinkTarget();
-			currentElement.setAttribute( "link-id", (( linkId == -1 ) ? "" : linkId+"") );
-
 			List<UHSNode> children = currentNode.getChildren();
 			if ( children != null ) {
 				int childCount = children.size();
