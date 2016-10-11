@@ -190,27 +190,22 @@ public class UHSRootNode extends UHSNode {
 
 
 	/**
-	 * Reverse-searches immediate children and returns the last Version node's content.
+	 * Returns the Version node's content.
 	 *
 	 * <p>It may be inaccurate, blank, or conflict with what is claimed in the info node.</p>
 	 *
-	 * <p>"Version: " will be stripped from the beginning.</p>
-	 *
 	 * @return the reported hint version (e.g., "96a"), or null if absent or blank
+	 * @see net.vhati.openuhs.core.UHSParser#parseVersionNode(UHSParseContext, UHSNode, int)
 	 */
 	public String getUHSVersion() {
 		String result = null;
 
-		for ( int i=this.getChildCount()-1; result == null && i >= 0; i-- ) {
-			UHSNode tmpNode = this.getChild( i );
-			if ( "Version".equals( tmpNode.getType() ) ) {
-				result = tmpNode.getDecoratedStringContent();
-			}
+		UHSNode versionNode = this.getFirstChild( "Version", UHSNode.class );
+		if ( versionNode != null ) {
+			String versionString = versionNode.getDecoratedStringContent();
+			if ( versionString.length() > 0 ) result = versionString;
 		}
 
-		if ( result != null ) {
-			if ( result.length() == 0 ) result = null;
-		}
 		return result;
 	}
 }
