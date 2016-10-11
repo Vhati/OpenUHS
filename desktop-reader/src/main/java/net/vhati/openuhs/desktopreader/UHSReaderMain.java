@@ -10,6 +10,7 @@ import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -52,6 +53,9 @@ public class UHSReaderMain {
 
 	private static final Logger logger = LoggerFactory.getLogger( UHSReaderMain.class );
 
+	private static Pattern compilerCreditsPtn = Pattern.compile( "This UHS hint file created through the use of the (.+?)(?:[.] +[A-Z]|, from )" );
+	private static Pattern compilerVersionPtn = Pattern.compile( "This file was written with the (.+?)[.] +[A-Z]" );
+
 	private static File appDir = new File( "./" );
 	private static File appDataDir = new File( "./" );
 	private static File userDataDir = new File( "./" );
@@ -64,8 +68,7 @@ public class UHSReaderMain {
 		OptionSpec<Void> optionForce88a = parser.accepts( "force-88a", "parse 9x hint files as if using an 88a reader" );
 		OptionSpec<Void> optionBatch = parser.acceptsAll( Arrays.asList( "b", "batch" ), "disable the default GUI and log file" );
 		OptionSpec<String> optionLoglevel = parser.acceptsAll( Arrays.asList( "v", "loglevel" ), "set console logging level" ).withRequiredArg().withValuesConvertedBy( new RegexMatcher( "debug|info|warn|error|off", Pattern.CASE_INSENSITIVE ) );
-		OptionSpec<Void> optionHintTitle = parser.accepts( "hint-title", "print the hint file's title" );
-		OptionSpec<Void> optionHintVersion = parser.accepts( "hint-version", "print the hint file's declared version" );
+		OptionSpec<Void> optionSummary = parser.accepts( "summary", "print the hint file's title and declared version" );
 		OptionSpec<Void> optionSaveXml = parser.accepts( "save-xml", "extract text as xml (in this dir)" );
 		OptionSpec<Void> optionSaveBin = parser.accepts( "save-bin", "extract embedded binaries (in this dir)" );
 		OptionSpec<Void> optionSave88a = parser.accepts( "save-88a", "save as 88a format (in this dir)" );
@@ -173,7 +176,12 @@ public class UHSReaderMain {
 							tmpRootNode = protoParser.parseFile( f );
 						}
 
-						if ( tmpRootNode != null ) validateNode( tmpRootNode, tmpRootNode );
+						if ( tmpRootNode != null ) {
+							if ( options.has( optionSummary ) ) {
+								printSummary( f, tmpRootNode );
+							}
+							validateNode( tmpRootNode, tmpRootNode );
+						}
 					}
 					catch ( Exception e ) {
 						logger.error( "Parsing/validating \"{}\" failed", f.getName(), e );
@@ -212,13 +220,8 @@ public class UHSReaderMain {
 			if ( rootNode != null ) {
 				logger.debug( "Parsing \"{}\" succeeded", etcFile.getName() );
 
-				if ( options.has( optionHintTitle ) ) {
-					String hintTitle = rootNode.getUHSTitle();
-					System.out.println( String.format( "Title: %s", ((hintTitle != null) ? hintTitle : "Unknown") ) );
-				}
-				if ( options.has( optionHintVersion ) ) {
-					String hintVersion = rootNode.getUHSVersion();
-					System.out.println( String.format( "Version: %s", ((hintVersion != null) ? hintVersion : "Unknown") ) );
+				if ( options.has( optionSummary ) ) {
+					printSummary( etcFile, rootNode );
 				}
 				if ( options.has( optionPrint ) ) {
 					rootNode.printNode("", "\t", System.out);
@@ -391,6 +394,61 @@ public class UHSReaderMain {
 		if ( rootNode != null ) {
 			frame.getUHSReaderPanel().setReaderRootNode( rootNode );
 		}
+	}
+
+
+	/**
+	 * Prints a description of a UHS file.
+	 */
+	public static void printSummary( File uhsFile, UHSRootNode rootNode ) {
+		String hintTitle = rootNode.getUHSTitle();
+		String hintVersion = rootNode.getUHSVersion();
+		String compilerVersion = getUHSCompilerVersion( rootNode );
+
+		System.out.println( String.format( "Name:\t%s", uhsFile.getName() ) );
+		System.out.println( String.format( "Title:\t%s", hintTitle ) );
+		System.out.println( String.format( "Version:\t%s", hintVersion ) );
+		System.out.println( String.format( "Compiler:\t%s", compilerVersion ) );
+		System.out.println( "" );
+	}
+
+	/**
+	 * Finds and scrapes a compiler description.
+	 *
+	 * <p>The compiler is mentioned in either the Credits node (88a format) or
+	 * Version node (9x format).</p>
+	 *
+	 * @return the reported compiler version, or null if absent or unrecognized
+	 */
+	public static String getUHSCompilerVersion( UHSRootNode rootNode ) {
+		String result = null;
+
+		UHSNode versionNode = rootNode.getFirstChild( "Version", UHSNode.class );
+		if ( versionNode != null ) {
+			String versionString = versionNode.getDecoratedStringContent();
+
+			if ( "88a".equals( versionString ) ) {
+				UHSNode creditsNode = rootNode.getFirstChild( "Credits", UHSNode.class );
+				if ( creditsNode != null ) {
+					UHSNode dataNode = creditsNode.getFirstChild( "CreditsData", UHSNode.class );
+					Matcher m = compilerCreditsPtn.matcher( dataNode.getDecoratedStringContent() );
+					if ( m.find() && m.group( 1 ).length() > 0 ) {
+						result = m.group( 1 );
+					}
+				}
+			}
+			else {
+				UHSNode dataNode = versionNode.getFirstChild( "VersionData", UHSNode.class );
+				if ( dataNode != null ) {
+					Matcher m = compilerVersionPtn.matcher( dataNode.getDecoratedStringContent() );
+					if ( m.find() && m.group( 1 ).length() > 0 ) {
+						result = m.group( 1 );
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 
 
