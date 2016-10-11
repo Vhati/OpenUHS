@@ -434,6 +434,10 @@ public class UHSWriter {
 			if ( currentNode.getId() != -1 ) {  // Associate id with current line.
 				context.putLine( currentNode.getId(), startIndex );
 			}
+
+			if ( currentNode.getRestriction() != UHSNode.RESTRICT_NONE ) {
+				context.registerRestrictedNode( currentNode );
+			}
 		}
 
 		if ( "Root".equals( type ) ) {
@@ -859,8 +863,14 @@ public class UHSWriter {
 				if ( tmpNode instanceof UHSImageNode == false ) {/* Throw an error */}
 				UHSImageNode overlayNode = (UHSImageNode)tmpNode;
 
-				if ( context.isPhaseOne() && overlayNode.getId() != -1 ) {
-					context.putLine( overlayNode.getId(), startIndex + innerCount - 1 );  // Fudge the line map to point to zone.
+				if ( context.isPhaseOne() ) {
+					if ( overlayNode.getId() != -1 ) {
+						context.putLine( overlayNode.getId(), startIndex + innerCount - 1 );  // Fudge the line map to point to zone.
+					}
+
+					if ( currentNode.getRestriction() != UHSNode.RESTRICT_NONE ) {
+						context.registerRestrictedNode( overlayNode );
+					}
 				}
 
 				StringBuilder oBuf = new StringBuilder();
@@ -1007,6 +1017,10 @@ public class UHSWriter {
 
 		contentLines = splitContentLines( dataNode, -1 );
 		innerCount += contentLines.length;
+		for ( int i=contentLines.length-1; i >= 0; i-- ) {
+			// Official reader panics if the actual file length does not match Info's line ("length=0204223").
+			contentLines[i] = contentLines[i].replaceFirst( "^(length=)[0-9]+$", "$1"+ context.getExpectedFileLength() );
+		}
 		appendLines( buf, true, contentLines );
 
 		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
@@ -1026,13 +1040,51 @@ public class UHSWriter {
 		buf.append( "-" ).append( "\r\n" );
 		innerCount += 2;
 
-		UHSNode dataNode = incentiveNode.getFirstChild( "IncentiveData", UHSNode.class );
-		if ( dataNode == null ) {/* Throw an error */}
+		// Generate a whole new Incentive hunk with the proper lines.
+		StringBuilder lineBuf = new StringBuilder();
+		StringBuilder chunkBuf = new StringBuilder();
 
-		contentLines = splitContentLines( dataNode, -1 );
-		innerCount += contentLines.length;
-		encryptContentLines( context, ENCRYPT_NEST, contentLines );
-		appendLines( buf, true, contentLines );
+		for ( UHSNode restrictedNode : context.getRestrictedNodes() ) {
+			if ( restrictedNode.getId() == -1 ) {
+				throw new UHSGenerationException( String.format( "Restricted node has no id set: %s", restrictedNode.getRawStringContent() ) );
+			}
+
+			String suffix = null;
+			if ( restrictedNode.getRestriction() == UHSNode.RESTRICT_NAG ) {
+				suffix = "Z";
+			}
+			else if ( restrictedNode.getRestriction() == UHSNode.RESTRICT_REGONLY ) {
+				suffix = "A";
+			}
+			else {
+				throw new UHSGenerationException( "Unexpected node restriction: "+ restrictedNode.getRestriction() );
+			}
+
+			chunkBuf.setLength( 0 );
+			chunkBuf.append( restrictedNode.getId() ).append( suffix );
+
+			// Word wrap at 78 characters.
+			if ( lineBuf.length() > 0 ) {
+				if ( lineBuf.length() + 1 + chunkBuf.length() <= 78 ) {
+					lineBuf.append( " " ).append( chunkBuf );
+				}
+				else {
+					buf.append( encryptNestString( lineBuf, context.getEncryptionKey() ) ).append( "\r\n" );
+					innerCount++;
+
+					lineBuf.setLength( 0 );
+					lineBuf.append( chunkBuf );
+				}
+			}
+			else {  // First chunk of the line, no leading space, no wrap.
+				lineBuf.append( chunkBuf );
+			}
+		}
+
+		if ( lineBuf.length() > 0 ) {
+			buf.append( encryptNestString( lineBuf, context.getEncryptionKey() ) ).append( "\r\n" );
+			innerCount++;
+		}
 
 		buf.insert( 0, innerCount );  // Insert innerCount at the beginning.
 		parentBuf.append( buf );

@@ -4,7 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -28,9 +30,11 @@ public class UHSGenerationContext {
 
 	// Phase 1.
 	private Map<Integer, Integer> idToLineMap = new HashMap<Integer, Integer>();
+	private List<UHSNode> restrictedNodes = new ArrayList<UHSNode>();
 
 	private long highestBinSectionOffset = 0;
 	private long highestBinSectionLength = 0;
+	private long highestBinHunkLength = 0;
 
 	private long binHunkOffset = 0;
 
@@ -50,6 +54,7 @@ public class UHSGenerationContext {
 	public void setPhase( int n ) {
 		phase = n;
 
+		highestBinHunkLength = Math.max( currentBinHunkLength, highestBinHunkLength );
 		currentBinHunkLength = 0;
 
 		int highestOffsetWidth = Long.toString( binHunkOffset + highestBinSectionOffset ).length();
@@ -118,6 +123,21 @@ public class UHSGenerationContext {
 	}
 
 
+	/**
+	 * Registers a node to include in the generated Incentive node.
+	 *
+	 * @param node  the node to register
+	 * @see net.vhati.openuhs.core.UHSNode#setRestriction(int)
+	 */
+	public void registerRestrictedNode( UHSNode node ) {
+		restrictedNodes.add( node );
+	}
+
+	public List<UHSNode> getRestrictedNodes() {
+		return restrictedNodes;
+	}
+
+
 	public long getNextBinaryOffset() {
 		return binHunkOffset + currentBinHunkLength;
 	}
@@ -175,5 +195,18 @@ public class UHSGenerationContext {
 	 */
 	public int getLengthNumberWidth() {
 		return lengthNumberWidth;
+	}
+
+
+	/**
+	 * Returns the current estimate for the file's total byte count.
+	 *
+	 * <p>This includes the 2-byte CRC16 checksum value at the end.</p>
+	 *
+	 * <p>The returned length will only be accurate after the binary hunk's
+	 * length and offset have been determined from previous phases.</p>
+	 */
+	public long getExpectedFileLength() {
+		return binHunkOffset + highestBinHunkLength + 2;
 	}
 }
