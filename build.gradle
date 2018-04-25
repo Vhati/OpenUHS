@@ -91,30 +91,42 @@ gradle.projectsEvaluated {
 			def blacklisted = false
 
 			/*
-			 * To be cautious, and probably redundant, exclude android explicitly.
+			 * To be cautious, and probably redundant, exclude retroJDKs for android explicitly.
 			 *
 			 * Android sets bootClasspath to the Android SDK's platform "android.jar".
 			 * Without it, you get "package android.[etc] does not exist" errors.
 			 */
 			if (p.plugins.hasPlugin("com.android.application")) { blacklisted = true }
 
-			if (!blacklisted) {
-				if (retroJDKs.containsKey(p.targetCompatibility)) {
-					println("Using JDK ${p.targetCompatibility} for \"${p.name}\" tasks.")
+			if (!blacklisted && retroJDKs.containsKey(p.targetCompatibility)) {
+				println("Using JDK ${p.targetCompatibility} for \"${p.name}\" tasks.")
 
-					p.tasks.withType(AbstractCompile) { t ->
-						t.options.fork = true
-						t.options.forkOptions.executable = retroJDKs[p.targetCompatibility]["javac"]
+				p.tasks.withType(AbstractCompile) { t ->
+					t.options.fork = true
+					t.options.forkOptions.executable = retroJDKs[p.targetCompatibility]["javac"]
+				}
+				p.tasks.withType(Javadoc) { t ->
+					t.executable = retroJDKs[p.targetCompatibility]["javadoc"]
+
+					if (p.targetCompatibility.isJava8Compatible()) {
+						t.options.addStringOption("Xdoclint:-missing", "-quiet")
 					}
-					p.tasks.withType(Javadoc) { t ->
-						t.executable = retroJDKs[p.targetCompatibility]["javadoc"]
-					}
-					p.tasks.withType(Test) { t ->
-						t.executable = retroJDKs[p.targetCompatibility]["java"]
-					}
-					p.tasks.withType(JavaExec) { t ->
-						t.executable = retroJDKs[p.targetCompatibility]["java"]
-					}
+				}
+				p.tasks.withType(Test) { t ->
+					t.executable = retroJDKs[p.targetCompatibility]["java"]
+				}
+				p.tasks.withType(JavaExec) { t ->
+					t.executable = retroJDKs[p.targetCompatibility]["java"]
+				}
+			}
+			else if (JavaVersion.current().isJava8Compatible()) {
+				p.tasks.withType(Javadoc) { t ->
+					// Java 8 introduced JavaDoc nags. Suppress them.
+
+					// Gradle's addStringOption() expects a key/value pair.
+					// This arg has no value, so tack on a harmless "-quiet" instead.
+
+					t.options.addStringOption("Xdoclint:-missing", "-quiet")
 				}
 			}
 		}
