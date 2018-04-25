@@ -178,8 +178,8 @@ public class UHSReaderFrame extends JFrame implements Nerfable {
 
 	/**
 	 * Does extra initialization after the constructor.
-	 *
-	 * <p>This must be called on the Swing event thread (use invokeLater()).</p>
+	 * <p>
+	 * This must be called on the Swing event thread (use invokeLater()).
 	 */
 	public void init() {
 		configChanged();

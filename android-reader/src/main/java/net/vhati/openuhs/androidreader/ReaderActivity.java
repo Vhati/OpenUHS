@@ -181,11 +181,11 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 
 	/**
 	 * Registers a reusable NodeView to handle a UHSNode class (and its subclasses).
-	 *
-	 * <p>When needed, views will be searched (in reverse order of
-	 * registration) for the first one whose accept() method returns true.</p>
-	 *
-	 * <p>Registered views determine the result of isNodeVisitable().</p>
+	 * <p>
+	 * When needed, views will be searched (in reverse order of
+	 * registration) for the first one whose accept() method returns true.
+	 * <p>
+	 * Registered views determine the result of isNodeVisitable().
 	 *
 	 * @see isNodeVisitable(UHSNode)
 	 * @see net.vhati.openuhs.androidreader.reader.NodeView.accept(UHSNode)
@@ -276,8 +276,8 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 
 	/**
 	 * Displays a new node within the current tree.
-	 *
-	 * <p>If the node is the same as the next/prev one, breadcrumbs will be traversed.</p>
+	 * <p>
+	 * If the node is the same as the next/prev one, breadcrumbs will be traversed.
 	 *
 	 * @param newNode  the new node
 	 */
@@ -350,8 +350,8 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 
 	/**
 	 * Displays a new node within the current tree.
-	 *
-	 * <p>Nothing will happen if the ID isn't among the root node's list of link targets.</p>
+	 * <p>
+	 * Nothing will happen if the ID isn't among the root node's list of link targets.
 	 *
 	 * @param id  the id of the new node
 	 */
@@ -439,8 +439,8 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 
 	/**
 	 * Recursively detaches child views and nulls references to resources.
-	 *
-	 * <p>Call this during onDestroy(), followed by System.gc().</p>
+	 * <p>
+	 * Call this during onDestroy(), followed by System.gc().
 	 */
 	private void unbindDrawables( View view ) {
 		if ( view.getBackground() != null ) {

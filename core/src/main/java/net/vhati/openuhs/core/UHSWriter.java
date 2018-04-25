@@ -83,8 +83,8 @@ public class UHSWriter {
 
 	/**
 	 * Encrypts the content of standalone 'hint' hunks, and all 88a blocks.
-	 *
-	 * <p>This is only necessary when saving a file.</p>
+	 * <p>
+	 * This is only necessary when saving a file.
 	 *
 	 * @param input  plaintext
 	 * @return the encrypted text
@@ -113,8 +113,8 @@ public class UHSWriter {
 
 	/**
 	 * Encrypts the content of 'nesthint' and 'incentive' hunks.
-	 *
-	 * <p>This is only necessary when saving a file.</p>
+	 * <p>
+	 * This is only necessary when saving a file.
 	 *
 	 * @param input  plaintext
 	 * @param key  this file's hint decryption key
@@ -139,8 +139,8 @@ public class UHSWriter {
 
 	/**
 	 * Encrypts the content of 'text' hunks.
-	 *
-	 * <p>This is only necessary when saving a file.</p>
+	 * <p>
+	 * This is only necessary when saving a file.
 	 *
 	 * @param input  plaintext
 	 * @param key  this file's hint decryption key
@@ -165,8 +165,8 @@ public class UHSWriter {
 
 	/**
 	 * Tests whether a UHSRootNode can be expressed in 88a format.
-	 *
-	 * <p>The rootNode must contain...
+	 * <p>
+	 * The rootNode must contain...
 	 * <blockquote><pre>
 	 * {@code
 	 * A master Subject node, with 0-or-more Subjects, containing:
@@ -175,14 +175,14 @@ public class UHSWriter {
 	 * 1 Credit node, containing a CreditData node
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>The 88a format is pretty limited...
+	 * <p>
+	 * The 88a format is pretty limited...
 	 * <ul>
 	 * <li>All nodes' content must be strings.</li>
 	 * <li>Newlines are not part of 88a, and will need to be stripped.</li>
 	 * <li>Accented and exotic characters will need to be asciified.</li>
 	 * <li>Markup within text will need to be stripped.</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param rootNode  an existing root node
 	 */
@@ -234,10 +234,10 @@ public class UHSWriter {
 
 	/**
 	 * Writes the tree of a UHSRootnode in 88a format.
-	 *
-	 * <p>TODO: This method needs to be made decorator-aware.</p>
-	 *
-	 * <p>Newlines and "^break^" are replaced by " ".</p>
+	 * <p>
+	 * TODO: This method needs to be made decorator-aware.
+	 * <p>
+	 * Newlines and "^break^" are replaced by " ".
 	 *
 	 * @param rootNode  an existing root node
 	 * @param writer  an existing Writer to receive text (encoding must be US-ASCII)
@@ -316,13 +316,13 @@ public class UHSWriter {
 
 	/**
 	 * Writes the tree of a UHSRootnode in 9x format.
-	 *
-	 * <p>Writing the 9x format is not straightforward because the text
+	 * <p>
+	 * Writing the 9x format is not straightforward because the text
 	 * depends on already knowing what text will be written. Hunk references
 	 * are based on line numbers. Binary segment offsets include the exact
-	 * byte count of all encoded text.</p>
-	 *
-	 * <p>Phase 1:
+	 * byte count of all encoded text.
+	 * <p>
+	 * Phase 1:
 	 * <ul>
 	 * <li>Dry-run text encoding. (Critical information will be missing.)</li>
 	 * <li>Count text lines, and build an ID-to-line map, for resolving link
@@ -331,24 +331,24 @@ public class UHSWriter {
 	 * it. (for zero-padding offsets/lengths to a minimum width)</li>
 	 * <li>Use total bytes of encoded text to roughly estimate the binary
 	 * hunk's offset.</li>
-	 * </ul></p>
-	 *
-	 * <p>Phase 2:
+	 * </ul>
+	 * <p>
+	 * Phase 2:
 	 * <ul>
 	 * <li>Another dry-run encoding.</li>
 	 * <li>Use the ID-to-Line map to resolve links.</li>
 	 * <li>Use total bytes of encoded text to re-estimate the binary hunk's
 	 * offset.</li>
-	 * </ul></p>
-	 *
-	 * <p>Phase 3:
+	 * </ul>
+	 * <p>
+	 * Phase 3:
 	 * <ul>
 	 * <li>Final encoding. All missing info should be ready now.</li>
 	 * <li>Collect binary content.</li>
-	 * </ul></p>
-	 *
-	 * <p>After phase 3, bytes are sent to the output stream: encoded text,
-	 * the 0x1a binary hink indicator, the binary hunk, and a CRC16 checksum.</p>
+	 * </ul>
+	 * <p>
+	 * After phase 3, bytes are sent to the output stream: encoded text,
+	 * the 0x1a binary hink indicator, the binary hunk, and a CRC16 checksum.
 	 *
 	 * @param rootNode  an existing root node
 	 * @param os  a stream to write into
@@ -417,9 +417,9 @@ public class UHSWriter {
 
 	/**
 	 * Recursively collects nodes' content in the 9x format.
-	 *
-	 * <p>Each nested call inserts text into the parent buffer. Then the
-	 * parent prepends a total line count to itself.</p>
+	 * <p>
+	 * Each nested call inserts text into the parent buffer. Then the
+	 * parent prepends a total line count to itself.
 	 *
 	 * @param context  the generation context
 	 * @param currentNode  an existing node to collect content from
@@ -490,9 +490,9 @@ public class UHSWriter {
 
 	/**
 	 * Returns a common fake 88a section for the start of 9x format files.
-	 *
-	 * <p>Write this root in 88a, append "** END OF 88A FORMAT **", then
-	 * write the real root in 9x.</p>
+	 * <p>
+	 * Write this root in 88a, append "** END OF 88A FORMAT **", then
+	 * write the real root in 9x.
 	 */
 	public UHSRootNode createDefaultLegacyRootNode() {
 		UHSRootNode rootNode = new UHSRootNode();
@@ -1119,8 +1119,8 @@ public class UHSWriter {
 
 	/**
 	 * Returns the raw string content of a UHSNode, split into individual lines.
-	 *
-	 * <p>This will split on both "^break^" and CRLF.</p>
+	 * <p>
+	 * This will split on both "^break^" and CRLF.
 	 *
 	 * @param currentNode  the node to get string content from
 	 * @param maxCount  a maximum number of lines to allow, or -1 for no limit
@@ -1176,13 +1176,13 @@ public class UHSWriter {
 
 	/**
 	 * Returns text from a UHSNode, escaped.
-	 *
-	 * <p>Unexpected non-ascii characters are replaced with <b>^?^</b>.</p>
-	 *
-	 * <p>Escapes have existed from version 88a onwards in most nodes' content and titles.
-	 * The # character is the main escape char.</p>
-	 *
-	 * <p><ul>
+	 * <p>
+	 * Unexpected non-ascii characters are replaced with <b>^?^</b>.
+	 * <p>
+	 * Escapes have existed from version 88a onwards in most nodes' content and titles.
+	 * The # character is the main escape char.
+	 * <br>
+	 * <ul>
 	 * <li><b>##</b> a '#' character.</li>
 	 * <li><b>#a+</b>[AaEeIiOoUu][:'`^]<b>#a-</b> accent enclosed letter; :=diaeresis,'=acute,`=grave,^=circumflex.</li>
 	 * <li><b>#a+</b>[Nn]~<b>#a-</b> accent enclosed letter with a tilde.</li>
@@ -1191,24 +1191,24 @@ public class UHSWriter {
 	 * <li><b>#w.</b> raw newlines are spaces.</li>
 	 * <li><b>#w+</b> raw newlines are spaces (default).</li>
 	 * <li><b>#w-</b> raw newlines are newlines.</li>
-	 * </ul></p>
-	 *
-	 * <p>The following are left for display code to handle (e.g., UHSTextArea).
+	 * </ul>
+	 * <p>
+	 * The following are left for display code to handle (e.g., UHSTextArea).
 	 * <ul>
 	 * <li><b>#p+</b> proportional font (default).</li>
 	 * <li><b>#p-</b> non-proportional font.</li>
-	 * </ul></p>
-	 *
-	 * <p>This is displayed as a hyperlink, but it is not clickable.
+	 * </ul>
+	 * <p>
+	 * This is displayed as a hyperlink, but it is not clickable.
 	 * <ul>
 	 * <li><b>#h+</b> through <b>#h-</b> is a hyperlink (http or email).</li>
-	 * </ul></p>
-	 *
-	 * <p>TODO: Translate between decorated strings.</p>
-	 *
-	 * <p><ul>
+	 * </ul>
+	 * <p>
+	 * TODO: Translate between decorated strings.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param currentNode  the node to get content from
 	 * @param plain  false to add markup, true to replace with ascii equivalent characters

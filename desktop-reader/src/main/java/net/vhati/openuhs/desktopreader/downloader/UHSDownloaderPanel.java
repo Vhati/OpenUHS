@@ -518,8 +518,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	/**
 	 * Returns the table displaying the catalog.
-	 *
-	 * <p>This is so parent containers can add listeners to the downloader's GUI.</p>
+	 * <p>
+	 * This is so parent containers can add listeners to the downloader's GUI.
 	 *
 	 * @return the table
 	 */
@@ -530,8 +530,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	/**
 	 * Calls setNerfed on the top-level ancestor, if nerfable.
-	 *
-	 * <p>A dedicated method was easier than passing the ancestor to runnables.</p>
+	 * <p>
+	 * A dedicated method was easier than passing the ancestor to runnables.
 	 */
 	private void ancestorSetNerfed( boolean b ) {
 		boolean nerfable = false;
@@ -545,8 +545,8 @@ public class UHSDownloaderPanel extends JPanel implements ActionListener {
 
 	/**
 	 * Returns the top level ancestor, cast as a Component.
-	 *
-	 * <p>Otherwise returns null.</p>
+	 * <p>
+	 * Otherwise returns null.
 	 */
 	private Component getAncestorComponent() {
 		Component ancestorComponent = null;

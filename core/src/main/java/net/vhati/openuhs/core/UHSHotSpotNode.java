@@ -11,11 +11,11 @@ import net.vhati.openuhs.core.UHSNode;
 
 /**
  * A container for UHSNodes that have clickable regions.
- *
- * <p>This node has string content for the title, image content for the main
+ * <p>
+ * This node has string content for the title, image content for the main
  * background image, and various children. Children are initially invisible
  * and associated with clickable HotSpot zones. When a zone is clicked, that
- * child node is either revealed or visited (if it's not an overlay image).</p>
+ * child node is either revealed or visited (if it's not an overlay image).
  *
  * @see net.vhati.openuhs.core.HotSpot
  */
@@ -90,8 +90,8 @@ public class UHSHotSpotNode extends UHSImageNode {
 
 	/**
 	 * Replace or initialize the current children.
-	 *
-	 * <p>This method gives the new nodes default zones/positions.</p>
+	 * <p>
+	 * This method gives the new nodes default zones/positions.
 	 *
 	 * @param newChildren  a List of new child UHSNodes
 	 */

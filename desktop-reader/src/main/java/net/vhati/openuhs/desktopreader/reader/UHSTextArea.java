@@ -86,8 +86,8 @@ public class UHSTextArea extends JTextPane {
 
 	/**
 	 * Sets a string to display instead of a UHSNode's content.
-	 *
-	 * <p>The string will be styled /as if/ that were the node's content.</p>
+	 * <p>
+	 * The string will be styled /as if/ that were the node's content.
 	 *
 	 * @param s  the text, or null for none
 	 */
@@ -160,10 +160,10 @@ public class UHSTextArea extends JTextPane {
 
 	/**
 	 * Returns a default-populated StyleContext for UHSTextAreas.
-	 *
-	 * <p>Changes to a style will immediately affect existing
+	 * <p>
+	 * Changes to a style will immediately affect existing
 	 * components using its descendants only. The style itself
-	 * will not update for some reason.</p>
+	 * will not update for some reason.
 	 *
 	 * <blockquote><pre>
 	 * @{code

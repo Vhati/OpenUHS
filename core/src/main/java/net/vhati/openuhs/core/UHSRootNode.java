@@ -10,9 +10,9 @@ import net.vhati.openuhs.core.UHSNode;
 
 /**
  * A node to hold all others.
- *
- * <p>Additionally a root node is responsible for tracking ids to resolve link
- * targets.</p>
+ * <p>
+ * Additionally a root node is responsible for tracking ids to resolve link
+ * targets.
  */
 public class UHSRootNode extends UHSNode {
 	private boolean legacy = false;
@@ -28,9 +28,9 @@ public class UHSRootNode extends UHSNode {
 
 	/**
 	 * Sets a flag indicating this root node is a non-canonical message for old readers.
-	 *
-	 * <p>The 9x format begins with a fake 88a format section telling old
-	 * readers to upgrade.</p>
+	 * <p>
+	 * The 9x format begins with a fake 88a format section telling old
+	 * readers to upgrade.
 	 *
 	 * #setLegacyRootNode(UHSRootNode)
 	 */
@@ -44,9 +44,9 @@ public class UHSRootNode extends UHSNode {
 
 	/**
 	 * Sets an alternate tree to display in legacy 88a readers.
-	 *
-	 * <p>The 9x format begins with a fake 88a section telling readers to
-	 * upgrade.</p>
+	 * <p>
+	 * The 9x format begins with a fake 88a section telling readers to
+	 * upgrade.
 	 *
 	 * @see #setLegacy(boolean)
 	 */
@@ -82,7 +82,7 @@ public class UHSRootNode extends UHSNode {
 	 * Makes a node unavailable to target by link nodes.
 	 *
 	 * @param doomedLink  the node to remove
-	 * @see #addLink(UHSNode, int)
+	 * @see #addLink(UHSNode)
 	 */
 	public void removeLink( UHSNode doomedLink ) {
 		linkMap.remove( doomedLink.getId()+"" );
@@ -98,9 +98,9 @@ public class UHSRootNode extends UHSNode {
 
 	/**
 	 * Gets a node by its id.
-	 *
-	 * <p>The node itself will always be returned, without any temporary group
-	 * wrapping it.</p>
+	 * <p>
+	 * The node itself will always be returned, without any temporary group
+	 * wrapping it.
 	 *
 	 * @param id  the id of the node to get
 	 * @return the node, or null if not found
@@ -136,8 +136,8 @@ public class UHSRootNode extends UHSNode {
 
 	/**
 	 * Returns the master Subject node containing the table of contents.
-	 *
-	 * <p>This is equivalent to getting the first Subject child.</p>
+	 * <p>
+	 * This is equivalent to getting the first Subject child.
 	 */
 	public UHSNode getMasterSubjectNode() {
 		return this.getFirstChild( "Subject", UHSNode.class );
@@ -146,8 +146,8 @@ public class UHSRootNode extends UHSNode {
 
 	/**
 	 * Returns the title of this hint tree.
-	 *
-	 * <p>This is the string content of the master Subject node.</p>
+	 * <p>
+	 * This is the string content of the master Subject node.
 	 *
 	 * @return the title of the hint file, or null if absent or blank
 	 * @see #getMasterSubjectNode()
@@ -167,8 +167,8 @@ public class UHSRootNode extends UHSNode {
 
 	/**
 	 * Returns the Version node's content.
-	 *
-	 * <p>It may be inaccurate, blank, or conflict with what is claimed in the info node.</p>
+	 * <p>
+	 * It may be inaccurate, blank, or conflict with what is claimed in the info node.
 	 *
 	 * @return the reported hint version (e.g., "96a"), or null if absent or blank
 	 * @see net.vhati.openuhs.core.UHSParser#parseVersionNode(UHSParseContext, UHSNode, int)

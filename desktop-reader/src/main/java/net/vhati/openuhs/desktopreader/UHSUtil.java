@@ -45,10 +45,10 @@ public class UHSUtil {
 
 	/**
 	 * Returns the appropriate extension, bsaed on recognizing file format signatures.
-	 *
-	 * <p>This method does not close the provided InputStream after the read
+	 * <p>
+	 * This method does not close the provided InputStream after the read
 	 * operation has completed; it is the responsibility of the caller to
-	 * close the stream, if desired.</p>
+	 * close the stream, if desired.
 	 *
 	 * @param is  an InputStream to inspect
 	 * @return jpg, gif, png, wav, or bin (if unknown)
@@ -95,8 +95,8 @@ public class UHSUtil {
 
 	/**
 	 * The signatire of a known file format.
-	 *
-	 * <p>This associates magic numbers with a file name extension.</p>
+	 * <p>
+	 * This associates magic numbers with a file name extension.
 	 */
 	public static class FormatSignature {
 		public final String extension;

@@ -12,6 +12,7 @@ import net.vhati.openuhs.core.markup.StringDecorator;
 
 /**
  * A StringDecorator ancestor.
+ * <p>
  * This doesn't actually decorate anything.
  */
 public class Version88StringDecorator extends StringDecorator {

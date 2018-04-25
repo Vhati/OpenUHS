@@ -16,9 +16,9 @@ import net.vhati.openuhs.core.markup.StringDecorator;
 
 /**
  * A StringDecorator ancestor.
- *
- * <p>Line breaks are initially replaced with "\n" by default,
- * but subclasses overriding getDecoratedString() can change that.</p>
+ * <p>
+ * Line breaks are initially replaced with "\n" by default,
+ * but subclasses overriding getDecoratedString() can change that.
  */
 public class Version9xStringDecorator extends StringDecorator {
 	public static final String MONOSPACED = "Monospaced";
@@ -106,17 +106,17 @@ public class Version9xStringDecorator extends StringDecorator {
 
 	/**
 	 * Consumes any markup at an index and adds replacement chars to a buffer.
-	 * 
-	 * <p>This should be called early to intercept the escaped '#' escape
-	 * character before other parse methods.</p>
-	 *
-	 * <p><ul>
+	 * <p>
+	 * This should be called early to intercept the escaped '#' escape
+	 * character before other parse methods.
+	 * <br>
+	 * <ul>
 	 * <li><b>##</b> a '#' character.</li>
 	 * <li><b>#a+</b>[AaEeIiOoUu][:'`^]<b>#a-</b> accent enclosed letter; :=diaeresis,'=acute,`=grave,^=curcumflex.</li>
 	 * <li><b>#a+</b>[Nn]~<b>#a-</b> accent enclosed letter with a tilde.</li>
 	 * <li><b>#a+</b>ae<b>#a-</b> an ash character.</li>
 	 * <li><b>#a+</b>TM<b>#a-</b> a trademark character.</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param contentChars  raw content with markup
 	 * @param buf  a destination buffer
@@ -167,12 +167,12 @@ public class Version9xStringDecorator extends StringDecorator {
 
 	/**
 	 * Consumes any markup at an index and adds replacement chars to a buffer.
-	 *
-	 * <p><ul>
+	 * <br>
+	 * <ul>
 	 * <li><b>#w.</b> raw newlines are spaces.</li>
 	 * <li><b>#w+</b> raw newlines are spaces (default).</li>
 	 * <li><b>#w-</b> raw newlines are newlines.</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param contentChars  raw content with markup
 	 * @param buf  a destination buffer
@@ -202,13 +202,13 @@ public class Version9xStringDecorator extends StringDecorator {
 
 	/**
 	 * Consumes markup, if found, and creates a decorated fragment using buffer contents.
-	 *
-	 * <p>A dictionary of decoration markup is used to determine where new
+	 * <p>
+	 * A dictionary of decoration markup is used to determine where new
 	 * fragments begin, so subclasses can customize what to look for.
-	 * The destination buffer will be cleared as fragments are created.</p>
-	 *
-	 * <p>This should be called last after other parse methods have
-	 * filled the buffer.</p>
+	 * The destination buffer will be cleared as fragments are created.
+	 * <p>
+	 * This should be called last after other parse methods have
+	 * filled the buffer.
 	 *
 	 * @param contentChars  raw content with markup
 	 * @param buf  a destination buffer
@@ -261,19 +261,19 @@ public class Version9xStringDecorator extends StringDecorator {
 
 	/**
 	 * Returns known markup decorations.
-	 *
-	 * <p>Subclasses may call this, add their own decorations,
-	 * and then call parseDecorationMarkup().</p>
-	 *
-	 * <p><ul>
+	 * <p>
+	 * Subclasses may call this, add their own decorations,
+	 * and then call parseDecorationMarkup().
+	 * <br>
+	 * <ul>
 	 * <li><b>#h+</b> through <b>#h-</b> is a hyperlink (http or email).</li>
 	 * <li><b>#p+</b> proportional font (default).</li>
 	 * <li><b>#p-</b> non-proportional font.</li>
-	 * </ul></p>
-	 *
-	 * <p><ul>
+	 * </ul>
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Portal: Achievements</i> (hyperlink)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @see #parseDecorationMarkup(char[], StringBuffer, int, Decoration[], int[], List)
 	 */

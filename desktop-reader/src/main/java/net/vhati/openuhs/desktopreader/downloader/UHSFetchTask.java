@@ -21,16 +21,16 @@ import net.vhati.openuhs.desktopreader.downloader.FetchUnitException;
 
 /**
  * A background task that downloads a hint file, while unzipping it.
- *
- * <p>Progress can be monitored with a PropertyChangeListener.</p>
- *
- * <p>Available properties:
+ * <p>
+ * Progress can be monitored with a PropertyChangeListener.
+ * <p>
+ * Available properties:
  * <ul>
  * <li>state: One of the SwingWorker.StateValue constants.</li>
  * <li>progress: Overall progress, from 0 to 100.</li>
  * <li>PROP_UNIT_NAME: the name of an individual download currently in progress.</li>
  * <li>PROP_UNIT_PROGRESS: progress for an individual download.</li>
- * </ul></p>
+ * </ul>
  */
 public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>, Object> {
 
@@ -64,11 +64,11 @@ public class UHSFetchTask extends SwingWorker<List<UHSFetchTask.UHSFetchResult>,
 
 	/**
 	 * Signals that the task should end gracefully.
-	 *
-	 * <p>SwingWorker's cancel() will cause get() to throw a CancellationException.
-	 * Use this method instead.</p>
-	 *
-	 * <p>This method is thread-safe.</p>
+	 * <p>
+	 * SwingWorker's cancel() will cause get() to throw a CancellationException.
+	 * Use this method instead.
+	 * <p>
+	 * This method is thread-safe.
 	 */
 	public void abortTask() {
 		aborting = true;

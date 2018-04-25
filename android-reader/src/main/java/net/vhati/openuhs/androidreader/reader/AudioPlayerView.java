@@ -101,8 +101,8 @@ public class AudioPlayerView extends LinearLayout {
 
 	/**
 	 * Immediately halts and releases the AudioTrack and the thread feeding it.
-	 *
-	 * <p>Node content will still be available for playing again.</p>
+	 * <p>
+	 * Node content will still be available for playing again.
 	 */
 	public void abortPlayback() {
 		if ( currentStreamThread != null ) {
@@ -122,8 +122,8 @@ public class AudioPlayerView extends LinearLayout {
 
 	/**
 	 * Decodes WAV header info from an InputStream.
-	 *
-	 * <p>Afterward, the stream's position will be at the first data chunk.</p>
+	 * <p>
+	 * Afterward, the stream's position will be at the first data chunk.
 	 *
 	 * @param is  a stream supporting mark()
 	 * @return an object describing header info
@@ -240,12 +240,12 @@ public class AudioPlayerView extends LinearLayout {
 
 	/**
 	 * Plays the node's audio content.
-	 *
-	 * <p>A new AudioTrack is created, which will release() itself when done
-	 * playing.</p>
-	 *
-	 * <p>A background thread will be started to feed bytes into the track as
-	 * it plays.</p>
+	 * <p>
+	 * A new AudioTrack is created, which will release() itself when done
+	 * playing.
+	 * <p>
+	 * A background thread will be started to feed bytes into the track as
+	 * it plays.
 	 */
 	public void play() {
 		abortPlayback();

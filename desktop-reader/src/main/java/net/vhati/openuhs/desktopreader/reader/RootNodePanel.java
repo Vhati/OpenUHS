@@ -21,15 +21,15 @@ import net.vhati.openuhs.desktopreader.reader.UHSTextArea;
 
 /**
  * A reusable panel that represents a UHSRootNode.
- *
- * <p>This panel does not display root's children canonically.
+ * <p>
+ * This panel does not display root's children canonically.
  * <ul>
  * <li>Where the master Subject node would be, that node's children will be
  * listed instead.</li>
  * <li>A Blank node will be included as a divider.</li>
  * <li>Remaining top-level children (auxiliary nodes) will appear after the
  * divider.</li>
- * </ul></p>
+ * </ul>
  *
  * @see net.vhati.openuhs.core.UHSRootNode
  */

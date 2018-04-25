@@ -14,10 +14,10 @@ import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 
 /**
  * A StringDecorator for "CommentData" nodes.
- *
- * <p>Line breaks are initially replaced with " " by default.</p>
- *
- * <p>Standard symbols and decorations are handled.</p>
+ * <p>
+ * Line breaks are initially replaced with " " by default.
+ * <p>
+ * Standard symbols and decorations are handled.
  */
 public class Version9xCommentDecorator extends Version9xStringDecorator {
 

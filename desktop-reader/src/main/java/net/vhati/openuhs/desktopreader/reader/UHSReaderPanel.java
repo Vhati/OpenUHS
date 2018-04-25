@@ -267,11 +267,11 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 	/**
 	 * Registers a reusable NodePanel to handle a UHSNode class (and its subclasses).
-	 *
-	 * <p>When needed, panels will be searched (in reverse order of
-	 * registration) for the first one whose accept() method returns true.</p>
-	 *
-	 * <p>Registered panels determine the result of isNodeVisitable().</p>
+	 * <p>
+	 * When needed, panels will be searched (in reverse order of
+	 * registration) for the first one whose accept() method returns true.
+	 * <p>
+	 * Registered panels determine the result of isNodeVisitable().
 	 *
 	 * @see isNodeVisitable(UHSNode)
 	 * @see net.vhati.openuhs.desktopreader.reader.NodePanel.accept(UHSNode)
@@ -386,9 +386,9 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 	/**
 	 * Displays a new node within the current tree.
-	 * 
-	 * <p>If the new node is the same as the next/previous one, breadcrumbs
-	 * will be traversed.</p>
+	 * <p>
+	 * If the new node is the same as the next/previous one, breadcrumbs
+	 * will be traversed.
 	 *
 	 * @param newNode  the new node
 	 */
@@ -463,8 +463,8 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 	/**
 	 * Displays a new node within the current tree.
-	 *
-	 * <p>Nothing will happen if the ID isn't among the root node's list of link targets.</p>
+	 * <p>
+	 * Nothing will happen if the ID isn't among the root node's list of link targets.
 	 *
 	 * @param id  the id of the new node
 	 */
@@ -507,10 +507,10 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 	/**
 	 * Recursively searches for a phrase within children of a node.
-	 *
-	 * <p>This'll go into an infinite loop if two nodes have each other as children.
+	 * <p>
+	 * This'll go into an infinite loop if two nodes have each other as children.
 	 * Luckily real UHS files aren't structured that way.
-	 * Link targets don't count as children.</p>
+	 * Link targets don't count as children.
 	 *
 	 * @param resultsNode  an existing temporary node to add results to
 	 * @param prefix  phrase to prepend to result titles (use "")
@@ -562,12 +562,12 @@ public class UHSReaderPanel extends JPanel implements UHSReaderNavCtrl, ActionLi
 
 	/**
 	 * Scrolls to the top/bottom of the visible hints.
-	 *
-	 * <p>This schedules a Runnable to do the scrolling at the next opportunity.</p>
-	 *
-	 * <p>SCROLL_IF_INCOMPLETE option defers completeness checking until the thread runs: top if true, bottom otherwise.</p>
-	 *
-	 * <p>The thread yielding is a workaround for JScrollPane goofiness when the content grows.</p>
+	 * <p>
+	 * This schedules a Runnable to do the scrolling at the next opportunity.
+	 * <p>
+	 * SCROLL_IF_INCOMPLETE option defers completeness checking until the thread runs: top if true, bottom otherwise.
+	 * <p>
+	 * The thread yielding is a workaround for JScrollPane goofiness when the content grows.
 	 *
 	 * @param position  one of: SCROLL_TO_TOP, SCROLL_TO_BOTTOM, or SCROLL_IF_INCOMPLETE
 	 * @see SwingUtilities#invokeLater(Runnable)

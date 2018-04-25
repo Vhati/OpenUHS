@@ -102,8 +102,8 @@ public class CatalogAdapter extends BaseAdapter {
 
 	/**
 	 * Toggles whether to only show local CatalogItems.
-	 *
-	 * <p>This means pruning any items for which isLocal() returns false.</p>
+	 * <p>
+	 * This means pruning any items for which isLocal() returns false.
 	 *
 	 * @see #applyFilters()
 	 * @see net.vhati.openuhs.core.downloader.CatalogItem#isLocal()
@@ -132,8 +132,8 @@ public class CatalogAdapter extends BaseAdapter {
 
 	/**
 	 * Sets a substring to find in CatalogItem titles.
-	 *
-	 * <p>This means pruning any items whose titles lack the substring.</p>
+	 * <p>
+	 * This means pruning any items whose titles lack the substring.
 	 *
 	 * @para s  the substring, or null
 	 * @see #applyFilters()
@@ -161,8 +161,8 @@ public class CatalogAdapter extends BaseAdapter {
 
 	/**
 	 * Repopulates the filteredCatalog with items from the original catalog.
-	 *
-	 * <p>Note: Remember to call notifyDataSetChanged() afterward.</p>
+	 * <p>
+	 * Note: Remember to call notifyDataSetChanged() afterward.
 	 */
 	protected void resetFilteredCatalog() {
 		filteredCatalog.clear();

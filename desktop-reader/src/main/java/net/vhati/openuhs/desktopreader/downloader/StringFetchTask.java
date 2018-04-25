@@ -13,14 +13,14 @@ import net.vhati.openuhs.desktopreader.downloader.FetchUnitException;
 
 /**
  * A background task that downloads text, then returns it, decoded as a String.
- *
- * <p>Progress can be monitored with a PropertyChangeListener.</p>
- *
- * <p>Available properties:
+ * <p>
+ * Progress can be monitored with a PropertyChangeListener.
+ * <p>
+ * Available properties:
  * <ul>
  * <li>state: One of the SwingWorker.StateValue constants.</li>
  * <li>progress: Overall progress, from 0 to 100.</li>
- * </ul></p>
+ * </ul>
  */
 public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResult, Object> {
 
@@ -58,11 +58,11 @@ public class StringFetchTask extends SwingWorker<StringFetchTask.StringFetchResu
 
 	/**
 	 * Signals that the task should end gracefully.
-	 *
-	 * <p>SwingWorker's cancel() will cause get() to throw a CancellationException.
-	 * Use this method instead.</p>
-	 *
-	 * <p>This method is thread-safe.</p>
+	 * <p>
+	 * SwingWorker's cancel() will cause get() to throw a CancellationException.
+	 * Use this method instead.
+	 * <p>
+	 * This method is thread-safe.
 	 */
 	public void abortTask() {
 		aborting = true;

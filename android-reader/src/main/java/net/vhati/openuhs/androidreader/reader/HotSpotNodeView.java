@@ -297,9 +297,9 @@ public class HotSpotNodeView extends NodeView {
 
 	/**
 	 * Resets the zoom state, fitting and centering content.
-	 *
-	 * <p>This needs to be called when either this View's dimensions change or
-	 * when a new node is set - if this View has non-zero dimensions.</p>
+	 * <p>
+	 * This needs to be called when either this View's dimensions change or
+	 * when a new node is set - if this View has non-zero dimensions.
 	 */
 	protected void resetScale() {
 		// Account for padding.
@@ -325,10 +325,10 @@ public class HotSpotNodeView extends NodeView {
 
 	/**
 	 * Sets a new scaling factor for content.
-	 *
-	 * <p>This will resize/reposition the main image pan view and all zones.</p>
-	 *
-	 * <p>After resizing, the pan rectangle will be centered on the same spot.</p>
+	 * <p>
+	 * This will resize/reposition the main image pan view and all zones.
+	 * <p>
+	 * After resizing, the pan rectangle will be centered on the same spot.
 	 */
 	private void handleScale( float newScale ) {
 		if ( hotspotNode == null ) return;
@@ -368,10 +368,10 @@ public class HotSpotNodeView extends NodeView {
 
 	/**
 	 * Incrementally nudges content.
-	 *
-	 * <p>If an axis of the pan view is larger than the main image, that
+	 * <p>
+	 * If an axis of the pan view is larger than the main image, that
 	 * axis will not scroll. (Presumably it will have been centered
-	 * already.)</p>
+	 * already.)
 	 */
 	private void handleScroll( float distanceX, float distanceY ) {
 		if ( hotspotNode == null ) return;

@@ -64,8 +64,8 @@ public class UHSParser {
 
 	/**
 	 * Sets whether to preload binary hunk segments into arrays or defer reads until needed.
-	 *
-	 * <p>This will be passed along to UHSParseContexts as they're created during parsing.</p>
+	 * <p>
+	 * This will be passed along to UHSParseContexts as they're created during parsing.
 	 *
 	 * @param b  true to defer, false to preload (default is false)
 	 * @see net.vhati.openuhs.core.UHSParseContext#setBinaryDeferred(boolean)
@@ -76,9 +76,9 @@ public class UHSParser {
 
 	/**
 	 * Toggles parsing 9x files as an 88a reader.
-	 *
-	 * <p>Old readers attempting to read a 9x file will see a
-	 * deprecation notice.</p>
+	 * <p>
+	 * Old readers attempting to read a 9x file will see a
+	 * deprecation notice.
 	 */
 	public void setForce88a( boolean b ) {
 		force88a = b;
@@ -111,8 +111,8 @@ public class UHSParser {
 
 	/**
 	 * Decrypts the content of standalone 'hint' hunks, and all 88a blocks.
-	 *
-	 * <p>This is only necessary when initially parsing a file.</p>
+	 * <p>
+	 * This is only necessary when initially parsing a file.
 	 *
 	 * @param input  ciphertext
 	 * @return the decrypted text
@@ -141,8 +141,8 @@ public class UHSParser {
 
 	/**
 	 * Decrypts the content of 'nesthint' and 'incentive' hunks.
-	 *
-	 * <p>This is only necessary when initially parsing a file.</p>
+	 * <p>
+	 * This is only necessary when initially parsing a file.
 	 *
 	 * @param input  ciphertext
 	 * @param key  this file's hint decryption key
@@ -167,8 +167,8 @@ public class UHSParser {
 
 	/**
 	 * Decrypts the content of 'text' hunks.
-	 *
-	 * <p>This is only necessary when initially parsing a file.</p>
+	 * <p>
+	 * This is only necessary when initially parsing a file.
 	 *
 	 * @param input  ciphertext
 	 * @param key  this file's hint decryption key
@@ -193,10 +193,10 @@ public class UHSParser {
 
 	/**
 	 * Reads bytes into a parse context using a RandomAccessFile.
-	 *
-	 * <p>This method is unbuffered and thus inefficient. It is also somewhat
+	 * <p>
+	 * This method is unbuffered and thus inefficient. It is also somewhat
 	 * reckless in decoding bytes into characters. On the plus side, the code
-	 * is uncomplicated.</p>
+	 * is uncomplicated.
 	 *
 	 * @param context  the parse context
 	 * @see #readBytesUsingStream(File)
@@ -265,9 +265,9 @@ public class UHSParser {
 
 	/**
 	 * Cuts CRLF terminated strings out of a StringBuilder.
-	 *
-	 * <p>Afterward, the StringBuilder will contain only the remaining
-	 * unterminated characters.</p>
+	 * <p>
+	 * Afterward, the StringBuilder will contain only the remaining
+	 * unterminated characters.
 	 *
 	 * @param buf  a source buffer to remove substrings from
 	 * @param results  a list to add collected strings into
@@ -286,14 +286,14 @@ public class UHSParser {
 
 	/**
 	 * Reads bytes into a parse context using an InputStream, a CharsetDecoder, and buffers.
-	 *
-	 * <p>Bytes are read from the file a little at a time. Any bytes prior to
+	 * <p>
+	 * Bytes are read from the file a little at a time. Any bytes prior to
 	 * the 9x format binary indicator byte (0x1a), if present, are decoded to
-	 * ascii characters. Everything after that is collected as bytes.</p>
-	 *
-	 * <p>This method is elborate, but in an informal benchmark, it was over
+	 * ascii characters. Everything after that is collected as bytes.
+	 * <p>
+	 * This method is elborate, but in an informal benchmark, it was over
 	 * six times faster than RandomAccessFile at parsing a directory of every
-	 * UHS file.</p>
+	 * UHS file.
 	 *
 	 * @param context  the parse context
 	 * @see #readBytesUsingRAF(File)
@@ -429,8 +429,8 @@ public class UHSParser {
 	/**
 	 * Reads a UHS file into a List of text lines and an array of bytes (for binary content).
 	 * Then calls an appropriate parser to construct a UHSRootNode and a tree of UHSNodes.
-	 *
-	 * <p>This is likely the only method you'll need.</p>
+	 * <p>
+	 * This is likely the only method you'll need.
 	 *
 	 * @param f  a file to read
 	 * @return the root of a tree of nodes representing the hint file
@@ -506,37 +506,37 @@ public class UHSParser {
 	 * credits sentences (several lines)
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>There are no hunk labels. The line index denotes meaning. Text of
-	 * subjects, questions, and hints are encrypted.</p>
-	 *
-	 * <p>The file's 1-based line references begin at the first subject.
+	 * <p>
+	 * There are no hunk labels. The line index denotes meaning. Text of
+	 * subjects, questions, and hints are encrypted.
+	 * <p>
+	 * The file's 1-based line references begin at the first subject.
 	 * This method will adjust the parse context's line fudge to ignore the
-	 * first four lines after it reads them.</p>
-	 *
-	 * <p>A Version node will be added, since that was not natively reported
-	 * in 88a.</p>
-	 *
-	 * <p>The official reader only honors line breaks in credit for lines with
+	 * first four lines after it reads them.
+	 * <p>
+	 * A Version node will be added, since that was not natively reported
+	 * in 88a.
+	 * <p>
+	 * The official reader only honors line breaks in credit for lines with
 	 * fewer than 20 characters. Otherwise, they're displayed as a space. No
-	 * authors ever wrote with that in mind, so it's not worth enforcing.</p>
-	 *
-	 * <p>The generated root node will be added to the parse context. Its
+	 * authors ever wrote with that in mind, so it's not worth enforcing.
+	 * <p>
+	 * The generated root node will be added to the parse context. Its
 	 * legacy flag will be set if "** END OF 88A FORMAT **" was found at the
-	 * end.</p>
-	 *
-	 * <p>Some 88a format files have titles with one or more leading spaces.
-	 * It is unclear why, but official readers honor them.</p>
-	 *
-	 * <p>Two 88a format files have extraneous bytes at the end. This was
+	 * end.
+	 * <p>
+	 * Some 88a format files have titles with one or more leading spaces.
+	 * It is unclear why, but official readers honor them.
+	 * <p>
+	 * Two 88a format files have extraneous bytes at the end. This was
 	 * apparently a bug in the "Atari ST UHS writer". Official readers ignore
-	 * those bytes.</p>
-	 *
-	 * <p><ul>
+	 * those bytes.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Castle Master</i> (Extraneous bytes at EOF: 0x00 x 38)</li>
 	 * <li>Illustrative UHS: <i>Spellcaster 101</i> (22 leading spaces in title)</li>
 	 * <li>Illustrative UHS: <i>The Fool's Errand</i> (Extraneous bytes at EOF: 0x00 x 71)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @see #decryptString(CharSequence)
@@ -670,17 +670,17 @@ public class UHSParser {
 
 	/**
 	 * Generates a tree of UHSNodes from UHS 91a format onwards.
-	 *
-	 * <p>Versions 91a, 95a, and 96a have been seen in the wild.
+	 * <p>
+	 * Versions 91a, 95a, and 96a have been seen in the wild.
 	 * These UHS files are prepended with an 88a section containing an
 	 * "upgrade your reader" notice. Additionally, they exploit the 88a format
 	 * to include ciphertext that will become human-readable when encrypted,
-	 * with a message for anyone opening the file in text editors.</p>
-	 *
-	 * <p>As shown below, the file's 1-based line references begin after
+	 * with a message for anyone opening the file in text editors.
+	 * <p>
+	 * As shown below, the file's 1-based line references begin after
 	 * "** END OF 88A FORMAT **". Before calling, set the context's line fudge
 	 * to ignore all lines prior, so that context.getLine(0) will yield the
-	 * END line.</p>
+	 * END line.
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -702,8 +702,8 @@ public class UHSParser {
 	 * {2-byte CRC16 of the entire file's bytes, excluding these two}
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>The root node will normally contain up to four children.
+	 * <p>
+	 * The root node will normally contain up to four children.
 	 * <ul>
 	 * <li>A 'subject', containing all the subjects, hints, etc., that users
 	 * care about. Official readers will begin inside this node.</li>
@@ -711,19 +711,19 @@ public class UHSParser {
 	 * <li>An 'info', mentioning the author, publisher, etc.</li>
 	 * <li>And an 'incentive', listing nodes to show/block if the reader is
 	 * unregistered.</li>
-	 * </ul></p>
-	 *
-	 * <p>Official readers merge the content of the auxiliary nodes to appear
+	 * </ul>
+	 * <p>
+	 * Official readers merge the content of the auxiliary nodes to appear
 	 * together as "Credits and File Information". Older readers buried it in
-	 * the file menu, "Information".</p>
-	 *
-	 * <p>Two 9x format files have extraneous bytes at the end. Official
-	 * readers ignore those bytes.</p>
-	 *
-	 * <p><ul>
+	 * the file menu, "Information".
+	 * <p>
+	 * Two 9x format files have extraneous bytes at the end. Official
+	 * readers ignore those bytes.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Return of the Phantom</i> (Extraneous bytes at EOF: 0x00 x 744)</li>
 	 * <li>Illustrative UHS: <i>Team Fortress Classic</i> (Extraneous bytes at EOF: 0x0d 0x0a)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @return the root of a tree of nodes
@@ -764,9 +764,9 @@ public class UHSParser {
 
 	/**
 	 * Recursively parses UHS newer than 88a.
-	 *
-	 * <p>This recognizes various types of hints, and runs specialized methods to decode them.
-	 * Unrecognized hints are harmlessly omitted.</p>
+	 * <p>
+	 * This recognizes various types of hints, and runs specialized methods to decode them.
+	 * Unrecognized hints are harmlessly omitted.
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -875,8 +875,8 @@ public class UHSParser {
 
 	/**
 	 * Generates an irregularly revealed UHSNode and its contents.
-	 *
-	 * <p>UHSBatchNode was written to handle children that reveal in batches.</p>
+	 * <p>
+	 * UHSBatchNode was written to handle children that reveal in batches.
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -892,36 +892,36 @@ public class UHSParser {
 	 * hint (encrypted)
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>A hyphen divider indicates the next batch, beginning with encrypted
-	 * hint text. The encrypted text may span multiple lines.</p>
-	 *
-	 * <p>An equals divider indicates a nested node of any type (as if this
-	 * were a Subject node), immediately followed by more encrypted hint text.</p>
-	 *
-	 * <p>The official reader reveals "partial hint", "embedded hunk", and
+	 * <p>
+	 * A hyphen divider indicates the next batch, beginning with encrypted
+	 * hint text. The encrypted text may span multiple lines.
+	 * <p>
+	 * An equals divider indicates a nested node of any type (as if this
+	 * were a Subject node), immediately followed by more encrypted hint text.
+	 * <p>
+	 * The official reader reveals "partial hint", "embedded hunk", and
 	 * "rest of hint" together as if they were one - each on a new line but
-	 * displayed within a shared border.</p>
-	 *
-	 * <p>The hints surrounding an embedded hunk are optional.
+	 * displayed within a shared border.
+	 * <p>
+	 * The hints surrounding an embedded hunk are optional.
 	 * That is: a 'standalone' embedded hunk is preceeded by a hyphen and an
 	 * equals sign. It is immediately followed by the hyphen indicating the
-	 * next sepatate hint.</p>
-	 *
-	 * <p>Hint text can span multiple lines, but none may be empty. By
+	 * next sepatate hint.
+	 * <p>
+	 * Hint text can span multiple lines, but none may be empty. By
 	 * convention, a 'blank' line contains single space. Files have been seen
-	 * with 'nesthint' lines exceeding the recommended 78 character word wrap.</p>
-	 *
-	 * <p>Multiple embedded hunks can appear in a row, each preceeded by an
-	 * equals.</p>
-	 *
-	 * <p>TODO: See if multiple embedded hunks can alternate with intervening
-	 * text, not just appearing in clumps.</p>
-	 *
-	 * <p><ul>
+	 * with 'nesthint' lines exceeding the recommended 78 character word wrap.
+	 * <p>
+	 * Multiple embedded hunks can appear in a row, each preceeded by an
+	 * equals.
+	 * <p>
+	 * TODO: See if multiple embedded hunks can alternate with intervening
+	 * text, not just appearing in clumps.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 1, What should I do with all the stuff outside my window?</li>
 	 * <li>Illustrative UHS: <i>The Elder Scrolls IV: Oblivion</i>, Faction Quests, Thieves Guild, Selling Stolen Goods (longest nesthint line in a file, 107 chars, dashes in a table)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1139,13 +1139,13 @@ public class UHSParser {
 	 * sentence
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>Unlike the 88a format's credits, 9x format credit hunks appear under
-	 * a Subject. They are not auxiliary nodes.</p>
-	 *
-	 * <p><ul>
+	 * <p>
+	 * Unlike the 88a format's credits, 9x format credit hunks appear under
+	 * a Subject. They are not auxiliary nodes.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Alone in the Dark</i>: About this UHS File, Who wrote this file?</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1194,10 +1194,12 @@ public class UHSParser {
 	 * 000000 0 offset length
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>Offset is counted from the beginning of the file.</p>
-	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
-	 * <p>The binary content is encrypted.</p>
+	 * <p>
+	 * Offset is counted from the beginning of the file.
+	 * <p>
+	 * Offset and length are zero-padded to 6 or 7 digits.
+	 * <p>
+	 * The binary content is encrypted.
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1252,8 +1254,8 @@ public class UHSParser {
 
 	/**
 	 * Generates a link UHSNode.
-	 *
-	 * <p>Nodes like this that have link targets behave like conventional hyperlinks instead of containing child nodes.</p>
+	 * <p>
+	 * Nodes like this that have link targets behave like conventional hyperlinks instead of containing child nodes.
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -1294,11 +1296,11 @@ public class UHSParser {
 
 	/**
 	 * Generates an image-filled UHSNode.
-	 *
-	 * <p>The UHS format allows for regions that trigger links or reveal overlaid subimages.
-	 * Regions may also trigger a move into nested hyperpng, text, or hint nodes.</p>
-	 *
-	 * <p>UHSHotSpotNode was written to handle regions.</p>
+	 * <p>
+	 * The UHS format allows for regions that trigger links or reveal overlaid subimages.
+	 * Regions may also trigger a move into nested hyperpng, text, or hint nodes.
+	 * <p>
+	 * UHSHotSpotNode was written to handle regions.
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -1332,35 +1334,35 @@ public class UHSParser {
 	 * 000000 offset length
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>The "--not-a-gap--" lines are inserted here for visual clarity.</p>
-	 *
-	 * <p>Offset is counted from the beginning of the file.</p>
-	 *
-	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
-	 *
-	 * <p>The zone (x, y, x+w, y+h) and overlay (x, y) numbers are zero-padded
-	 * to 4 digits. Both x's and y's seem to be 0-based.</p>
-	 *
-	 * <p>A gifa has the same structure, but might not officially contain
-	 * regions.</p>
-	 *
-	 * <p>The HyperImage itself gets an id, as usual. The main image also gets
+	 * <p>
+	 * The "--not-a-gap--" lines are inserted here for visual clarity.
+	 * <p>
+	 * Offset is counted from the beginning of the file.
+	 * <p>
+	 * Offset and length are zero-padded to 6 or 7 digits.
+	 * <p>
+	 * The zone (x, y, x+w, y+h) and overlay (x, y) numbers are zero-padded
+	 * to 4 digits. Both x's and y's seem to be 0-based.
+	 * <p>
+	 * A gifa has the same structure, but might not officially contain
+	 * regions.
+	 * <p>
+	 * The HyperImage itself gets an id, as usual. The main image also gets
 	 * an id, which may be referenced by an Incentive chunk. There are no
 	 * examples in the wild of a restricted main image inside an unrestricted
 	 * HyperImage chunk. Testing with an edited file indicated that official
 	 * readers ignore main image restrictions, and that this is likely an
-	 * error the authors made.</p>
-	 *
-	 * </p>Line ids of nodes nested within a HyperImage are skewed because
+	 * error the authors made.
+	 * <p>
+	 * Line ids of nodes nested within a HyperImage are skewed because
 	 * their initial line is the region coords, and the node type comes
-	 * second.</p>
-	 *
-	 * <p>HyperImages can contain additional HyperImage nodes that have
+	 * second.
+	 * <p>
+	 * HyperImages can contain additional HyperImage nodes that have
 	 * their own children. Shifting a nested HyperImage should not recurse
-	 * into its children.</p>
-	 *
-	 * <p><ul>
+	 * into its children.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Arcania: Gothic 4</i>: Jungle and Mountains, Jungle Map</li>
 	 * <li>Illustrative UHS: <i>Deja Vu I</i>: Sewer, The Map</li>
 	 * <li>Illustrative UHS: <i>Dungeon Siege</i>: Chapter 6, Maps, Fire Village (Incentive'd HyperImage and main image)</li>
@@ -1368,7 +1370,7 @@ public class UHSParser {
 	 * <li>Illustrative UHS: <i>Nancy Drew 4: TitRT</i>: Shed, How can I solve, Finished Leaf Puzzle (Incentive'd HyperImage and main image)</li>
 	 * <li>Illustrative UHS: <i>The Longest Journey</i>: Chapter 7, the Stone Altar, Can you give me a picture of the solution? (Overlay and Link)</li>
 	 * <li>Illustrative UHS: <i>Trinity</i>: Trinity Site, Map of the Trinity Site, Map Key (Link targeting a nested HyperImage erroneously points to the node type line, instead of shifting to the zone line)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1495,8 +1497,8 @@ public class UHSParser {
 
 	/**
 	 * Generates a sound UHSNode.
-	 *
-	 * <p>This seems to be limited to PCM WAV audio.</p>
+	 * <p>
+	 * This seems to be limited to PCM WAV audio.
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -1505,13 +1507,14 @@ public class UHSParser {
 	 * 000000 offset length
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>Offset is counted from the beginning of the file.</p>
-	 * <p>Offset and length are zero-padded to 6 or 7 digits.</p>
-	 *
-	 * <p><ul>
+	 * <p>
+	 * Offset is counted from the beginning of the file.
+	 * <p>
+	 * Offset and length are zero-padded to 6 or 7 digits.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Tex Murphy: Overseer</i>: Day Two, Bosworth Clark's Lab, How do I operate that keypad?</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1580,9 +1583,9 @@ public class UHSParser {
 
 	/**
 	 * Generates a version UHSNode.
-	 *
-	 * <p>This is the version reported by the hint file. It may be inaccurate,
-	 * blank, or conflict with what is claimed in the info node.</p>
+	 * <p>
+	 * This is the version reported by the hint file. It may be inaccurate,
+	 * blank, or conflict with what is claimed in the info node.
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -1593,11 +1596,11 @@ public class UHSParser {
 	 * sentence
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>The title text is the version, like "96a". Sentences that follow
-	 * describe the compiler.</p>
-	 *
-	 * <p><ul>
+	 * <p>
+	 * The title text is the version, like "96a". Sentences that follow
+	 * describe the compiler.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>Frankenstein: Through the Eyes of the Monster</i> (blank version, info says 96a)</li>
 	 * <li>Illustrative UHS: <i>Kingdom O' Magic</i> (blank version, info doesn't say)</li>
 	 * <li>Illustrative UHS: <i>Out of This World</i> (blank version, info says 95a)</li>
@@ -1605,7 +1608,7 @@ public class UHSParser {
 	 * <li>Illustrative UHS: <i>Star Control 3</i> (blank version, info says 96a)</li>
 	 * <li>Illustrative UHS: <i>System Shock</i> (blank version, info says 96a)</li>
 	 * <li>Illustrative UHS: <i>The Bizarre Adventures of Woodruff</i> (blank version, info doesn't say)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1669,12 +1672,12 @@ public class UHSParser {
 	 * >sentence
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>This hunk is not always present. Presumably it was introduced in the
-	 * 95a format.</p>
-	 *
-	 * <p>Length is a long number, which must match the UHS file's total
-	 * length, or official readers will complain about corruption.</p>
+	 * <p>
+	 * This hunk is not always present. Presumably it was introduced in the
+	 * 95a format.
+	 * <p>
+	 * Length is a long number, which must match the UHS file's total
+	 * length, or official readers will complain about corruption.
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1721,14 +1724,14 @@ public class UHSParser {
 
 	/**
 	 * Generates an incentive UHSNode.
-	 *
-	 * <p>This node lists ids to show/block if the reader is unregistered.</p>
-	 *
-	 * <p>The list is a space-separated string of numbers, each with 'Z' or
+	 * <p>
+	 * This node lists ids to show/block if the reader is unregistered.
+	 * <p>
+	 * The list is a space-separated string of numbers, each with 'Z' or
 	 * 'A' appended to each. 'Z' means the node is a nag message that should
 	 * be hidden from registered readers. 'A' means only registered readers
 	 * can see the node's children or link target. In some files, there is no
-	 * list, and this node only occupies 2 lines.</p>
+	 * list, and this node only occupies 2 lines.
 	 *
 	 * <blockquote><pre>
 	 * {@code
@@ -1739,17 +1742,17 @@ public class UHSParser {
 	 * More ids
 	 * }
 	 * </pre></blockquote>
-	 *
-	 * <p>This hunk is not always present. Presumably it was introduced in the
-	 * 95a format.</p>
-	 *
-	 * <p>Upon parsing this node, all referenced ids will be looked up by
+	 * <p>
+	 * This hunk is not always present. Presumably it was introduced in the
+	 * 95a format.
+	 * <p>
+	 * Upon parsing this node, all referenced ids will be looked up by
 	 * calling getLink(id) on the rootNode. The nodes will have their
-	 * restriction field set, but it is up to readers to actually honor that.</p>
-	 *
-	 * <p><ul>
+	 * restriction field set, but it is up to readers to actually honor that.
+	 * <br>
+	 * <ul>
 	 * <li>Illustrative UHS: <i>AGON</i> (no IDs)</li>
-	 * </ul></p>
+	 * </ul>
 	 *
 	 * @param context  the parse context
 	 * @param currentNode  an existing node to add children to
@@ -1799,7 +1802,7 @@ public class UHSParser {
 	 * @param context  the parse context
 	 * @param incentiveString  a space-separated string of numbers, each with 'Z' or 'A' appended
 	 * @see #parseIncentiveNode(UHSParseContext, UHSNode, int)
-	 * @see net.vhati.openuhs.core.UHSParseContext#registerExtraId(int)
+	 * @see net.vhati.openuhs.core.UHSParseContext#registerExtraId(ExtraNodeId)
 	 */
 	public void applyRestrictions( UHSParseContext context, String incentiveString ) {
 		List<String> badTokens = new ArrayList<String>();
@@ -1893,9 +1896,9 @@ public class UHSParser {
 
 	/**
 	 * Calculates the security checksum of a UHS file.
-	 *
-	 * <p>It's a CRC16 of the entire file (read as unsigned bytes),
-	 * minus the last two bytes.</p>
+	 * <p>
+	 * It's a CRC16 of the entire file (read as unsigned bytes),
+	 * minus the last two bytes.
 	 */
 	public int calcChecksum( File f ) throws IOException {
 		int result = -1;
@@ -1972,11 +1975,11 @@ public class UHSParser {
 
 	/**
 	 * Reads the security checksum stored in an array.
-	 *
-	 * <p>The final two bytes contain the expected CRC16
-	 * of the rest of the file.</p>
-	 *
-	 * <p>It's a little-endian short ((un)signed?).</p>
+	 * <p>
+	 * The final two bytes contain the expected CRC16
+	 * of the rest of the file.
+	 * <p>
+	 * It's a little-endian short ((un)signed?).
 	 *
 	 * @param a  any byte array that includes the end of a UHS file
 	 */

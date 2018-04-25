@@ -24,8 +24,8 @@ public abstract class NodeView extends FrameLayout {
 
 	/**
 	 * Sets a new note to represent.
-	 *
-	 * <p>Subclasses should override this and call super.setNode() early.</p>
+	 * <p>
+	 * Subclasses should override this and call super.setNode() early.
 	 *
 	 * @param node  the new node
 	 * @param showAll  true if all child hints should be revealed, false otherwise
@@ -51,8 +51,8 @@ public abstract class NodeView extends FrameLayout {
 
 	/**
 	 * Resets this panel's state.
-	 *
-	 * <p>Subclasses should override this and call super.reset() late.</p>
+	 * <p>
+	 * Subclasses should override this and call super.reset() late.
 	 */
 	public void reset() {
 		node = null;
@@ -73,8 +73,8 @@ public abstract class NodeView extends FrameLayout {
 
 	/**
 	 * Returns whether this panel supports revealing hints incrementally.
-	 *
-	 * <p>Subclasses that support revealing should override this.</p>
+	 * <p>
+	 * Subclasses that support revealing should override this.
 	 *
 	 * @see #getCurrentReveal()
 	 * @see #getMaximumReveal()
@@ -87,8 +87,8 @@ public abstract class NodeView extends FrameLayout {
 
 	/**
 	 * Returns the highest value that might be returned by getCurrentReveal().
-	 *
-	 * <p>This defers to the node's reported value.</p>
+	 * <p>
+	 * This defers to the node's reported value.
 	 *
 	 * @see #getCurrentReveal()
 	 * @see #isRevealSupported()
@@ -100,8 +100,8 @@ public abstract class NodeView extends FrameLayout {
 
 	/**
 	 * Returns the current reveal progress.
-	 *
-	 * <p>This defers to the node's reported value.</p>
+	 * <p>
+	 * This defers to the node's reported value.
 	 *
 	 * @see #getMaximumReveal()
 	 * @see #isRevealSupported()
@@ -113,10 +113,10 @@ public abstract class NodeView extends FrameLayout {
 
 	/**
 	 * Reveals the next hint, possibly more, by setting components' visibility.
-	 *
-	 * <p>Subclasses that support revealing should override this.
+	 * <p>
+	 * Subclasses that support revealing should override this.
 	 * After setting a node's reveal, call its getter for the new current
-	 * value. Don't assume it only incremented.</p>
+	 * value. Don't assume it only incremented.
 	 *
 	 * @see #getCurrentReveal()
 	 * @see #getMaximumReveal()

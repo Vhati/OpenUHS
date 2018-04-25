@@ -5,34 +5,34 @@ import java.util.zip.Checksum;
 
 /**
  * An algorithm used for tamper-detection in 9x format UHS files.
- *
- * <p>TODO: There's a conditional fudge in getValue() to make this work.</p>
- *
- * <p>This correctly, if inexplicably, calculates the CRC of every file.
+ * <p>
+ * TODO: There's a conditional fudge in getValue() to make this work.
+ * <p>
+ * This correctly, if inexplicably, calculates the CRC of every file.
  * Stefan Wolff emailed his Perl algorithm (on 2012-02-21), which frequently
  * worked, but not always. When it disagreed with stored sums (the last two
- * bytes of a file), it was always off by exactly 256.</p>
- *
- * <p>These wrong values occurred when they exceeded the half-way point for an
- * unsigned 16-bit short (32768), when they needed to add 1+FF.</p>
+ * bytes of a file), it was always off by exactly 256.
+ * <p>
+ * These wrong values occurred when they exceeded the half-way point for an
+ * unsigned 16-bit short (32768), when they needed to add 1+FF.
  *
  * <blockquote><pre>
  * {@code
  * if (result >= 0x8000) result = (result + 0x0100) & 0xFFFF;
  * }
  * </pre></blockquote>
- *
- * <p>Perl was likely dealing with a wider numeric type than short, and so,
- * was oblivious to the sign bit, if any.</p>
- *
- * <p>Since the fudge involves addition, the bitwise AND truncates a
- * potential overflowing 17th bit.</p>
- *
- * <p><ul>
+ * <p>
+ * Perl was likely dealing with a wider numeric type than short, and so,
+ * was oblivious to the sign bit, if any.
+ * <p>
+ * Since the fudge involves addition, the bitwise AND truncates a
+ * potential overflowing 17th bit.
+ * <br>
+ * <ul>
  * <li>Illustrative UHS: <i>Star Trek: Borg</i> (low, CRC=32725 aka 0xD5 0x7F)</li>
  * <li>Illustrative UHS: <i>Rent-A-Hero</i> (high, CRC=33060 aka 0x24 0x81)</li>
  * <li>Illustrative UHS: <i>Azrael's Tear</i> (overflow, CRC=113 aka 0x71 0x00)</li>
- * </ul></p>
+ * </ul>
  */
 public class CRC16 implements Checksum {
 	private static final int[] a = new int[] {

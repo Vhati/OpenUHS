@@ -3,12 +3,12 @@ package net.vhati.openuhs.core;
 
 /**
  * Coordinates for use with a UHSHotSpotNode.
- *
- * <p>Children are initially invisible and associated with clickable zones.
- * When the zone is clicked, that child node is revealed, at a given position.</p>
- *
- * <p>The position may be -1 for children like link nodes that trigger an action
- * instead of becoming visible.</p>
+ * <p>
+ * Children are initially invisible and associated with clickable zones.
+ * When the zone is clicked, that child node is revealed, at a given position.
+ * <p>
+ * The position may be -1 for children like link nodes that trigger an action
+ * instead of becoming visible.
  *
  * @see net.vhati.openuhs.core.UHSHotSpotNode
  */

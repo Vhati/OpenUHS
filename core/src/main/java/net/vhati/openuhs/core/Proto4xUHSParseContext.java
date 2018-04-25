@@ -13,8 +13,8 @@ import net.vhati.openuhs.core.UHSRootNode;
 
 /**
  * A state-tracking object used internally by UHSProto4xParser.
- *
- * <p>There is no need to construct an instance of this directly.</p>
+ * <p>
+ * There is no need to construct an instance of this directly.
  *
  * @see net.vhati.openuhs.core.Proto4xUHSParser
  */
@@ -83,8 +83,8 @@ public class Proto4xUHSParseContext {
 
 	/**
 	 * An amount to add to any index passed into getLine().
-	 *
-	 * <p>For the proto4x format, there are no ignored lines.</p>
+	 * <p>
+	 * For the proto4x format, there are no ignored lines.
 	 *
 	 * @param lineIndexFudge  the number of lines to ignore
 	 * @see #getLine(int)
@@ -106,9 +106,9 @@ public class Proto4xUHSParseContext {
 
 	/**
 	 * Returns a reference to read bytes from a file.
-	 *
-	 * <p>If binaryDeferred is false, an ArrayByteReference will be returned.
-	 * Otherwise, a FileRegionByteReference will be returned.</p>
+	 * <p>
+	 * If binaryDeferred is false, an ArrayByteReference will be returned.
+	 * Otherwise, a FileRegionByteReference will be returned.
 	 *
 	 * @param f  the file to read
 	 * @return a ByteReference to retrieve the relevant bytes
@@ -151,10 +151,10 @@ public class Proto4xUHSParseContext {
 
 	/**
 	 * Returns a string from allLines at a given index, while caching that index for logging purposes.
-	 *
-	 * <p>Note: While a list of lines is involved, the index is not synonymous
+	 * <p>
+	 * Note: While a list of lines is involved, the index is not synonymous
 	 * with the line number seen in text editors. When parsing the proto4x
-	 * format, there happen to be no ignored lines, however.</p>
+	 * format, there happen to be no ignored lines, however.
 	 *
 	 * @param index  an index within allLines (0-based)
 	 */
@@ -172,8 +172,8 @@ public class Proto4xUHSParseContext {
 
 	/**
 	 * Returns the 1-based line number of the index in the last call to getLine().
-	 *
-	 * <p>This will be counted from the very beginning of the file.</p>
+	 * <p>
+	 * This will be counted from the very beginning of the file.
 	 */
 	public int getLastParsedLineNumber() {
 		return ( lineIndexFudge + lastLineIndex + 1 );

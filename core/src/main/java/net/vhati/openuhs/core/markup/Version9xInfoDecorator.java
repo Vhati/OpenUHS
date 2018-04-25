@@ -14,10 +14,10 @@ import net.vhati.openuhs.core.markup.Version9xStringDecorator;
 
 /**
  * A StringDecorator for "InfoData" nodes.
- *
- * <p>Unlike other classes, this will ignore symbols and decorations.
+ * <p>
+ * Unlike other classes, this will ignore symbols and decorations.
  * Instead, lines will be tested for prefixes, then
- * un-wordwrapped and/or prepended by a linebreak.</p>
+ * un-wordwrapped and/or prepended by a linebreak.
  */
 public class Version9xInfoDecorator extends Version9xStringDecorator {
 

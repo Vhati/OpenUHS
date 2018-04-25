@@ -8,11 +8,11 @@ import net.vhati.openuhs.core.UHSNode;
 
 /**
  * A container for UHSNodes that should be revealed in batches.
- *
- * <p>Children behave normally, except when one is revealed.
+ * <p>
+ * Children behave normally, except when one is revealed.
  * All nodes marked as 'addon' that immediately follow the
  * revealed one are revealed as well. The revealed count
- * increments accordingly.</p>
+ * increments accordingly.
  */
 public class UHSBatchNode extends UHSNode {
 	private List<Boolean> batchAddons = new Vector<Boolean>();
@@ -85,8 +85,8 @@ public class UHSBatchNode extends UHSNode {
 
 	/**
 	 * Replace or initialize the current children.
-	 *
-	 * <p>This method gives the new nodes default batch status (revealed individually).</p>
+	 * <p>
+	 * This method gives the new nodes default batch status (revealed individually).
 	 *
 	 * @param newChildren  a List of new child UHSNodes
 	 */
@@ -128,10 +128,10 @@ public class UHSBatchNode extends UHSNode {
 
 	/**
 	 * Sets the current reveal progress.
-	 *
-	 * <p>The given amount will be a minimum. Revealing will continue to
+	 * <p>
+	 * The given amount will be a minimum. Revealing will continue to
 	 * increment for every 'addon' child following the last one explicitly
-	 * revealed.</p>
+	 * revealed.
 	 *
 	 * @param n  a non-negative number less than or equal to the maximum reveal
 	 */

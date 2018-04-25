@@ -49,8 +49,8 @@ public class UHSXML {
 
 	/**
 	 * Recursively exports a node and its children to xml Elements.
-	 *
-	 * <p>Extensions are guessed.</p>
+	 * <p>
+	 * Extensions are guessed.
 	 *
 	 * @param currentNode  a node to start extracting from
 	 * @param basename  prefix for referenced binary files

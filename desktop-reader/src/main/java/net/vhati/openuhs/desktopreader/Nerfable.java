@@ -3,10 +3,10 @@ package net.vhati.openuhs.desktopreader;
 
 /*
  * An interface to en/disable user interaction.
- *
- * <p>It was written with JFrames and glassPanes in mind.</p>
- *
- * <p>It doesn't do anything vital, so one can safely use an empty method to become nerfable.</p>
+ * <p>
+ * It was written with JFrames and glassPanes in mind.
+ * <p>
+ * It doesn't do anything vital, so one can safely use an empty method to become nerfable.
  */
 public interface Nerfable {
 

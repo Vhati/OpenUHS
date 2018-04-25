@@ -5,10 +5,10 @@ import java.util.Date;
 
 /**
  * Catalog info about a UHS catalog entry (and its local file).
- *
- * <p>The CatalogParser will set most fields.</p>
- *
- * <p>Additional state flags can be set for tracking the entry's relation to its local file.</p>
+ * <p>
+ * The CatalogParser will set most fields.
+ * <p>
+ * Additional state flags can be set for tracking the entry's relation to its local file.
  *
  * @see net.vhati.openuhs.core.downloader.CatalogParser
  */

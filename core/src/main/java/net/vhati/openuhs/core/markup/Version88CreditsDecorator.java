@@ -13,8 +13,8 @@ import net.vhati.openuhs.core.markup.Version88StringDecorator;
 
 /**
  * A StringDecorator for "CreditData" nodes.
- *
- * <br />The official reader only honors line breaks
+ * <p>
+ * The official reader only honors line breaks
  * in credit for lines with fewer than 20 characters.
  * Otherwise, they're displayed as a space. No authors
  * ever wrote with that in mind, so it's barely worth

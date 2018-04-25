@@ -18,12 +18,12 @@ import net.vhati.openuhs.core.downloader.CatalogItem;
 
 /**
  * A parser for catalogs downloaded from the official UHS server.
- *
- * <p>The catalog advertises zip archives, each with a lone UHS file inside.</p>
- *
- * <p>Note: The catalog text varies depending on the user-agent that downloaded it!</p>
- *
- * <p>This is what "Mozilla" user-agents see...</p>
+ * <p>
+ * The catalog advertises zip archives, each with a lone UHS file inside.
+ * <p>
+ * Note: The catalog text varies depending on the user-agent that downloaded it!
+ * <p>
+ * This is what "Mozilla" user-agents see...
  *
  * <blockquote><pre>
  * {@code
@@ -34,8 +34,8 @@ import net.vhati.openuhs.core.downloader.CatalogItem;
  * <FFULLSIZE>51278</FFULLSIZE></FILE>
  * }
  * </pre></blockquote>
- *
- * <p>This is what "UHSWIN/5.2" user-agents see:</p>
+ * <p>
+ * This is what "UHSWIN/5.2" user-agents see:
  *
  * <blockquote><pre>
  * {@code
@@ -47,13 +47,16 @@ import net.vhati.openuhs.core.downloader.CatalogItem;
  * <FFULLSIZE>51278</FFULLSIZE></FILE>
  * }
  * </pre></blockquote>
- *
- * <p>FSIZE is the size of the zip file.</p>
- * <p>FFULLSIZE is the size of the UHS file, inside the zip, after extraction.</p>
- * <p>MESSAGE only appears for old UHS user-agents since "UHSWIN/4.0".</p>
- * <p>FDATE is usually just date. Except for "Mozilla", it's both date AND time (and +1 day!?).</p>
- *
- * <p>So FDATE can be "dd-MMM-yy" or "dd-MMM-yy HH:mm:ss".</p>
+ * <p>
+ * FSIZE is the size of the zip file.
+ * <p>
+ * FFULLSIZE is the size of the UHS file, inside the zip, after extraction.
+ * <p>
+ * MESSAGE only appears for old UHS user-agents since "UHSWIN/4.0".
+ * <p>
+ * FDATE is usually just date. Except for "Mozilla", it's both date AND time (and +1 day!?).
+ * <p>
+ * So FDATE can be "dd-MMM-yy" or "dd-MMM-yy HH:mm:ss".
  *
  * @see net.vhati.openuhs.core.downloader.CatalogItem
  */

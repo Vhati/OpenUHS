@@ -457,8 +457,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 	/**
 	 * Updates state flags on all catalog entries.
-	 *
-	 * <p>Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.</p>
+	 * <p>
+	 * Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.
 	 */
 	public void colorizeCatalog( List<CatalogItem> catalog ) {
 
@@ -482,8 +482,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 	/**
 	 * Updates state flags on a catalog entry.
-	 *
-	 * <p>Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.</p>
+	 * <p>
+	 * Note: Remember to call notifyDataSetChanged() on the ListView's ArrayAdapter afterward.
 	 */
 	public void colorizeCatalogRow( CatalogItem catItem ) {
 		catItem.resetState();
@@ -623,8 +623,8 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 
 	/**
 	 * Recursively detaches child views and nulls references to resources.
-	 *
-	 * <p>Call this during onDestroy(), followed by System.gc().</p>
+	 * <p>
+	 * Call this during onDestroy(), followed by System.gc().
 	 */
 	private void unbindDrawables( View view ) {
 		if ( view.getBackground() != null ) {

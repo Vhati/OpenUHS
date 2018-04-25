@@ -300,6 +300,7 @@ public class UHSReaderMain {
 
 				FileAppender<ILoggingEvent> fileAppender = new FileAppender<ILoggingEvent>();
 				fileAppender.setContext( lc );
+				fileAppender.setName( "LogFile" );
 				fileAppender.setFile( new File( "./openuhs-log.txt" ).getAbsolutePath() );
 				fileAppender.setAppend( false );
 				fileAppender.setEncoder( encoder );
@@ -414,9 +415,9 @@ public class UHSReaderMain {
 
 	/**
 	 * Finds and scrapes a compiler description.
-	 *
-	 * <p>The compiler is mentioned in either the Credits node (88a format) or
-	 * Version node (9x format).</p>
+	 * <p>
+	 * The compiler is mentioned in either the Credits node (88a format) or
+	 * Version node (9x format).
 	 *
 	 * @return the reported compiler version, or null if absent or unrecognized
 	 */
@@ -454,14 +455,14 @@ public class UHSReaderMain {
 
 	/**
 	 * Recursively scans a node and its descendents for log-worthy problems.
-	 *
-	 * <p>This method doesn't return anything. It just calls methods not
-	 * encountered during basic parsing to give loggers a chance to complain.</p>
-	 *
-	 * <p><ul>
+	 * <p>
+	 * This method doesn't return anything. It just calls methods not
+	 * encountered during basic parsing to give loggers a chance to complain.
+	 * <p>
+	 * <ul>
 	 * <li>String content decorators may complain about markup.</li>
 	 * <li>Nodes may have link target ids which have not been registered.</li>
-	 * </ul></p>
+	 * </ul>
 	 */
 	public static void validateNode( UHSRootNode rootNode, UHSNode currentNode ) {
 		if ( currentNode.getStringContentDecorator() != null ) {
@@ -486,8 +487,8 @@ public class UHSReaderMain {
 
 	/**
 	 * Recursively extracts the binary content of a node and its children to files.
-	 *
-	 * <p>Extensions are guessed.</p>
+	 * <p>
+	 * Extensions are guessed.
 	 *
 	 * @param currentNode  a node to start extracting from
 	 * @param destDir  the destination dir

@@ -20,8 +20,8 @@ import net.vhati.openuhs.core.UHSRootNode;
 
 /**
  * A state-tracking object used internally by UHSParser.
- *
- * <p>There is no need to construct an instance of this directly.</p>
+ * <p>
+ * There is no need to construct an instance of this directly.
  *
  * @see net.vhati.openuhs.core.UHSParser
  */
@@ -75,11 +75,11 @@ public class UHSParseContext {
 
 	/**
 	 * Sets the offset, from the beginning of the UHS file, to the binary hunk.
-	 *
-	 * <p>In the 88a format, there is no binary hunk.</p>
-	 *
-	 * <p>In the 9x format, there's a special 0x1a byte in the file.
-	 * Everything after that is the binary hunk.</p>
+	 * <p>
+	 * In the 88a format, there is no binary hunk.
+	 * <p>
+	 * In the 9x format, there's a special 0x1a byte in the file.
+	 * Everything after that is the binary hunk.
 	 */
 	public void setBinaryHunkOffset( long binHunkOffset ) {
 		this.binHunkOffset = binHunkOffset;
@@ -141,8 +141,8 @@ public class UHSParseContext {
 
 	/**
 	 * An amount to add to any index passed into getLine().
-	 *
-	 * <p>For the 9x format, this is used to ignore the fake 88a header lines.</p>
+	 * <p>
+	 * For the 9x format, this is used to ignore the fake 88a header lines.
 	 *
 	 * @param lineIndexFudge  the number of lines to ignore
 	 * @see #getLine(int)
@@ -165,12 +165,12 @@ public class UHSParseContext {
 
 	/**
 	 * Registers an extraneous id to ignore.
-	 *
-	 * <p>Rather than track unnecessary ids, this will suppress warnings about
-	 * unsatisfied Incentive hunk references.</p>
-	 *
-	 * <p>HyperImage hunks sometimes have their main image line referenced in
-	 * an Incentive hunk.</p>
+	 * <p>
+	 * Rather than track unnecessary ids, this will suppress warnings about
+	 * unsatisfied Incentive hunk references.
+	 * <p>
+	 * HyperImage hunks sometimes have their main image line referenced in
+	 * an Incentive hunk.
 	 */
 	public void registerExtraId( ExtraNodeId extraId ) {
 		extraIds.add( extraId );
@@ -189,14 +189,14 @@ public class UHSParseContext {
 
 	/**
 	 * Returns a reference to read bytes from the binary hunk.
-	 *
-	 * <p>Images, comments, sounds, etc., are stored there.</p>
-	 *
-	 * <p>If the binary hunk has been set to an array, an ArrayByteReference
+	 * <p>
+	 * Images, comments, sounds, etc., are stored there.
+	 * <p>
+	 * If the binary hunk has been set to an array, an ArrayByteReference
 	 * will be returned. Otherwise, a FileRegionByteReference will be
-	 * returned, as long as the binary hunk offset has been set.</p>
-	 *
-	 * <p>The offset here is relative to the start of the binary hunk, NOT the beginning of the file.</p>
+	 * returned, as long as the binary hunk offset has been set.
+	 * <p>
+	 * The offset here is relative to the start of the binary hunk, NOT the beginning of the file.
 	 *
 	 * @param offset  the start offset of the data, within the binary hunk
 	 * @param length  the number of bytes to read
@@ -234,13 +234,13 @@ public class UHSParseContext {
 
 	/**
 	 * Returns the unsigned checksum value stored at the end of the file.
-	 *
-	 * <p>The last two bytes of a 9x format file are a little-endian 16-bit
+	 * <p>
+	 * The last two bytes of a 9x format file are a little-endian 16-bit
 	 * unsigned short CRC16 of the entire file, excluding those last two
-	 * bytes.</p>
-	 *
-	 * <p>Java doesn't have unsigned types, so the return value is a masked
-	 * int.</p>
+	 * bytes.
+	 * <p>
+	 * Java doesn't have unsigned types, so the return value is a masked
+	 * int.
 	 */
 	public int readStoredChecksumValue() {
 		int result = -1;
@@ -268,10 +268,10 @@ public class UHSParseContext {
 
 	/**
 	 * Returns a string from allLines at a given index, while caching that index for logging purposes.
-	 *
-	 * <p>Note: While a list of lines is involved, the index is not synonymous
+	 * <p>
+	 * Note: While a list of lines is involved, the index is not synonymous
 	 * with the line number seen in text editors. When parsing the 9x format,
-	 * index is reset to 0 at the end of the fake 88a header.</p>
+	 * index is reset to 0 at the end of the fake 88a header.
 	 *
 	 * @param index  an index within allLines (0-based)
 	 */
@@ -289,9 +289,9 @@ public class UHSParseContext {
 
 	/**
 	 * Returns the 1-based line number of the index in the last call to getLine().
-	 *
-	 * <p>This will be counted from the very beginning of the file,
-	 * including 9x format's fake 88a header.</p>
+	 * <p>
+	 * This will be counted from the very beginning of the file,
+	 * including 9x format's fake 88a header.
 	 */
 	public int getLastParsedLineNumber() {
 		return ( lineIndexFudge + lastLineIndex + 1 );

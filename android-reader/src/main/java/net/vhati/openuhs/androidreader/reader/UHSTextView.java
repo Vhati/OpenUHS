@@ -69,8 +69,8 @@ public class UHSTextView extends LinearLayout {
 
 	/**
 	 * Sets a string to display instead of a UHSNode's content.
-	 *
-	 * <p>The string will be styled /as if/ that were the node's content.</p>
+	 * <p>
+	 * The string will be styled /as if/ that were the node's content.
 	 *
 	 * @param s  the text, or null for none
 	 */

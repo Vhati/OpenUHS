@@ -12,8 +12,8 @@ import java.util.Map;
 
 /**
  * A state-tracking object used internally by UHSWriter.
- *
- * <p>There is no need to construct an instance of this directly.</p>
+ * <p>
+ * There is no need to construct an instance of this directly.
  *
  * @see net.vhati.openuhs.core.UHSWriter
  */
@@ -200,11 +200,11 @@ public class UHSGenerationContext {
 
 	/**
 	 * Returns the current estimate for the file's total byte count.
-	 *
-	 * <p>This includes the 2-byte CRC16 checksum value at the end.</p>
-	 *
-	 * <p>The returned length will only be accurate after the binary hunk's
-	 * length and offset have been determined from previous phases.</p>
+	 * <p>
+	 * This includes the 2-byte CRC16 checksum value at the end.
+	 * <p>
+	 * The returned length will only be accurate after the binary hunk's
+	 * length and offset have been determined from previous phases.
 	 */
 	public long getExpectedFileLength() {
 		return binHunkOffset + highestBinHunkLength + 2;
