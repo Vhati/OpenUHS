@@ -607,8 +607,12 @@ public class DownloaderActivity extends AppCompatActivity implements UHSFetchObs
 	 */
 	public void openFile( String uhsPath ) {
 		Intent intent = new Intent().setClass( this, ReaderActivity.class );
+
+		// Suppress a lint error (unrecognized IntentCompat flag) with a comment.
+		//noinspection WrongConstant
 		intent.setFlags( Intent.FLAG_ACTIVITY_NEW_TASK | IntentCompat.FLAG_ACTIVITY_CLEAR_TASK | IntentCompat.FLAG_ACTIVITY_TASK_ON_HOME );
 		intent.putExtra( ReaderActivity.EXTRA_OPEN_FILE, uhsPath );
+
 		this.startActivity( intent );
 		finish();
 	}

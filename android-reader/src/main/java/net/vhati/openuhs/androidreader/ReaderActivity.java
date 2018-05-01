@@ -146,6 +146,9 @@ public class ReaderActivity extends AppCompatActivity implements UHSReaderNavCtr
 
 			case R.id.switchToDownloaderAction:
 				Intent intent = new Intent().setClass( this, DownloaderActivity.class );
+
+				// Suppress a lint error (unrecognized IntentCompat flag) with a comment.
+				//noinspection WrongConstant
 				intent.setFlags( Intent.FLAG_ACTIVITY_NEW_TASK | IntentCompat.FLAG_ACTIVITY_CLEAR_TASK | IntentCompat.FLAG_ACTIVITY_TASK_ON_HOME );
 				this.startActivity( intent );
 				finish();
