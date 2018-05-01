@@ -11,9 +11,11 @@ Build System Requirements
 
   The code within projects here is less demanding, for legacy compatibility.
 
-  Installing multiple Java Development Kits is recommended (one to run Gradle, another to compile code).
+  Installing multiple Java Development Kits is recommended (one to run Gradle, another to compile code), but optional.
 
   For non-android builds, Java 1.6 is sufficient to both run Gradle and compile code.
+
+  Gradle 4 is not yet supported. Gradle 2.14 and 3.5.1 are known to work.
 
 
 Projects
