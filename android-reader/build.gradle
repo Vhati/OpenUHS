@@ -10,17 +10,20 @@
 buildscript {
 	repositories {
 		jcenter()
+		maven { url "https://maven.google.com" }
 	}
 
 	dependencies {
-		// https://developer.android.com/studio/releases/gradle-plugin
-		// Gradle 2.14.1: Android Plugin 2.2.3
-		// Gradle 3.3+: Android Plugin 2.3.0+
-		// Gradle 4.1+: Android Plugin 3.0.0+
-		// Gradle 4.4+: Android Plugin 3.1.0+
-
-		// Build succeeded with Android Plugin 2.2.3 under Gradle 2.14.1 and 3.5.1.
-
+		/*
+		 * https://developer.android.com/studio/releases/gradle-plugin
+		 * Android Plugin 2.2.3: Gradle 2.14.1
+		 * Android Plugin 2.3.0+: Gradle 3.3+
+		 * Android Plugin 3.0.0+: Gradle 4.1+
+		 * Android Plugin 3.1.0+: Gradle 4.4+
+		 *
+		 * Build succeeded with Android Plugin 2.2.3 under Gradle 2.14.1 and 3.5.1.
+		 * Build succeeded with Android Plugin 3.0.1 under Gradle 4.7.
+		 */
 		classpath "com.android.tools.build:gradle:2.2.3"
 	}
 }
@@ -174,15 +177,32 @@ task runAndroidReader(type: DefaultTask) {
 	}
 }
 
+// appcompat-v7 25.4.0+ requires Google's maven repo.
+// Gradle 4+ w/ Android Plugin 3.0.0+ supports google() as an alias for maven{...}.
+repositories {
+	maven { url "https://maven.google.com" }
+}
+
+/*
+ * Since Android Plugin 3.0.0, "compile" is deprecated.
+ * "api" dependencies should be visible to other modules (like "compile" was).
+ * "implementation" dependencies are only seen by this module.
+ * Assume the latter when migrating.
+ *
+ * Migration breaks backward compatibility with earlier versions of the plugin.
+ */
 dependencies {
 	compile project(":core")
 
 	/*
 	 * appcompat-v7 library for Action Bar UI.
 	 * https://developer.android.com/topic/libraries/support-library/features.html#v7-appcompat
+	 * 25.4.0 was the last to support API 10.
+	 * 26.0.0 raised the minimum SDK to API 14.
+	 *
 	 * support-v4 will be brought in as its dependency.
 	 */
-	compile "com.android.support:appcompat-v7:24.2.0"
+	compile "com.android.support:appcompat-v7:25.4.0"
 
 	compile "org.slf4j:slf4j-api:1.7.21"
 	compile "org.slf4j:slf4j-android:1.7.21"
