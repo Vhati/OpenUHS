@@ -41,7 +41,7 @@ project.ext.activityClassName = "${packageName}.MainActivity"
 android {
 	// These two should match the latest packages in your your Android SDK Manager.
 	compileSdkVersion = 24
-	buildToolsVersion = "24.0.1"
+	buildToolsVersion = "27.0.3"
 
 	compileOptions {
 		encoding = sourceEncoding
