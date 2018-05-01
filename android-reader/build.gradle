@@ -120,8 +120,10 @@ android {
 		targetSdkVersion(10)
 	}
 
-	// Gradle 2.14.1: This wasn't needed.
-	// Gradle 3.5.1: Prevent a DuplicateFileException from merging Jackson jars.
+	/*
+	 * Gradle 2.14.1: This wasn't needed.
+	 * Gradle 3.5.1: Prevent a DuplicateFileException from merging Jackson jars.
+	 */
 	packagingOptions {
 		exclude "META-INF/LICENSE"
 	}
