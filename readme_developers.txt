@@ -7,15 +7,17 @@ Build System Requirements
 
   Gradle 3.00 requires at least Java 1.7.
 
-  Android development requires at least Java 1.8, but that subproject is optional. (See: settings.gradle)
+  Android development requires at least Java 1.8, but that subproject is optional. (See: "settings.gradle") It's the fault of an elaborate Gradle plugin. Code within projects here is less demanding, for legacy compatibility.
 
-  The code within projects here is less demanding, for legacy compatibility.
-
-  Installing multiple Java Development Kits is recommended (one to run Gradle, another to compile code), but optional.
+  Installing multiple Java Development Kits is recommended (one to run Gradle, another to compile code), but that is optional.
 
   For non-android builds, Java 1.6 is sufficient to both run Gradle and compile code.
 
-  Gradle 4 is not yet supported. Gradle 2.14 and 3.5.1 are known to work.
+  The Android Plugin for Gradle tends to break as Gradle upgrades. This may require editing a dependency in "android-reader/build.gradle".
+
+  Gradle 2.14 and 3.5.1 are known to work with Android Plugin 2.2.3 (default).
+
+  Gradle 4.7 will work with Android Plugin 3.0.1 (edit).
 
 
 Projects
@@ -112,6 +114,8 @@ Android SDK Setup
       Extras/
         Android Support Repository
         Intel x86 Emulator Accelerator (HAXM installer)
+
+  Edit "buildToolsVersion" in "android-reader/build.gradle" to match the ticked version.
 
   Emulating an x86 device (as opposed to ARM), combined with HAXM, is considerably faster.
 
