@@ -27,7 +27,6 @@ task generateJavadocs(type: Javadoc) {
 task packageDist(type: Zip) {
 	baseName = "OpenUHS"
 	appendix = "Core"
-
 	includeEmptyDirs = true
 	filteringCharset = "UTF-8"
 

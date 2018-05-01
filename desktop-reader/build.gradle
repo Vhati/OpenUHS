@@ -158,6 +158,7 @@ task packageDistUnix(type: Tar, dependsOn: copyDistUnix) {
 	baseName = "OpenUHS"
 	appendix = "Reader"
 	classifier = "Unix"
+	includeEmptyDirs = true
 	compression = Compression.GZIP
 
 	into("${baseName} ${version}")
@@ -176,6 +177,7 @@ task packageDistWin(type: Zip, dependsOn: copyDistWin) {
 	baseName = "OpenUHS"
 	appendix = "Reader"
 	classifier = "Win"
+	includeEmptyDirs = true
 
 	into("${baseName} ${version}")
 
